@@ -1,9 +1,11 @@
-import React from 'react'
-
 const Home = () => {
   return (
-    <h5>Team2</h5>
+    <>
+      <br />
+      <h5>여기가 메인페이지겸 인덱스입니다.</h5>
+    </>
   )
 }
 
 export default Home
+

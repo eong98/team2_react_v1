@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import './App.css'
 import {BrowserRouter, Routes, Route} from 'react-router-dom'
-import { getCopyright } from './components/Tool'; // Tool.ts
-import Home from './components/Home'
+import { getCopyright } from '../Tool'; // Tool.ts
 
 function App() {
 
@@ -11,7 +10,7 @@ function App() {
       <div style={{width: '100%'}}>
         2조 React Frontend project
         <Routes>
-          <Route path='/' element={<Home />} />
+          {/* <Route path='/' element={} /> */}
         </Routes>
 
         <div className='copyright'>{getCopyright()}</div>      
