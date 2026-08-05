@@ -72,7 +72,7 @@ export default function StatsView() {
             <div className="donut" />
             <div className="legend">
               <div className="li">
-                <span className="sw" style={{ background: 'var(--amber)' }} />
+                <span className="sw" style={{ background: 'var(--amber-500)' }} />
                 장시간 배회<span className="pct">34%</span>
               </div>
               <div className="li">
@@ -80,7 +80,7 @@ export default function StatsView() {
                 무단침입<span className="pct">24%</span>
               </div>
               <div className="li">
-                <span className="sw" style={{ background: 'var(--red)' }} />
+                <span className="sw" style={{ background: 'var(--red-500)' }} />
                 기물파손<span className="pct">20%</span>
               </div>
               <div className="li">

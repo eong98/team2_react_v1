@@ -103,5 +103,5 @@ export function statusBadgeClass(s: EventStatus): 'danger' | 'ok' | 'neutral' {
 }
 
 export function confColor(level: EventLevel): string {
-  return level === 'danger' ? 'var(--red)' : level === 'warn' ? 'var(--amber)' : 'var(--green)';
+  return level === 'danger' ? 'var(--red-500)' : level === 'warn' ? 'var(--amber-500)' : 'var(--green-500)';
 }
