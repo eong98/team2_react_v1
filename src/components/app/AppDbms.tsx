@@ -2,6 +2,7 @@
 import '../style/normalize.css'
 import '../style/common.css'
 import '../style/contents.css'
+import '../style/dbms.css'
 /* ------------------------------------------- */
 
 import { useState } from 'react'
