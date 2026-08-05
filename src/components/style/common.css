@@ -65,6 +65,7 @@
   --cyan:#33D6C0; --cyan-dim:rgba(51,214,192,.14);
   --amber-dim:rgba(255,176,32,0.14);
   --maxw:1180px;
+  --tabbar-h:64px;
 }
 
 /* reset — allimio 다크 디자인 기준으로 재정리
@@ -179,7 +180,12 @@ code{font-family:var(--font-mono);font-size:12px;background:var(--surface-2);col
 .nav_item.active{background:var(--primary-dim);color:var(--primary);border-color:rgba(51,214,138,.3);font-weight:600;}
 
 
-.menu_btn{display:none;position:fixed;top:14px;left:14px;z-index:65;width:38px;height:38px;border-radius:8px;background:var(--surface);border:1px solid var(--border-strong);color:var(--text);align-items:center;justify-content:center;font-size:16px;cursor:pointer;}
+.menu_btn{display:none;width:34px;height:34px;flex-shrink:0;border-radius:8px;background:var(--surface);border:1px solid var(--border-strong);color:var(--text);align-items:center;justify-content:center;font-size:15px;cursor:pointer;}
+
+/* 모바일 전용 상단바 (햄버거 + 로고) — dashboard의 .topbar(항상 노출, store_switch 등 포함)와 달리
+   사이드바만 있고 별도 헤더가 없는 화면(회원 등)에서 900px 이하일 때만 나타남 */
+.topbar_mobile{display:none;position:sticky;top:0;z-index:20;background:rgba(10,14,19,0.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);align-items:center;gap:10px;padding:12px 16px;}
+.topbar_mobile .brand{padding:0;}
 
 
 .view{display:none;}
@@ -205,6 +211,7 @@ code{font-family:var(--font-mono);font-size:12px;background:var(--surface-2);col
   .grid_2, .grid_3, .grid_split, .plan_grid, .img_grid{grid-template-columns:1fr !important;}
   .table_wrap{overflow-x:auto !important;}
   .menu_btn{display:flex;}
+  .topbar_mobile{display:flex;}
 }
 @media(max-width:520px){
   .stat_mini{flex-wrap:wrap;}

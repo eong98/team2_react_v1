@@ -88,7 +88,7 @@ export default function StatsView() {
                 쓰러짐<span className="pct">14%</span>
               </div>
               <div className="li">
-                <span className="sw" style={{ background: '#7C5CFF' }} />
+                <span className="sw" style={{ background: 'var(--violet-500)' }} />
                 폭행<span className="pct">8%</span>
               </div>
             </div>

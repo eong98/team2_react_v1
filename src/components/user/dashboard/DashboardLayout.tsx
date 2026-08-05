@@ -36,12 +36,8 @@ function Shell() {
       <Sidebar open={navOpen} onNavigate={() => setNavOpen(false)} />
       {navOpen && <div className="sidebar_backdrop open" onClick={() => setNavOpen(false)} />}
 
-      <button className="menu_btn" onClick={() => setNavOpen(true)} aria-expanded={navOpen} aria-label="메뉴 열기">
-        ☰
-      </button>
-
       <main className="main">
-        <Topbar />
+        <Topbar onMenuClick={() => setNavOpen(true)} />
         <div className="views">
           <Outlet />
         </div>

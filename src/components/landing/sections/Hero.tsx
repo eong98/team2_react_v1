@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useClock } from "../../hooks/useClock";
 
 export default function Hero() {
@@ -18,9 +19,9 @@ export default function Hero() {
             감지하고 관리자에게 알립니다.
           </p>
           <div className="hero_actions">
-            <a href="/member#signup" className="btn btn_primary">
+            <Link to="/member/signup" className="btn btn_primary">
               데모 신청하기
-            </a>
+            </Link>
             <a href="#flow" className="btn btn_ghost">
               작동 방식 보기
             </a>

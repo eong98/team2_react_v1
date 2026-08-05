@@ -8,7 +8,11 @@ function formatClock(d: Date) {
   )}:${pad(d.getSeconds())}`;
 }
 
-export default function Topbar() {
+interface TopbarProps {
+  onMenuClick: () => void;
+}
+
+export default function Topbar({ onMenuClick }: TopbarProps) {
   const { currentStoreName } = useDashboard();
   const [now, setNow] = useState(new Date());
 
@@ -19,9 +23,14 @@ export default function Topbar() {
 
   return (
     <header className="topbar">
-      <div className="store_switch" id="storeSwitchBtn">
-        <span className="st_dot" />
-        <span>{currentStoreName}</span> ▾
+      <div className="topbar_left">
+        <button className="menu_btn" onClick={onMenuClick} aria-label="전체 메뉴 열기">
+          ☰
+        </button>
+        <div className="store_switch" id="storeSwitchBtn">
+          <span className="st_dot" />
+          <span>{currentStoreName}</span> ▾
+        </div>
       </div>
       <div className="topbar_right">
         <span className="live_pill">LIVE</span>

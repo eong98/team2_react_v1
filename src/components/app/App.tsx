@@ -11,6 +11,7 @@ import { getCopyright } from '../Tool'; // Tool.ts
 
 import Home from '../Home';
 import DashboardLayout from '../user/dashboard/DashboardLayout'
+import MemberLayout from '../user/member/MemberLayout'
 import Landing from '../landing/Landing'
 
 
@@ -25,6 +26,7 @@ function App() {
           
           <Route path="/" element={<Landing />} />
           <Route path="/dashboard/*" element={<DashboardLayout />} />
+          <Route path="/member/*" element={<MemberLayout />} />
         </Routes>
 
         {/* <div className='copyright'>{getCopyright()}</div>       */}
