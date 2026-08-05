@@ -18,7 +18,7 @@ import BoardLayout from '../dbms/board/BoardLayout'
 import Landing from '../landing/Landing'
 
 
-function App() {
+function AppDbms() {
 
   return (
     <BrowserRouter>
@@ -27,7 +27,6 @@ function App() {
         <Routes>
           {/* <Route path='/' element={<Home />} /> */}
           
-          <Route path="/" element={<Landing />} />
           <Route path="/dbms/dashboard/*" element={<DashboardLayout />} />
           <Route path="/dbms/member/*" element={<MemberLayout />} />
           <Route path="/dbms/store/*" element={<StoreLayout />} />
@@ -43,4 +42,4 @@ function App() {
   )
 }
 
-export default App
+export default AppDbms
