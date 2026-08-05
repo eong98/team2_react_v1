@@ -10,9 +10,9 @@ export default function CtaSection() {
           <Link to="/member/signup" className="btn btn_primary">
             데모 신청하기
           </Link>
-          <a href="/board#qna" className="btn btn_ghost">
+          <Link to="/board/qna" className="btn btn_ghost">
             문의하기
-          </a>
+          </Link>
         </div>
       </div>
     </section>
