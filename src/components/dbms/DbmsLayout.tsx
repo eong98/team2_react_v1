@@ -8,6 +8,8 @@ import NoticeList from './board/NoticeList';
 import NoticeForm from './board/NoticeForm';
 import ShopList from './shop/ShopList';
 import ShopForm from './shop/ShopForm';
+import InMenuList from './menu/InMenuList';
+import InMenuForm from './menu/InMenuForm';
 
 
 function Shell() {
@@ -38,11 +40,11 @@ export default function BoardLayout() {
         <Route index element={<Navigate to="notice" replace />} />
         {/* 참고해서 추가하시면 됩니다 / 페이지 추가 */}
         <Route path="notice" element={<NoticeList />} />
-        <Route path="notice/edit" element={<NoticeForm />} />
+        <Route path="notice/new" element={<NoticeForm />} />
         <Route path="notice/:no/edit" element={<NoticeForm />} />
 
         <Route path="shop" element={<ShopList />} />
-        <Route path="shop/edit" element={<ShopForm />} />
+        <Route path="shop/new" element={<ShopForm />} />
         <Route path="shop/:no/edit" element={<ShopForm />} />
       </Route>
     </Routes>

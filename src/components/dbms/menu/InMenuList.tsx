@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AdminPageHeader, AdminToolbar, DataTable, Pagination, ConfirmDeleteModal } from '../common';
 import type { DataTableColumn } from '../common';
-import { MOCK_NOTICES, TAG_LIST, TAG_TONE, type Notice } from './Shop.mock';
+import { MOCK_NOTICES, TAG_LIST, TAG_TONE, type Notice } from './InMenu.mock';
 
 // 파일이름 꼭 맞춰주세요 
 /* ---------------------------------------------------------------------
