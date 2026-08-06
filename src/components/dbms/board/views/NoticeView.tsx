@@ -89,29 +89,19 @@ export default function NoticeView() {
         onSearchChange={goSearch}
         searchPlaceholder="제목으로 검색"
         filters={
-          <div className="tabs tag_filter_tabs" role="tablist" aria-label="태그 필터">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tagFilter === ''}
-              className={`tab${tagFilter === '' ? ' on' : ''}`}
-              onClick={() => selectTag('')}
-            >
-              전체
-            </button>
+          <select
+            className="form_select"
+            value={tagFilter}
+            onChange={(e) => selectTag(e.target.value as Notice['tag'] | '')}
+            aria-label="태그 필터"
+          >
+            <option value="">태그 전체</option>
             {TAG_LIST.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                role="tab"
-                aria-selected={tagFilter === tag}
-                className={`tab${tagFilter === tag ? ' on' : ''}`}
-                onClick={() => selectTag(tag)}
-              >
+              <option key={tag} value={tag}>
                 {tag}
-              </button>
+              </option>
             ))}
-          </div>
+          </select>
         }
       />
 
