@@ -12,7 +12,7 @@ interface ConfirmDeleteModalProps {
 }
 
 /**
- * 삭제 버튼 클릭 시 공용으로 띄우는 확인 모달.
+ * 삭제 버튼 클릭 시 공용으로 띄우는 확인 모달. 기존 Modal.tsx + .btn 클래스 재사용.
  * 사용 예:
  *   <ConfirmDeleteModal
  *     open={deleteTarget !== null}
@@ -38,22 +38,31 @@ export default function ConfirmDeleteModal({
       title={title}
       footer={
         <>
-          <button type="button" className="dbms-btn dbms-btn-md dbms-btn-ghost" onClick={onClose}>
+          <button type="button" className="btn btn_md btn_ghost" onClick={onClose}>
             취소
           </button>
-          <button
-            type="button"
-            className="dbms-btn dbms-btn-md dbms-btn-danger-solid"
-            onClick={onConfirm}
-            disabled={loading}
-          >
+          <button type="button" className="btn btn_md btn_danger" onClick={onConfirm} disabled={loading}>
             {loading ? '삭제 중...' : '삭제'}
           </button>
         </>
       }
     >
-      <p className="dbms-confirm-text">{description}</p>
-      {targetLabel && <div className="dbms-confirm-target">{targetLabel}</div>}
+      <p className="b_sm">{description}</p>
+      {targetLabel && (
+        <div
+          style={{
+            marginTop: 8,
+            padding: '10px 12px',
+            borderRadius: 8,
+            border: '1px solid var(--border)',
+            background: 'var(--surface-2)',
+            fontSize: 13,
+            color: 'var(--text)',
+          }}
+        >
+          {targetLabel}
+        </div>
+      )}
     </Modal>
   );
 }

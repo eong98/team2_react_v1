@@ -1,258 +1,84 @@
 @charset "utf-8";
 
 /* ============================================================================
-   DBMS ADMIN 공용 컴포넌트 스타일 (Tailwind @layer components)
-   - 게시판/매장/CCTV/이슈/유형/알림 등 모든 관리자 리스트 화면에서 공통으로 사용
-   - 색상/폰트 토큰은 common.css의 :root 변수(--bg, --surface, --primary ...)를 그대로 재사용
-     -> 랜딩/기존 화면과 톤이 어긋나지 않음
-   - 사용법: 화면 컴포넌트에서는 <section className="dbms-page"> 로 감싸고
-     아래 클래스 + 필요한 Tailwind 유틸리티(w-, gap-, flex- 등)를 함께 사용하면 됨
+   DBMS ADMIN 공용 스타일 (리스트 검색 / 생성 / 수정 / 삭제 / 페이지네이션)
+   - Tailwind 미사용, 순수 CSS
+   - 기존 common.css / contents.css 에 이미 정의된 .btn .badge .table .form_*
+     .filter_bar .view_head .actions .req .empty_row 등은 그대로 재사용하고,
+     여기서는 지금까지 없던 것만 추가함:
+       1) .table_wrap 기본 스타일 (기존엔 미디어쿼리 오버라이드만 있고 기본값이 없었음)
+       2) .search_box 검색 입력창 (filter_bar 안에서 select와 나란히 사용)
+       3) .pagination 페이지네이션
+       4) .cell_title / .cell_sub 리스트 셀 안의 제목+부제 조합
 ============================================================================ */
 
-@layer components {
-
-  /* ---------------------------------------------------------------------
-     1) 페이지 헤더 (제목 + 설명 + 우측 생성 버튼)
-  --------------------------------------------------------------------- */
-  .dbms-page {
-    @apply w-full;
-  }
-
-  .dbms-header {
-    @apply flex flex-wrap items-start justify-between gap-4 mb-5;
-  }
-
-  .dbms-header-title {
-    @apply text-[19px] font-bold text-[var(--text)] leading-tight;
-  }
-
-  .dbms-header-desc {
-    @apply mt-1.5 text-[13px] leading-relaxed text-[var(--text-dim)];
-  }
-
-  /* ---------------------------------------------------------------------
-     2) 버튼 (생성 / 수정 / 삭제 / 보조)
-  --------------------------------------------------------------------- */
-  .dbms-btn {
-    @apply inline-flex select-none items-center justify-center gap-1.5
-           whitespace-nowrap rounded-[8px] border font-semibold
-           transition-colors duration-150 cursor-pointer
-           disabled:cursor-not-allowed disabled:opacity-40;
-  }
-
-  .dbms-btn-md { @apply h-9 px-4 text-[13px]; }
-  .dbms-btn-sm { @apply h-8 px-3 text-[12.5px]; }
-  .dbms-btn-icon { @apply h-8 w-8 p-0; }
-
-  .dbms-btn-primary {
-    @apply border-[var(--primary)] bg-[var(--primary)] text-[#04140C]
-           hover:brightness-110 active:brightness-95;
-  }
-
-  .dbms-btn-ghost {
-    @apply border-[var(--border)] bg-[var(--surface-2)] text-[var(--text)]
-           hover:border-[var(--border-strong)] hover:bg-[var(--surface)];
-  }
-
-  .dbms-btn-outline {
-    @apply border-[var(--border)] bg-transparent text-[var(--text-dim)]
-           hover:border-[var(--border-strong)] hover:text-[var(--text)];
-  }
-
-  .dbms-btn-danger {
-    @apply border-[var(--danger)] bg-transparent text-[var(--red-300)]
-           hover:bg-[var(--danger-dim)];
-  }
-
-  .dbms-btn-danger-solid {
-    @apply border-[var(--danger)] bg-[var(--danger)] text-white
-           hover:brightness-110;
-  }
-
-  /* ---------------------------------------------------------------------
-     3) 툴바 (검색 입력 + 필터 셀렉트 + 생성 버튼을 감싸는 바)
-  --------------------------------------------------------------------- */
-  .dbms-toolbar {
-    @apply mb-4 flex flex-wrap items-center gap-2.5 rounded-[12px] border
-           border-[var(--border)] bg-[var(--surface)] p-3;
-  }
-
-  .dbms-search {
-    @apply relative min-w-[220px] flex-1;
-  }
-
-  .dbms-search-icon {
-    @apply pointer-events-none absolute left-3 top-1/2 -translate-y-1/2
-           text-[var(--text-faint)];
-  }
-
-  .dbms-search-input {
-    @apply h-9 w-full rounded-[8px] border border-[var(--border)]
-           bg-[var(--surface-2)] pl-9 pr-8 text-[13px] text-[var(--text)]
-           outline-none transition-colors
-           placeholder:text-[var(--text-faint)]
-           focus:border-[var(--primary)];
-  }
-
-  .dbms-search-clear {
-    @apply absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer
-           rounded-full p-1 text-[var(--text-faint)] hover:text-[var(--text)];
-  }
-
-  .dbms-select {
-    @apply h-9 rounded-[8px] border border-[var(--border)]
-           bg-[var(--surface-2)] px-3 text-[13px] text-[var(--text)]
-           outline-none transition-colors focus:border-[var(--primary)];
-  }
-
-  .dbms-toolbar-divider {
-    @apply hidden h-5 w-px bg-[var(--border)] sm:block;
-  }
-
-  /* ---------------------------------------------------------------------
-     4) 테이블
-  --------------------------------------------------------------------- */
-  .dbms-table-wrap {
-    @apply w-full overflow-x-auto rounded-[12px] border border-[var(--border)]
-           bg-[var(--surface)];
-  }
-
-  .dbms-table {
-    @apply w-full min-w-[640px] border-collapse text-[13px];
-  }
-
-  .dbms-table thead th {
-    @apply whitespace-nowrap border-b border-[var(--border)]
-           bg-[var(--surface-2)] px-4 py-3 text-left text-[11.5px]
-           font-semibold uppercase tracking-wide text-[var(--text-faint)];
-  }
-
-  .dbms-table thead th.dbms-th-right { @apply text-right; }
-
-  .dbms-table tbody td {
-    @apply border-b border-[var(--border)] px-4 py-3 align-middle
-           text-[var(--text)];
-  }
-
-  .dbms-table tbody tr {
-    @apply transition-colors hover:bg-[var(--surface-2)];
-  }
-
-  .dbms-table tbody tr:last-child td { @apply border-b-0; }
-
-  .dbms-mono {
-    @apply font-[var(--font-mono)] text-[12.5px] text-[var(--text-dim)];
-  }
-
-  .dbms-cell-title {
-    @apply font-medium text-[var(--text)];
-  }
-
-  .dbms-cell-sub {
-    @apply mt-0.5 text-[11.5px] text-[var(--text-faint)];
-  }
-
-  .dbms-table-empty {
-    @apply flex flex-col items-center justify-center gap-2 py-16 text-center
-           text-[13px] text-[var(--text-faint)];
-  }
-
-  .dbms-table-loading {
-    @apply flex items-center justify-center gap-2 py-16 text-[13px]
-           text-[var(--text-faint)];
-  }
-
-  /* 행 액션(수정/삭제) 묶음 */
-  .dbms-actions {
-    @apply flex items-center justify-end gap-1.5;
-  }
-
-  /* ---------------------------------------------------------------------
-     5) 뱃지 (상태 표시)
-  --------------------------------------------------------------------- */
-  .dbms-badge {
-    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-[3px]
-           text-[11.5px] font-semibold leading-none;
-  }
-
-  .dbms-badge-success { @apply bg-[var(--primary-dim)] text-[var(--green-500)]; }
-  .dbms-badge-warning { @apply bg-[var(--warning-dim)] text-[var(--amber-500)]; }
-  .dbms-badge-danger  { @apply bg-[var(--danger-dim)] text-[var(--red-300)]; }
-  .dbms-badge-neutral { @apply bg-[var(--surface-2)] text-[var(--text-dim)]; }
-
-  /* ---------------------------------------------------------------------
-     6) 체크박스 (일괄 선택/삭제용)
-  --------------------------------------------------------------------- */
-  .dbms-checkbox {
-    @apply h-4 w-4 cursor-pointer rounded border-[var(--border-strong)]
-           bg-[var(--surface-2)] accent-[var(--primary)];
-  }
-
-  /* ---------------------------------------------------------------------
-     7) 페이지네이션
-  --------------------------------------------------------------------- */
-  .dbms-pagination {
-    @apply mt-4 flex flex-wrap items-center justify-between gap-3;
-  }
-
-  .dbms-pagination-info {
-    @apply font-[var(--font-mono)] text-[12px] text-[var(--text-faint)];
-  }
-
-  .dbms-pagination-btns {
-    @apply flex items-center gap-1;
-  }
-
-  .dbms-page-btn {
-    @apply h-8 min-w-[32px] rounded-[6px] border border-[var(--border)]
-           bg-[var(--surface-2)] px-2 font-[var(--font-mono)] text-[12px]
-           text-[var(--text-dim)] transition-colors
-           hover:border-[var(--border-strong)] hover:text-[var(--text)]
-           disabled:cursor-not-allowed disabled:opacity-30
-           disabled:hover:border-[var(--border)] disabled:hover:text-[var(--text-dim)];
-  }
-
-  .dbms-page-btn-active {
-    @apply border-[var(--primary)] bg-[var(--primary)] font-bold text-[#04140C]
-           hover:border-[var(--primary)] hover:text-[#04140C];
-  }
-
-  /* ---------------------------------------------------------------------
-     8) 폼 (생성/수정 모달 내부 공용 - 기존 form_group/form_input과 병행 가능)
-  --------------------------------------------------------------------- */
-  .dbms-form-group { @apply mb-3.5 flex flex-col gap-1.5; }
-
-  .dbms-form-label {
-    @apply text-[12.5px] font-semibold text-[var(--text-dim)];
-  }
-
-  .dbms-form-label .dbms-req { @apply ml-0.5 text-[var(--danger)]; }
-
-  .dbms-form-input,
-  .dbms-form-select,
-  .dbms-form-textarea {
-    @apply w-full rounded-[8px] border border-[var(--border)]
-           bg-[var(--surface-2)] px-3 py-2 text-[13px] text-[var(--text)]
-           outline-none transition-colors
-           placeholder:text-[var(--text-faint)]
-           focus:border-[var(--primary)];
-  }
-
-  .dbms-form-textarea { @apply min-h-[90px] resize-y; }
-
-  .dbms-form-row-2 {
-    @apply grid grid-cols-1 gap-3 sm:grid-cols-2;
-  }
-
-  /* ---------------------------------------------------------------------
-     9) 삭제 확인 모달 본문
-  --------------------------------------------------------------------- */
-  .dbms-confirm-text {
-    @apply text-[13.5px] leading-relaxed text-[var(--text-dim)];
-  }
-
-  .dbms-confirm-target {
-    @apply mt-2 rounded-[8px] border border-[var(--border)]
-           bg-[var(--surface-2)] px-3 py-2 text-[13px] text-[var(--text)];
-  }
+/* ---------------------------------------------------------------------
+   1) 테이블 래퍼
+--------------------------------------------------------------------- */
+.table_wrap{
+  width:100%;
+  overflow-x:auto;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--surface);
 }
+.table_wrap .table{border:none;}
+
+/* ---------------------------------------------------------------------
+   2) 검색창 (filter_bar 안에서 select/input[date]와 같은 톤으로 사용)
+--------------------------------------------------------------------- */
+.search_box{
+  position:relative;
+  flex:1;
+  min-width:220px;
+}
+.search_box input[type="text"],
+.search_box input[type="search"]{
+  width:100%;
+  background:var(--surface);
+  border:1px solid var(--border-strong);
+  color:var(--text);
+  padding:9px 34px;
+  border-radius:7px;
+  font-size:12.5px;
+  font-family:var(--font-disp);
+}
+.search_box input::placeholder{color:var(--text-faint);}
+.search_box input:focus{outline:2px solid var(--primary);outline-offset:1px;border-color:var(--primary);}
+.search_box .search_ic{
+  position:absolute;left:11px;top:50%;transform:translateY(-50%);
+  color:var(--text-faint);pointer-events:none;display:flex;
+}
+.search_box .search_clear{
+  position:absolute;right:7px;top:50%;transform:translateY(-50%);
+  color:var(--text-faint);cursor:pointer;background:none;border:none;padding:4px;
+  display:flex;border-radius:100px;
+}
+.search_box .search_clear:hover{color:var(--text);background:var(--surface-2);}
+
+/* ---------------------------------------------------------------------
+   3) 페이지네이션 (신규 컴포넌트)
+--------------------------------------------------------------------- */
+.pagination{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  gap:12px;margin-top:16px;
+}
+.pagination_info{font-family:var(--font-mono);font-size:11.5px;color:var(--text-faint);}
+.pagination_btns{display:flex;align-items:center;gap:4px;}
+.page_btn{
+  min-width:30px;height:30px;padding:0 8px;
+  border-radius:6px;border:1px solid var(--border-strong);
+  background:var(--surface);color:var(--text-dim);
+  font-family:var(--font-mono);font-size:12px;cursor:pointer;
+  transition:.15s ease;
+}
+.page_btn:hover:not(:disabled){color:var(--text);border-color:var(--text-faint);}
+.page_btn:disabled{opacity:.35;cursor:not-allowed;}
+.page_btn.active{background:var(--primary);border-color:var(--primary);color:#04211D;font-weight:700;}
+.pagination_ellipsis{font-family:var(--font-mono);font-size:12px;color:var(--text-faint);padding:0 2px;}
+
+/* ---------------------------------------------------------------------
+   4) 리스트 셀 (제목 + 부제) - 게시판형 테이블에서 자주 씀
+--------------------------------------------------------------------- */
+.cell_title{font-weight:600;font-size:13px;color:var(--text);}
+.cell_sub{font-size:11px;color:var(--text-faint);margin-top:2px;}

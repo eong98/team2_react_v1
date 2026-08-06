@@ -12,6 +12,8 @@ interface AdminPageHeaderProps {
 
 /**
  * 모든 관리자 리스트 화면 최상단에 공통으로 쓰는 헤더.
+ * 기존 .view_head / .btn 클래스를 그대로 사용 (StoresView.tsx 패턴과 동일).
+ *
  * 사용 예:
  *   <AdminPageHeader
  *     title="공지사항"
@@ -28,15 +30,18 @@ export default function AdminPageHeader({
   actions,
 }: AdminPageHeaderProps) {
   return (
-    <div className="dbms-header">
+    <div
+      className="view_head"
+      style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}
+    >
       <div>
-        <h1 className="dbms-header-title">{title}</h1>
-        {description && <p className="dbms-header-desc">{description}</p>}
+        <h1>{title}</h1>
+        {description && <p>{description}</p>}
       </div>
       {actions ? (
         actions
       ) : createLabel ? (
-        <button type="button" className="dbms-btn dbms-btn-md dbms-btn-primary" onClick={onCreate}>
+        <button type="button" className="btn btn_md btn_primary" onClick={onCreate}>
           {createLabel}
         </button>
       ) : null}

@@ -7,9 +7,9 @@ export interface DataTableColumn<T> {
   render?: (row: T) => ReactNode;
   /** render 없이 단순 필드 출력할 때 사용 */
   accessor?: keyof T;
-  /** 숫자/코드처럼 고정폭 폰트로 보여줄 컬럼이면 true */
+  /** 숫자/코드처럼 고정폭 폰트로 보여줄 컬럼이면 true (기존 .mono 클래스 사용) */
   mono?: boolean;
-  /** th/td 정렬, 폭 등 커스텀 클래스 */
+  /** th/td 폭 등 커스텀 클래스 */
   className?: string;
   headerClassName?: string;
 }
@@ -30,12 +30,15 @@ interface DataTableProps<T> {
 
 /**
  * 컬럼 정의만 넘기면 되는 범용 관리자 테이블.
+ * 기존 .table_wrap / .table / .mono / .actions / .empty_row 클래스를 그대로 사용
+ * (StoresView.tsx / HistoryView.tsx 패턴과 동일).
+ *
  * 사용 예:
  *   <DataTable
  *     columns={[
- *       { header: '매장명', render: (r) => <span className="dbms-cell-title">{r.name}</span> },
+ *       { header: '매장명', render: (r) => <span className="cell_title">{r.name}</span> },
  *       { header: '연락처', accessor: 'tel', mono: true },
- *       { header: '상태', render: (r) => <span className="dbms-badge dbms-badge-success">{r.status}</span> },
+ *       { header: '상태', render: (r) => <span className="badge badge_success">{r.status}</span> },
  *     ]}
  *     data={stores}
  *     rowKey={(r) => r.id}
@@ -55,10 +58,11 @@ export default function DataTable<T>({
   loading = false,
 }: DataTableProps<T>) {
   const hasActions = Boolean(onEdit || onDelete);
+  const colCount = columns.length + (hasActions ? 1 : 0);
 
   return (
-    <div className="dbms-table-wrap">
-      <table className="dbms-table">
+    <div className="table_wrap">
+      <table className="table">
         <thead>
           <tr>
             {columns.map((col) => (
@@ -66,48 +70,46 @@ export default function DataTable<T>({
                 {col.header}
               </th>
             ))}
-            {hasActions && <th className="dbms-th-right">관리</th>}
+            {hasActions && <th></th>}
           </tr>
         </thead>
         <tbody>
           {loading ? (
-            <tr>
-              <td colSpan={columns.length + (hasActions ? 1 : 0)}>
-                <div className="dbms-table-loading">불러오는 중...</div>
-              </td>
+            <tr className="empty_row">
+              <td colSpan={colCount}>불러오는 중...</td>
             </tr>
           ) : data.length === 0 ? (
-            <tr>
-              <td colSpan={columns.length + (hasActions ? 1 : 0)}>
-                <div className="dbms-table-empty">{emptyMessage}</div>
-              </td>
+            <tr className="empty_row">
+              <td colSpan={colCount}>{emptyMessage}</td>
             </tr>
           ) : (
             data.map((row) => (
               <tr key={rowKey(row)}>
                 {columns.map((col) => (
                   <td key={col.header} className={col.className}>
-                    {col.render ? col.render(row) : col.mono ? (
-                      <span className="dbms-mono">{col.accessor ? String(row[col.accessor] ?? '') : ''}</span>
+                    {col.render ? (
+                      col.render(row)
+                    ) : col.mono ? (
+                      <span className="mono">{col.accessor ? String(row[col.accessor] ?? '') : ''}</span>
+                    ) : col.accessor ? (
+                      String(row[col.accessor] ?? '')
                     ) : (
-                      col.accessor ? String(row[col.accessor] ?? '') : ''
+                      ''
                     )}
                   </td>
                 ))}
                 {hasActions && (
-                  <td>
-                    <div className="dbms-actions">
-                      {onEdit && (
-                        <button type="button" className="dbms-btn dbms-btn-sm dbms-btn-ghost" onClick={() => onEdit(row)}>
-                          {editLabel}
-                        </button>
-                      )}
-                      {onDelete && (
-                        <button type="button" className="dbms-btn dbms-btn-sm dbms-btn-danger" onClick={() => onDelete(row)}>
-                          {deleteLabel}
-                        </button>
-                      )}
-                    </div>
+                  <td className="actions">
+                    {onEdit && (
+                      <button type="button" className="btn btn_sm btn_ghost" onClick={() => onEdit(row)}>
+                        {editLabel}
+                      </button>
+                    )}
+                    {onDelete && (
+                      <button type="button" className="btn btn_sm btn_danger_outline" onClick={() => onDelete(row)}>
+                        {deleteLabel}
+                      </button>
+                    )}
                   </td>
                 )}
               </tr>

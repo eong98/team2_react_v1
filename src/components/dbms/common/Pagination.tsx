@@ -21,6 +21,7 @@ function getPageNumbers(page: number, totalPages: number): number[] {
 }
 
 /**
+ * 신규 컴포넌트 (기존에 없던 것) — dbms.css의 .pagination / .page_btn 사용.
  * 사용 예:
  *   <Pagination page={page} totalPages={totalPages} totalCount={filtered.length} pageSize={10} onChange={setPage} />
  */
@@ -32,45 +33,39 @@ export default function Pagination({ page, totalPages, totalCount, pageSize, onC
   const pages = getPageNumbers(page, totalPages);
 
   return (
-    <div className="dbms-pagination">
-      <span className="dbms-pagination-info">
+    <div className="pagination">
+      <span className="pagination_info">
         전체 {totalCount}건 중 {from}–{to}건 표시
       </span>
-      <div className="dbms-pagination-btns">
-        <button
-          type="button"
-          className="dbms-page-btn"
-          disabled={page === 1}
-          onClick={() => onChange(1)}
-          aria-label="첫 페이지"
-        >
+      <div className="pagination_btns">
+        <button type="button" className="page_btn" disabled={page === 1} onClick={() => onChange(1)} aria-label="첫 페이지">
           «
         </button>
         <button
           type="button"
-          className="dbms-page-btn"
+          className="page_btn"
           disabled={page === 1}
           onClick={() => onChange(page - 1)}
           aria-label="이전 페이지"
         >
           ‹
         </button>
-        {pages[0] > 1 && <span className="dbms-pagination-info px-1">…</span>}
+        {pages[0] > 1 && <span className="pagination_ellipsis">…</span>}
         {pages.map((p) => (
           <button
             key={p}
             type="button"
-            className={`dbms-page-btn ${p === page ? 'dbms-page-btn-active' : ''}`}
+            className={`page_btn ${p === page ? 'active' : ''}`}
             onClick={() => onChange(p)}
             aria-current={p === page ? 'page' : undefined}
           >
             {p}
           </button>
         ))}
-        {pages[pages.length - 1] < totalPages && <span className="dbms-pagination-info px-1">…</span>}
+        {pages[pages.length - 1] < totalPages && <span className="pagination_ellipsis">…</span>}
         <button
           type="button"
-          className="dbms-page-btn"
+          className="page_btn"
           disabled={page === totalPages}
           onClick={() => onChange(page + 1)}
           aria-label="다음 페이지"
@@ -79,7 +74,7 @@ export default function Pagination({ page, totalPages, totalCount, pageSize, onC
         </button>
         <button
           type="button"
-          className="dbms-page-btn"
+          className="page_btn"
           disabled={page === totalPages}
           onClick={() => onChange(totalPages)}
           aria-label="마지막 페이지"

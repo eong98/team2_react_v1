@@ -12,14 +12,16 @@ interface AdminToolbarProps {
 }
 
 /**
- * 리스트 상단 검색/필터 바. AdminPageHeader 바로 아래, 테이블 위에 배치.
+ * 리스트 상단 검색/필터 바. 기존 .filter_bar 클래스를 그대로 사용
+ * (HistoryView.tsx의 필터 바와 동일한 톤), 검색 입력만 .search_box로 새로 추가.
+ *
  * 사용 예:
  *   <AdminToolbar
  *     searchValue={keyword}
  *     onSearchChange={setKeyword}
  *     searchPlaceholder="제목으로 검색"
  *     filters={
- *       <select className="dbms-select" value={tag} onChange={(e) => setTag(e.target.value)}>
+ *       <select value={tag} onChange={(e) => setTag(e.target.value)}>
  *         <option value="">전체</option>
  *         <option value="긴급">긴급</option>
  *       </select>
@@ -34,17 +36,16 @@ export default function AdminToolbar({
   extra,
 }: AdminToolbarProps) {
   return (
-    <div className="dbms-toolbar">
-      <div className="dbms-search">
-        <span className="dbms-search-icon" aria-hidden>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <div className="filter_bar">
+      <div className="search_box">
+        <span className="search_ic" aria-hidden>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="7" />
             <path d="m20 20-3.5-3.5" />
           </svg>
         </span>
         <input
           type="text"
-          className="dbms-search-input"
           placeholder={searchPlaceholder}
           value={searchValue}
           onChange={(e) => onSearchChange(e.target.value)}
@@ -52,25 +53,20 @@ export default function AdminToolbar({
         {searchValue && (
           <button
             type="button"
-            className="dbms-search-clear"
+            className="search_clear"
             aria-label="검색어 지우기"
             onClick={() => onSearchChange('')}
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
               <path d="M18 6 6 18M6 6l12 12" />
             </svg>
           </button>
         )}
       </div>
 
-      {filters && (
-        <>
-          <span className="dbms-toolbar-divider" />
-          {filters}
-        </>
-      )}
+      {filters}
 
-      {extra && <div className="ml-auto flex items-center gap-2">{extra}</div>}
+      {extra && <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>{extra}</div>}
     </div>
   );
 }
