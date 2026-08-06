@@ -44,8 +44,11 @@ export default function BoardLayout() {
         <Route path="notice/:no/edit" element={<NoticeForm />} />
 
         <Route path="shop" element={<ShopList />} />
-        <Route path="shop/new" element={<ShopForm />} />
         <Route path="shop/:no/edit" element={<ShopForm />} />
+
+        <Route path="menu" element={<InMenuList />} />
+        <Route path="menu/new" element={<InMenuForm />} />
+        <Route path="menu/:no/edit" element={<InMenuForm />} />
       </Route>
     </Routes>
   );
