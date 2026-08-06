@@ -5,6 +5,7 @@ import Topbar from './Topbar';
 import MobileTabbar from './MobileTabbar';
 import ChatWidget from './ChatWidget';
 import NoticeView from './views/NoticeView';
+import NoticeFormView from './views/NoticeFormView';
 import QnaView from './views/QnaView';
 import AttachView from './views/AttachView';
 import ChatlogView from './views/ChatlogView';
@@ -38,6 +39,8 @@ export default function BoardLayout() {
       <Route element={<Shell />}>
         <Route index element={<Navigate to="notice" replace />} />
         <Route path="notice" element={<NoticeView />} />
+        <Route path="notice/new" element={<NoticeFormView />} />
+        <Route path="notice/:no/edit" element={<NoticeFormView />} />
         <Route path="qna" element={<QnaView />} />
         <Route path="attach" element={<AttachView />} />
         <Route path="chatlog" element={<ChatlogView />} />

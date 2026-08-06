@@ -82,3 +82,36 @@
 --------------------------------------------------------------------- */
 .cell_title{font-weight:600;font-size:13px;color:var(--text);}
 .cell_sub{font-size:11px;color:var(--text-faint);margin-top:2px;}
+
+/* ---------------------------------------------------------------------
+   5) 생성/수정 전용 폼 페이지 (모달이 아닌 별도 라우트)
+   라벨을 좌측 고정폭으로 두는 방식 — SettingsView.tsx의 .slider_row /
+   .toggle_row 와 동일한 톤으로 통일 (신규 컴포넌트)
+--------------------------------------------------------------------- */
+.form_page{max-width:640px;}
+.field_row{
+  display:flex; align-items:flex-start; gap:20px;
+  padding:18px 0; border-top:1px solid var(--border);
+}
+.field_row:first-of-type{border-top:none;padding-top:4px;}
+.field_row .field_label{
+  width:110px; flex-shrink:0; padding-top:10px;
+  font-size:13px; font-weight:600; color:var(--text);
+}
+.field_row .field_label .req{color:var(--red-200);margin-left:2px;}
+.field_row .field_control{flex:1; min-width:0;}
+.field_row .field_hint{font-size:11.5px;color:var(--text-faint);margin-top:6px;}
+.form_page_footer{
+  display:flex; justify-content:flex-end; gap:10px;
+  margin-top:8px; padding-top:20px; border-top:1px solid var(--border);
+}
+@media(max-width:640px){
+  .field_row{flex-direction:column; gap:6px;}
+  .field_row .field_label{width:auto; padding-top:0;}
+}
+
+/* ---------------------------------------------------------------------
+   6) 리스트 툴바의 태그 필터 탭 (검색창 옆, 좌측 정렬)
+   기존 .tabs/.tab(common.css) 재사용 — filter_bar 안에서 줄바꿈 허용만 추가
+--------------------------------------------------------------------- */
+.tag_filter_tabs{flex-wrap:wrap;}

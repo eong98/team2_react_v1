@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import Modal from '../../../ui/Modal';
+import { useNavigate } from 'react-router-dom';
 import { AdminPageHeader, AdminToolbar, DataTable, Pagination, ConfirmDeleteModal } from '../../common';
 import type { DataTableColumn } from '../../common';
+import { MOCK_NOTICES, TAG_LIST, TAG_TONE, type Notice } from './notice.mock';
 
 /* ---------------------------------------------------------------------
    ⚠️ 이 파일은 "관리자 CRUD 리스트" 공용 디자인 틀 사용 예시입니다.
@@ -9,49 +10,23 @@ import type { DataTableColumn } from '../../common';
    CCTV, 이슈, 유형코드, 매장 등 다른 리스트 화면도 이 구조를 그대로 복사해서
    columns / 상태값 / API 연동 부분만 바꾸면 됩니다.
    (공용 컴포넌트: src/components/dbms/common/*, 스타일: src/components/style/dbms.css)
-   클래스는 전부 기존 common.css/contents.css에 있는 것(.btn/.badge/.table 등)을
-   그대로 쓰고, dbms.css에는 검색창/페이지네이션 등 없던 것만 추가되어 있음.
+
+   ※ 생성/수정은 모달이 아니라 전용 라우트(페이지)로 분리했습니다.
+     - 작성: /dbms/board/notice/new
+     - 수정: /dbms/board/notice/:no/edit
+     - 삭제는 그대로 확인 모달(ConfirmDeleteModal) 사용.
+     → 폼 화면 구현은 NoticeFormView.tsx 참고.
 --------------------------------------------------------------------- */
-
-interface Notice {
-  no: number;
-  tag: '긴급' | '중요' | '신규' | '일반';
-  title: string;
-  writer: string;
-  hit: number;
-  cdate: string;
-}
-
-const TAG_TONE: Record<Notice['tag'], string> = {
-  긴급: 'badge_danger',
-  중요: 'badge_warning',
-  신규: 'badge_success',
-  일반: 'badge_neutral',
-};
-
-const MOCK_NOTICES: Notice[] = [
-  { no: 24, tag: '긴급', title: '8/5(수) 02:00~04:00 서버 점검 안내', writer: 'admin', hit: 214, cdate: '2026-08-03' },
-  { no: 23, tag: '신규', title: "이상행동 유형에 '흡연 감지'가 추가되었습니다", writer: 'admin', hit: 152, cdate: '2026-07-29' },
-  { no: 22, tag: '중요', title: '7월 구독 결제 관련 안내', writer: 'admin', hit: 341, cdate: '2026-07-20' },
-  { no: 21, tag: '일반', title: 'CCTV 연동 가이드 문서가 갱신되었습니다', writer: 'admin', hit: 88, cdate: '2026-07-14' },
-  { no: 20, tag: '일반', title: '모바일 알림 수신 설정 안내', writer: 'admin', hit: 63, cdate: '2026-07-05' },
-  { no: 19, tag: '신규', title: '매장별 대시보드 위젯이 추가되었습니다', writer: 'admin', hit: 121, cdate: '2026-06-28' },
-  { no: 18, tag: '중요', title: '개인정보처리방침 개정 안내', writer: 'admin', hit: 205, cdate: '2026-06-19' },
-  { no: 17, tag: '일반', title: '이용가이드 오탈자 수정', writer: 'admin', hit: 41, cdate: '2026-06-10' },
-  { no: 16, tag: '일반', title: '6월 정기 점검 결과 안내', writer: 'admin', hit: 97, cdate: '2026-06-02' },
-  { no: 15, tag: '긴급', title: '일부 지역 CCTV 스트리밍 지연 이슈 안내', writer: 'admin', hit: 276, cdate: '2026-05-27' },
-  { no: 14, tag: '신규', title: '통계 화면에 주간 리포트가 추가되었습니다', writer: 'admin', hit: 133, cdate: '2026-05-19' },
-];
 
 const PAGE_SIZE = 6;
 
 export default function NoticeView() {
+  const navigate = useNavigate();
+
   const [keyword, setKeyword] = useState('');
-  const [tagFilter, setTagFilter] = useState('');
+  const [tagFilter, setTagFilter] = useState<Notice['tag'] | ''>('');
   const [page, setPage] = useState(1);
 
-  const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<Notice | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Notice | null>(null);
 
   const filtered = useMemo(() => {
@@ -70,19 +45,9 @@ export default function NoticeView() {
     setPage(1);
   };
 
-  const openCreate = () => {
-    setEditing(null);
-    setFormOpen(true);
-  };
-
-  const openEdit = (row: Notice) => {
-    setEditing(row);
-    setFormOpen(true);
-  };
-
-  const handleSave = () => {
-    // TODO: 실제 등록/수정 API 연동 (POST /api/notice, PUT /api/notice/{no})
-    setFormOpen(false);
+  const selectTag = (tag: Notice['tag'] | '') => {
+    setTagFilter(tag);
+    setPage(1);
   };
 
   const handleDelete = () => {
@@ -116,7 +81,7 @@ export default function NoticeView() {
         title="공지사항"
         description="서비스 업데이트와 점검 안내를 등록/관리합니다. (NOTICE 테이블 기준: no·tag·title·content·writer·hit·cdate)"
         createLabel="+ 공지 작성"
-        onCreate={openCreate}
+        onCreate={() => navigate('new')}
       />
 
       <AdminToolbar
@@ -124,19 +89,29 @@ export default function NoticeView() {
         onSearchChange={goSearch}
         searchPlaceholder="제목으로 검색"
         filters={
-          <select
-            value={tagFilter}
-            onChange={(e) => {
-              setTagFilter(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">태그 전체</option>
-            <option value="긴급">긴급</option>
-            <option value="중요">중요</option>
-            <option value="신규">신규</option>
-            <option value="일반">일반</option>
-          </select>
+          <div className="tabs tag_filter_tabs" role="tablist" aria-label="태그 필터">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tagFilter === ''}
+              className={`tab${tagFilter === '' ? ' on' : ''}`}
+              onClick={() => selectTag('')}
+            >
+              전체
+            </button>
+            {TAG_LIST.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                role="tab"
+                aria-selected={tagFilter === tag}
+                className={`tab${tagFilter === tag ? ' on' : ''}`}
+                onClick={() => selectTag(tag)}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
         }
       />
 
@@ -144,67 +119,12 @@ export default function NoticeView() {
         columns={columns}
         data={paged}
         rowKey={(n) => n.no}
-        onEdit={openEdit}
+        onEdit={(n) => navigate(`${n.no}/edit`)}
         onDelete={(n) => setDeleteTarget(n)}
         emptyMessage="검색 결과가 없습니다."
       />
 
       <Pagination page={page} totalPages={totalPages} totalCount={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
-
-      {/* 생성/수정 모달 */}
-      <Modal
-        open={formOpen}
-        onClose={() => setFormOpen(false)}
-        titleId="noticeFormTitle"
-        title={editing ? '공지 수정' : '공지 작성'}
-        footer={
-          <>
-            <button type="button" className="btn btn_md btn_ghost" onClick={() => setFormOpen(false)}>
-              취소
-            </button>
-            <button type="button" className="btn btn_md btn_primary" onClick={handleSave}>
-              저장
-            </button>
-          </>
-        }
-      >
-        <div className="grid_2">
-          <div className="form_group">
-            <label className="form_label" htmlFor="notice-tag">
-              태그<span className="req">*</span>
-            </label>
-            <select id="notice-tag" className="form_select" defaultValue={editing?.tag ?? '일반'}>
-              <option value="긴급">긴급</option>
-              <option value="중요">중요</option>
-              <option value="신규">신규</option>
-              <option value="일반">일반</option>
-            </select>
-          </div>
-          <div className="form_group">
-            <label className="form_label" htmlFor="notice-writer">
-              작성자
-            </label>
-            <input id="notice-writer" className="form_input" defaultValue={editing?.writer ?? 'admin'} disabled />
-          </div>
-        </div>
-        <div className="form_group">
-          <label className="form_label" htmlFor="notice-title">
-            제목<span className="req">*</span>
-          </label>
-          <input
-            id="notice-title"
-            className="form_input"
-            placeholder="공지 제목을 입력하세요"
-            defaultValue={editing?.title ?? ''}
-          />
-        </div>
-        <div className="form_group">
-          <label className="form_label" htmlFor="notice-content">
-            내용<span className="req">*</span>
-          </label>
-          <textarea id="notice-content" className="form_textarea" placeholder="공지 내용을 입력하세요" />
-        </div>
-      </Modal>
 
       <ConfirmDeleteModal
         open={deleteTarget !== null}
