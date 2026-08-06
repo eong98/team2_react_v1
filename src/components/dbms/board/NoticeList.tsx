@@ -4,6 +4,7 @@ import { AdminPageHeader, AdminToolbar, DataTable, Pagination, ConfirmDeleteModa
 import type { DataTableColumn } from '../common';
 import { MOCK_NOTICES, TAG_LIST, TAG_TONE, type Notice } from './notice.mock';
 
+// 파일이름 꼭 맞춰주세요 
 /* ---------------------------------------------------------------------
    ⚠️ 이 파일은 "관리자 CRUD 리스트" 공용 디자인 틀 사용 예시입니다.
    검색 / 생성 / 수정 / 삭제 / 페이지네이션이 모두 붙어있는 기본 패턴이라
