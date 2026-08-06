@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AdminPageHeader } from '../common';
-import { MOCK_NOTICES, type Notice } from './notice.mock';
+import { MOCK_NOTICES, type Notice } from './Shop.mock';
 
 // 파일이름 꼭 맞춰주세요 
 /* ---------------------------------------------------------------------

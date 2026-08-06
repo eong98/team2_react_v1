@@ -4,8 +4,11 @@ import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 // import MobileTabbar from './MobileTabbar';
 import ChatWidget from './ChatWidget';
-import NoticeView from './board/NoticeList';
-import NoticeFormView from './board/NoticeForm';
+import NoticeList from './board/NoticeList';
+import NoticeForm from './board/NoticeForm';
+import ShopList from './shop/ShopList';
+import ShopForm from './shop/ShopForm';
+
 
 function Shell() {
   const [navOpen, setNavOpen] = useState(false);
@@ -33,9 +36,14 @@ export default function BoardLayout() {
     <Routes>
       <Route element={<Shell />}>
         <Route index element={<Navigate to="notice" replace />} />
-        <Route path="notice" element={<NoticeView />} />
-        <Route path="notice/new" element={<NoticeFormView />} />
-        <Route path="notice/:no/edit" element={<NoticeFormView />} />
+        {/* 참고해서 추가하시면 됩니다 / 페이지 추가 */}
+        <Route path="notice" element={<NoticeList />} />
+        <Route path="notice/edit" element={<NoticeForm />} />
+        <Route path="notice/:no/edit" element={<NoticeForm />} />
+
+        <Route path="shop" element={<ShopList />} />
+        <Route path="shop/edit" element={<ShopForm />} />
+        <Route path="shop/:no/edit" element={<ShopForm />} />
       </Route>
     </Routes>
   );
