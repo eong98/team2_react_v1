@@ -3,8 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { AdminPageHeader } from '../common';
 import { MOCK_NOTICES, type Notice } from './notice.mock';
 
+// 파일이름 꼭 맞춰주세요 
 /* ---------------------------------------------------------------------
-   공지 작성(/dbms/board/notice/new) / 수정(/dbms/board/notice/:no/edit) 페이지.
+   공지 작성(/dbms/board/notice/new) / 수정(/dbms/board/notice/edit/:no) 페이지.
    NoticeView.tsx의 생성/수정 모달을 대체하는 전용 라우트입니다.
    (삭제는 그대로 목록 화면의 확인 모달을 사용합니다.)
 
