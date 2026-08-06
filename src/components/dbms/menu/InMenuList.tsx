@@ -79,30 +79,14 @@ export default function NoticeView() {
   return (
     <section className="view active">
       <AdminPageHeader
-        title="매장관리"
-        description="관리자 매장관리"
+        title="관리자메뉴생성"
+        description="관리자메뉴생성"
+        createLabel="+ 메뉴생성"
+        onCreate={() => navigate('new')}
       />
 
-      <AdminToolbar
-        searchValue={keyword}
-        onSearchChange={goSearch}
-        searchPlaceholder="매장명 검색"
-        filters={
-          <select
-            className="form_select"
-            value={tagFilter}
-            onChange={(e) => selectTag(e.target.value as Notice['tag'] | '')}
-            aria-label="태그 필터"
-          >
-            <option value="">태그 전체</option>
-            {TAG_LIST.map((tag) => (
-              <option key={tag} value={tag}>
-                {tag}
-              </option>
-            ))}
-          </select>
-        }
-      />
+      
+
 
       <DataTable
         columns={columns}
