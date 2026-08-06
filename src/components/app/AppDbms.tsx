@@ -11,11 +11,7 @@ import { getCopyright } from '../Tool'; // Tool.ts
 
 
 import Home from '../Home';
-import DashboardLayout from '../dbms/dashboard/DashboardLayout'
-import MemberLayout from '../dbms/member/MemberLayout'
-import StoreLayout from '../dbms/store/StoreLayout'
-import NotifyLayout from '../dbms/notify/NotifyLayout'
-import BoardLayout from '../dbms/board/BoardLayout'
+import DbmsLayout from '../dbms/DbmsLayout'
 import Landing from '../landing/Landing'
 
 
@@ -28,11 +24,7 @@ function AppDbms() {
         <Routes>
           {/* <Route path='/' element={<Home />} /> */}
           
-          <Route path="/dbms/dashboard/*" element={<DashboardLayout />} />
-          <Route path="/dbms/member/*" element={<MemberLayout />} />
-          <Route path="/dbms/store/*" element={<StoreLayout />} />
-          <Route path="/dbms/notify/*" element={<NotifyLayout />} />
-          <Route path="/dbms/board/*" element={<BoardLayout />} />
+          <Route path="/dbms/*" element={<DbmsLayout />} />
         </Routes>
 
         {/* <div className='copyright'>{getCopyright()}</div>       */}

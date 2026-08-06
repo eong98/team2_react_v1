@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AdminPageHeader } from '../../common';
+import { AdminPageHeader } from '../common';
 import { MOCK_NOTICES, type Notice } from './notice.mock';
 
 /* ---------------------------------------------------------------------

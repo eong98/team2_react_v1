@@ -88,7 +88,10 @@
    라벨을 좌측 고정폭으로 두는 방식 — SettingsView.tsx의 .slider_row /
    .toggle_row 와 동일한 톤으로 통일 (신규 컴포넌트)
 --------------------------------------------------------------------- */
-.form_page{max-width:640px;}
+.form_page{
+  /* max-width:640px; */
+  width:100%;
+}
 .field_row{
   display:flex; align-items:flex-start; gap:20px;
   padding:18px 0; border-top:1px solid var(--border);
