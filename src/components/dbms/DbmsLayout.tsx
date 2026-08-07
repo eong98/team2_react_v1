@@ -11,6 +11,9 @@ import ShopForm from './shop/ShopForm';
 import InMenuList from './menu/InMenuList';
 import InMenuForm from './menu/InMenuForm';
 
+import SurveyForm from './survey/SurveyForm';
+import SurveyList from './survey/SurveyList';
+import SurveyResponseList from './survey/SurveyResponseList';
 
 function Shell() {
   const [navOpen, setNavOpen] = useState(false);
@@ -19,14 +22,13 @@ function Shell() {
     <div className="app">
       <Sidebar open={navOpen} onNavigate={() => setNavOpen(false)} />
       {navOpen && <div className="sidebar_backdrop open" onClick={() => setNavOpen(false)} />}
-      
+
       <main className="main">
         <Topbar onMenuClick={() => setNavOpen(true)} />
         <div className="views">
           <Outlet />
         </div>
       </main>
-
       {/* <MobileTabbar /> */}
       <ChatWidget />
     </div>
@@ -49,6 +51,11 @@ export default function BoardLayout() {
         <Route path="menu" element={<InMenuList />} />
         <Route path="menu/new" element={<InMenuForm />} />
         <Route path="menu/:no/edit" element={<InMenuForm />} />
+        
+        <Route path="survey" element={<SurveyList />}/>
+        <Route path="survey/create" element={<SurveyForm />} />
+        <Route path="survey/:no/edit" element={<SurveyForm />} />
+        <Route path="survey/:no/responses" element={<SurveyResponseList />}/>
       </Route>
     </Routes>
   );
