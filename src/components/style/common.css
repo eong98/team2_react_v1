@@ -118,7 +118,7 @@ legend {overflow:hidden; position:absolute; width:1px; height:1px; margin:-1px; 
 label {display:inline-block; vertical-align:middle; cursor:pointer;}
 
 /* select: 네이티브 화살표·배경만 제거하는 최소 리셋. 실제 스타일은 .form_select 가 담당 */
-select {overflow:hidden; white-space:nowrap; text-overflow:ellipsis; height:36px; margin:0; padding:0 12px; line-height:36px; color:inherit; vertical-align:middle; border:none; background:none; -webkit-appearance:none; -moz-appearance:none; appearance:none;}
+select {overflow:hidden; white-space:nowrap; text-overflow:ellipsis; height:36px; margin:0; padding:0 12px; color:inherit; vertical-align:middle; border:none; background:none; -webkit-appearance:none; -moz-appearance:none; appearance:none;}
 select[disabled] {color:var(--text-faint); background-color:var(--surface-2); opacity:1;}
 select::-ms-expand {display:none;}
 
@@ -154,7 +154,7 @@ table td {padding:0; word-break:break-all;}
   background:var(--bg); color:var(--text); font-family:var(--font-disp); line-height:1.6;
 }
 .app {display:flex; flex:1;}
-.app .main{/* overflow:visible; overflow-x:auto;  */flex:1; display:flex; flex-direction:column; min-width:0; width:100%;}
+#container{/* overflow:visible; overflow-x:auto;  */flex:1; display:flex; flex-direction:column; min-width:0; width:100%;}
 /* .main{flex:1;min-width:0;padding:26px 34px 80px;} */
 /* @media(max-width:900px){.app .main{padding:70px 18px 60px;}} */
 
@@ -263,7 +263,7 @@ code{font-family:var(--font-mono);font-size:12px;background:var(--surface-2);col
 .form_label .req{color:var(--red-200);margin-left:2px;}
 .form_input,
 .form_select,
-.form_textarea{width:100%;background:var(--n-900,var(--bg));border:1px solid var(--border-strong);color:var(--text);padding:11px 14px;border-radius:8px;font-size:13.5px;font-family:var(--font-disp);}
+.form_textarea{width:100%; min-height:36px; background:var(--n-900,var(--bg));border:1px solid var(--border-strong);color:var(--text);padding:8px 14px;border-radius:8px;font-size:13.5px;font-family:var(--font-disp);}
 .form_input:focus,
 .form_select:focus,
 .form_textarea:focus{outline:2px solid var(--primary);outline-offset:1px;border-color:var(--primary);}
@@ -291,8 +291,8 @@ code{font-family:var(--font-mono);font-size:12px;background:var(--surface-2);col
 .stack_sm > * + *{margin-top:8px;}
 .stack_md > * + *{margin-top:16px;}
 .stack_lg > * + *{margin-top:28px;}
-.container{max-width:1180px;margin:0 auto;padding:0 26px;}
-.container_app{max-width:1400px;margin:0 auto;padding:0 26px;}
+/* .container{max-width:1180px;margin:0 auto;padding:0 26px;}
+.container_app{max-width:1400px;margin:0 auto;padding:0 26px;} */
 .gd_wrap{max-width:1240px;margin:0 auto;padding:0 32px 120px;}
 .demo_row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
 

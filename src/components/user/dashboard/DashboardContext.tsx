@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
-import { EVENTS, type DashboardEvent, type EventStatus } from './mock';
+import { EVENTS, type DashboardEvent, type EventStatus } from './Live.mock';
 
 interface DashboardContextValue {
   mainCam: string;

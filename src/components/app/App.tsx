@@ -8,34 +8,32 @@ import { useState } from 'react'
 import {BrowserRouter, Routes, Route, Navigate} from 'react-router-dom'
 import { getCopyright } from '../Tool'; // Tool.ts
 
-
+/* 메인페이지 import */
+import MainLayout from '../main/MainLayout'
 import Home from '../Home';
-import DashboardLayout from '../user/dashboard/DashboardLayout'
-import MemberLayout from '../user/member/MemberLayout'
-import StoreLayout from '../user/store/StoreLayout'
-import NotifyLayout from '../user/notify/NotifyLayout'
-import BoardLayout from '../user/board/BoardLayout'
-import Landing from '../landing/Landing'
+import Login from '../Login'
+/* // 메인페이지 import */
+
+import UserLayout from '../user/UserLayout'
+import DbmsLayout from '../dbms/DbmsLayout'
 
 
 function App() {
+  {/* 2조 React Frontend project */}
 
   return (
     <BrowserRouter>
       <div id='allimio'>
-        {/* 2조 React Frontend project */}
         <Routes>
-          {/* <Route path='/' element={<Home />} /> */}
+          <Route element={<MainLayout />}>
+            {/* 메인페이지 */}
+            <Route path='/' element={<Home />} />
+            <Route path='/login' element={<Login />} />
+          </Route>
           
-          <Route path="/" element={<Landing />} />
-          <Route path="/dashboard/*" element={<DashboardLayout />} />
-          <Route path="/member/*" element={<MemberLayout />} />
-          <Route path="/store/*" element={<StoreLayout />} />
-          <Route path="/notify/*" element={<NotifyLayout />} />
-          <Route path="/board/*" element={<BoardLayout />} />
+          <Route path="/user/*" element={<UserLayout />} />
+          <Route path="/dbms/*" element={<DbmsLayout />} />
         </Routes>
-
-        {/* <div className='copyright'>{getCopyright()}</div>       */}
       </div>
     </BrowserRouter>
 

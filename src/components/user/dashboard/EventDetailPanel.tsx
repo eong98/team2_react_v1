@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useDashboard } from './DashboardContext';
-import { confColor, statusBadgeClass } from './mock';
+import { confColor, statusBadgeClass } from './Live.mock';
 
 export default function EventDetailPanel() {
   const { detailEvent, closeDetail, markStatus } = useDashboard();
