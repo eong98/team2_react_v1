@@ -59,7 +59,7 @@ export default function Modal({ open, onClose, titleId, title, children, footer 
   return (
     <div className="modal_bg open" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} ref={modalRef}>
-        <h3 id={titleId}>{title}</h3>
+        <h3 id={titleId} className='title sm'>{title}</h3>
         {children}
         <div className="modal_foot">{footer}</div>
       </div>
