@@ -12,6 +12,9 @@ import ShopMenuForm from '../pages/dbms/menu/ShopMenuForm';
 import SurveyForm from '../pages/dbms/survey/SurveyForm';
 import SurveyList from '../pages/dbms/survey/SurveyList';
 import SurveyResponseList from '../pages/dbms/survey/SurveyResponseList';
+import MemberList from '../pages/dbms/member/MemberList';
+import DbmsLogin from '../pages/main/DbmsLogin'
+import MemberDetail from '../pages/dbms/member/MemberDetail';
 
 export default function DbmsRoutes() {
   return (
@@ -27,8 +30,8 @@ export default function DbmsRoutes() {
       <Route path="inmenu/:no/edit" element={<InMenuForm />} />
 
       <Route path="shopmenu" element={<ShopMenuList />} />
-      <Route path="shopmenu/new" element={<ShopMenuForm />} />
-      <Route path="shopmenu/:no/edit" element={<ShopMenuForm />} />      
+      <Route path="shopmenu/new" element={<SurveyForm />} />
+      <Route path="shopmenu/:no/edit" element={<SurveyForm />} />      
 
       <Route path="shop" element={<ShopList />} />
       <Route path="shop/:no/edit" element={<ShopForm />} />
@@ -37,6 +40,10 @@ export default function DbmsRoutes() {
       <Route path="survey/create" element={<SurveyForm />} />
       <Route path="survey/:no/edit" element={<SurveyForm />} />
       <Route path="survey/:no/responses" element={<SurveyResponseList />}/>
+
+      <Route path="login" element={<DbmsLogin />} />{/* 관리자 로그인 */}
+      <Route path="memberlist" element={<MemberList />} />
+      <Route path="memberlist/:role/:no" element = {<MemberDetail />} />
     </Routes>
   );
 }
