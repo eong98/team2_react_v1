@@ -1,5 +1,5 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import PageHeader from '../../../components/ui/common/PageHeader';
 import { enter_chk, axiosInstance } from '../../../utils/Tool.ts';
 import type { InMenuType, ParentMenuType } from './InMenu.ts';
@@ -40,7 +40,12 @@ const DEPT_SUB = 2;   // 하위 메뉴
 export default function InMenuFormView() {
   const navigate = useNavigate();
   const { no } = useParams<{ no: string }>();
+  const [searchParams] = useSearchParams();
   const isEdit = Boolean(no);
+
+  // 목록 화면의 "+ 하위 메뉴" 버튼(/dbms/menu/new?fkno=1)으로 들어온 경우,
+  // 등록 시 하위 메뉴 + 해당 상위 메뉴가 기본으로 선택되도록 함
+  const presetFkno = !isEdit ? Number(searchParams.get('fkno')) || null : null;
 
   // 상위 메뉴(대표 메뉴) 후보 목록: fkno 없이 호출 → 최상위(fkno=null) 메뉴만 조회됨
   const [parentList, setParentList] = useState<ParentMenuType[]>([]);
@@ -59,11 +64,11 @@ export default function InMenuFormView() {
   }, [no]);
 
   // 상태 객체 사용
-  const [input, setInput] = useState<InMenuType>({
-    dept: DEPT_TOP,
-    ord: 0,
-    useYn: 'Y',
-  });
+  const [input, setInput] = useState<InMenuType>(
+    presetFkno
+      ? { dept: DEPT_SUB, fkno: presetFkno, ord: 0, useYn: 'Y' }
+      : { dept: DEPT_TOP, ord: 0, useYn: 'Y' }
+  );
 
   // 수정모드일 때 기존 데이터 조회
   useEffect(() => {

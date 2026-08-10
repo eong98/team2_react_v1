@@ -398,3 +398,74 @@ table td {padding:0; word-break:break-all;}
  
 
 .copyright{font-size:12px;color:var(--text-faint);font-family:var(--font-mono);}
+
+
+/* ---------------------------------------------------------------------
+   관리자 메뉴 목록 - 드래그 정렬 (InMenuList.tsx)
+   대표 메뉴(1뎁스) 카드 + 하위 메뉴(2뎁스) 리스트, 마우스 드래그로 순서 변경
+--------------------------------------------------------------------- */
+.menu_reorder_list{display:flex;flex-direction:column;gap:12px;}
+
+.menu_group{
+  border:1px solid var(--border);border-radius:12px;
+  background:var(--surface);overflow:hidden;
+  transition:opacity .15s ease, border-color .15s ease;
+}
+.menu_group.dragging{opacity:.45;}
+.menu_group.drag_over{border-color:var(--primary);}
+
+.menu_group_head{
+  display:flex;align-items:center;gap:10px;
+  padding:14px 16px;background:var(--surface-2);
+  cursor:grab;user-select:none;
+}
+.menu_group_head:active{cursor:grabbing;}
+
+.menu_drag_handle{
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text-faint);flex-shrink:0;
+}
+.menu_group_head:hover .menu_drag_handle,
+.menu_child_row:hover .menu_drag_handle{color:var(--text-dim);}
+
+.menu_ord_badge{
+  font-family:var(--font-mono);font-size:11px;color:var(--text-faint);
+  width:20px;text-align:center;flex-shrink:0;
+}
+
+.menu_collapse_btn{
+  flex-shrink:0;width:22px;height:22px;display:flex;align-items:center;justify-content:center;
+  background:none;border:none;color:var(--text-faint);cursor:pointer;font-size:12px;
+}
+.menu_collapse_btn:hover{color:var(--text);}
+
+.menu_group_title{
+  flex:1;min-width:0;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.menu_group_title .cell_sub{white-space:nowrap;}
+
+.menu_group_actions{display:flex;gap:6px;flex-shrink:0;}
+
+.menu_children{
+  display:flex;flex-direction:column;gap:6px;
+  padding:10px 16px 14px 44px;border-top:1px solid var(--border);
+}
+.menu_empty_children{font-size:11.5px;color:var(--text-faint);padding:6px 2px;}
+
+.menu_child_row{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;border:1px solid var(--border);border-radius:8px;
+  background:var(--surface-2);cursor:grab;user-select:none;
+  transition:opacity .15s ease, border-color .15s ease;
+}
+.menu_child_row:active{cursor:grabbing;}
+.menu_child_row.dragging{opacity:.45;}
+.menu_child_row.drag_over{border-color:var(--primary);}
+
+@media(max-width:640px){
+  .menu_group_head{flex-wrap:wrap;}
+  .menu_group_actions{width:100%;justify-content:flex-end;}
+  .menu_children{padding-left:24px;}
+  .menu_child_row{flex-wrap:wrap;}
+}
