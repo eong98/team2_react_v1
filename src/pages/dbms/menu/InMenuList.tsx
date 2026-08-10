@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { DragEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PageHeader, ConfirmDeleteModal } from '../../../components/ui';
+import { PageHeader, ConfirmDeleteModal, DbmsPagination } from '../../../components/ui';
 import { axiosInstance } from '../../../utils/Tool.ts';
 import type { InMenuType } from './InMenu.ts';
 
@@ -11,9 +11,11 @@ import type { InMenuType } from './InMenu.ts';
 
    - 대표 메뉴(dept=1)를 그룹 카드로 보여주고, 그 안에 하위 메뉴(dept=2)를
      들여쓰기된 목록으로 붙여서 트리처럼 표시합니다.
-   - 목록이 그렇게 많지 않다는 전제로, 검색/페이지네이션 대신
-     "마우스 드래그"로 순서(ord)를 바로 바꿀 수 있게 만들었습니다.
-       · 대표 메뉴 카드끼리 드래그 → 대표 메뉴들 순서 변경
+   - 대표 메뉴 그룹은 PAGE_SIZE개씩 페이지네이션됩니다(하위 메뉴는 그룹 안에서
+     전부 다 보여줌 - 그룹당 하위 메뉴 개수는 많지 않다는 전제).
+   - "마우스 드래그"로 순서(ord)를 바로 바꿀 수 있습니다.
+       · 대표 메뉴 카드끼리 드래그 → 대표 메뉴들 순서 변경 (페이지가 달라도
+         드래그 자체는 항상 화면에 보이는 카드끼리만 가능)
        · 같은 그룹 안의 하위 메뉴끼리 드래그 → 그 그룹 내 하위 메뉴 순서 변경
        · 다른 그룹으로 하위 메뉴를 옮기는 것(상위 메뉴 변경)은 지원하지 않음 →
          상위 메뉴를 바꾸고 싶으면 수정 화면에서 "상위 메뉴" select로 변경.
@@ -27,6 +29,8 @@ import type { InMenuType } from './InMenu.ts';
    DELETE /inmenu/{pk}                    - 삭제
 --------------------------------------------------------------------- */
 
+const PAGE_SIZE = 10; // 대표 메뉴(1뎁스) 기준, 한 페이지에 보여줄 그룹 개수
+
 export default function InMenuListView() {
   const navigate = useNavigate();
 
@@ -36,6 +40,7 @@ export default function InMenuListView() {
   const [reorderingKey, setReorderingKey] = useState<string | null>(null); // "top" | `child:${fkno}`
   const [deleteTarget, setDeleteTarget] = useState<InMenuType | null>(null);
   const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
+  const [page, setPage] = useState(1);
 
   // 드래그 중에도 항상 최신 상태를 참조하기 위한 ref
   const topListRef = useRef<InMenuType[]>([]);
@@ -71,6 +76,14 @@ export default function InMenuListView() {
   };
 
   useEffect(() => { loadAll(); }, []);
+
+  const totalPages = Math.max(1, Math.ceil(topList.length / PAGE_SIZE));
+  const pagedTopList = topList.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // 삭제 등으로 목록이 줄어들어 현재 페이지가 범위를 벗어나면 마지막 페이지로 보정
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   const toggleCollapse = (no: number) => {
     setCollapsed(prev => {
@@ -219,7 +232,7 @@ export default function InMenuListView() {
         </div>
       ) : (
         <div className="menu_reorder_list">
-          {topList.map((top) => {
+          {pagedTopList.map((top) => {
             const children = childMap[top.no ?? -1] ?? [];
             const isCollapsed = collapsed.has(top.no ?? -1);
 
@@ -348,6 +361,14 @@ export default function InMenuListView() {
           })}
         </div>
       )}
+{/* 
+      <DbmsPagination
+        page={page}
+        totalPages={totalPages}
+        totalCount={topList.length}
+        pageSize={PAGE_SIZE}
+        onChange={setPage}
+      /> */}
 
       <ConfirmDeleteModal
         open={deleteTarget !== null}
