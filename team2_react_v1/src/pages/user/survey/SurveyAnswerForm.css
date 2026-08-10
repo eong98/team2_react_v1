@@ -1,0 +1,535 @@
+/* =========================================================
+   사용자 설문 전체
+========================================================= */
+
+.survey-answer-page {
+    padding-bottom: 60px;
+}
+
+.survey-answer-container {
+    width: 100%;
+    max-width: 1100px;
+}
+
+
+/* =========================================================
+   설문 정보 카드
+========================================================= */
+
+.survey-info-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+
+    padding: 24px 26px;
+    margin-bottom: 20px;
+
+    background: #151d26;
+
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+}
+
+.survey-info-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 64px;
+    height: 64px;
+
+    flex-shrink: 0;
+
+    border-radius: 14px;
+
+    background: rgba(43, 216, 143, 0.12);
+
+    color: #2bd88f;
+
+    font-size: 27px;
+    font-weight: 700;
+}
+
+.survey-info-content h2 {
+    margin: 0 0 7px;
+
+    color: #ffffff;
+
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.survey-info-content p {
+    margin: 0 0 8px;
+
+    color: #b5bdc7;
+
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.survey-period {
+    color: #919ba7;
+
+    font-size: 13px;
+}
+
+
+/* =========================================================
+   진행률
+========================================================= */
+
+.survey-progress-area {
+    display: flex;
+    align-items: center;
+
+    gap: 16px;
+
+    padding: 5px 2px 20px;
+}
+
+.survey-progress-text {
+    min-width: 110px;
+
+    color: #d5d9df;
+
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.survey-progress-bar {
+    height: 7px;
+
+    flex: 1;
+
+    overflow: hidden;
+
+    border-radius: 20px;
+
+    background: #202a34;
+}
+
+.survey-progress-value {
+    height: 100%;
+
+    border-radius: 20px;
+
+    background: #2bd88f;
+
+    transition: width 0.25s ease;
+}
+
+.survey-progress-count {
+    min-width: 44px;
+
+    text-align: right;
+
+    color: #a8b0ba;
+
+    font-size: 13px;
+}
+
+
+/* =========================================================
+   질문 목록
+========================================================= */
+
+.survey-question-list {
+    display: flex;
+    flex-direction: column;
+
+    gap: 12px;
+}
+
+.survey-question-card {
+    padding: 22px 24px;
+
+    background: #151d26;
+
+    border: 1px solid rgba(255, 255, 255, 0.055);
+
+    border-radius: 14px;
+}
+
+
+/* =========================================================
+   질문 제목
+========================================================= */
+
+.survey-question-header {
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    margin-bottom: 20px;
+}
+
+.survey-question-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 28px;
+    height: 28px;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+
+    background: rgba(43, 216, 143, 0.16);
+
+    color: #2bd88f;
+
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.survey-question-title {
+    color: #f3f5f7;
+
+    font-size: 15px;
+    font-weight: 600;
+
+    line-height: 1.5;
+}
+
+.survey-required {
+    margin-left: 4px;
+
+    color: #ff7070;
+}
+
+
+/* =========================================================
+   SCORE
+   이미지처럼 원형 선택
+========================================================= */
+
+.survey-score-options {
+    display: flex;
+    align-items: center;
+
+    gap: 36px;
+
+    padding-left: 42px;
+}
+
+.survey-score-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 54px;
+    height: 54px;
+
+    min-height: 0;
+
+    flex: none;
+
+    box-sizing: border-box;
+
+    cursor: pointer;
+
+    border: 1px solid #35414c;
+    border-radius: 50%;
+
+    background: transparent;
+
+    color: #d1d7dd;
+
+    font-size: 13px;
+
+    transition:
+        border-color 0.15s ease,
+        background 0.15s ease,
+        color 0.15s ease,
+        transform 0.15s ease;
+}
+
+.survey-score-item:hover {
+    border-color: #2bd88f;
+
+    transform: translateY(-1px);
+}
+
+.survey-score-item.selected {
+    border-color: #2bd88f;
+
+    background: #198c5e;
+
+    color: #ffffff;
+}
+
+.survey-score-item input {
+    display: none;
+}
+
+
+/* =========================================================
+   SINGLE / MULTIPLE
+   이미지처럼 라디오 / 체크박스만
+========================================================= */
+
+.survey-choice-options {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 42px;
+
+    padding-left: 42px;
+}
+
+.survey-choice-item {
+    display: inline-flex;
+    align-items: center;
+
+    gap: 9px;
+
+    min-width: auto;
+
+    padding: 4px 0;
+
+    box-sizing: border-box;
+
+    cursor: pointer;
+
+    border: none;
+    border-radius: 0;
+
+    background: transparent;
+
+    color: #d3d8de;
+
+    font-size: 14px;
+
+    transition: color 0.15s ease;
+}
+
+.survey-choice-item:hover {
+    border: none;
+
+    background: transparent;
+
+    color: #ffffff;
+}
+
+.survey-choice-item.selected {
+    border: none;
+
+    background: transparent;
+
+    color: #ffffff;
+}
+
+.survey-choice-item input {
+    width: 16px;
+    height: 16px;
+
+    margin: 0;
+
+    flex-shrink: 0;
+
+    cursor: pointer;
+
+    accent-color: #2bd88f;
+}
+
+
+/* =========================================================
+   TEXT
+========================================================= */
+
+.survey-textarea {
+    display: block;
+
+    width: calc(100% - 42px);
+    min-height: 105px;
+
+    margin-left: 42px;
+
+    box-sizing: border-box;
+
+    padding: 14px 15px;
+
+    resize: vertical;
+
+    outline: none;
+
+    border: 1px solid #35414c;
+    border-radius: 9px;
+
+    background: #0b1117;
+
+    color: #f4f6f8;
+
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.6;
+
+    caret-color: #ffffff;
+
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+.survey-textarea::placeholder {
+    color: #69737e;
+}
+
+.survey-textarea:focus {
+    border-color: #2bd88f;
+
+    box-shadow:
+        0 0 0 2px rgba(43, 216, 143, 0.08);
+}
+
+
+/* =========================================================
+   오류
+========================================================= */
+
+.survey-error {
+    margin-top: 16px;
+
+    padding: 12px 14px;
+
+    border-radius: 8px;
+
+    background: rgba(239, 68, 68, 0.1);
+
+    color: #ff7474;
+
+    font-size: 13px;
+}
+
+
+/* =========================================================
+   하단 버튼
+
+   관리자 설문 작성 폼과 동일한 느낌
+========================================================= */
+
+.survey-form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+
+    gap: 8px;
+
+    margin-top: 24px;
+}
+
+
+/* 취소 */
+
+.survey-form-actions .btn:not(.btn_primary) {
+    border: 1px solid #3b4652;
+
+    background: transparent;
+
+    color: #d1d5db;
+}
+
+.survey-form-actions .btn:not(.btn_primary):hover:not(:disabled) {
+    border-color: #65717e;
+
+    background: rgba(255, 255, 255, 0.04);
+
+    color: #ffffff;
+}
+
+
+/* 설문 제출 */
+
+.survey-form-actions .btn_primary {
+    border: 1px solid #2bd88f;
+
+    background: #2bd88f;
+
+    color: #07110d;
+}
+
+.survey-form-actions .btn_primary:hover:not(:disabled) {
+    opacity: 0.9;
+}
+
+.survey-form-actions .btn:disabled {
+    cursor: default;
+
+    opacity: 0.5;
+}
+
+
+/* =========================================================
+   반응형
+========================================================= */
+
+@media (max-width: 800px) {
+
+    .survey-info-card {
+        padding: 18px;
+    }
+
+    .survey-info-icon {
+        width: 52px;
+        height: 52px;
+
+        font-size: 22px;
+    }
+
+    .survey-info-content h2 {
+        font-size: 18px;
+    }
+
+    .survey-question-card {
+        padding: 18px;
+    }
+
+    .survey-score-options {
+        justify-content: space-between;
+
+        gap: 6px;
+
+        padding-left: 0;
+    }
+
+    .survey-score-item {
+        width: 48px;
+        height: 48px;
+    }
+
+    .survey-choice-options {
+        gap: 18px;
+
+        padding-left: 0;
+    }
+
+    .survey-textarea {
+        width: 100%;
+
+        margin-left: 0;
+    }
+}
+
+
+@media (max-width: 520px) {
+
+    .survey-score-item {
+        width: 42px;
+        height: 42px;
+
+        font-size: 12px;
+    }
+
+    .survey-choice-options {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .survey-progress-text {
+        min-width: auto;
+    }
+}
