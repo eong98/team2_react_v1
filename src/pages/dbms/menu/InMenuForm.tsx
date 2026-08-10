@@ -2,6 +2,7 @@ import { useEffect, useState, type ChangeEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import PageHeader from '../../../components/ui/common/PageHeader';
 import { enter_chk, axiosInstance } from '../../../utils/Tool.ts';
+import type { InMenuType, ParentMenuType } from './InMenu.ts';
 
 // 파일이름 꼭 맞춰주세요
 /* ---------------------------------------------------------------------
@@ -32,24 +33,6 @@ import { enter_chk, axiosInstance } from '../../../utils/Tool.ts';
    레이아웃: .form_group > .form_label + .form_control(.form_hint) 패턴
    (NoticeFormView 최신 마크업 톤과 동일 — dbms.css 참고)
 --------------------------------------------------------------------- */
-
-type InMenuType = {
-  no?: number;
-  fkno?: number | null;
-  dept?: number;
-  ord?: number;
-  title?: string;
-  purl?: string;
-  tname?: string;
-  mname?: string;
-  useYn?: 'Y' | 'N';
-};
-
-type ParentMenuType = {
-  no: number;
-  dept: number;
-  title: string;
-};
 
 const DEPT_TOP = 1;   // 대표 메뉴
 const DEPT_SUB = 2;   // 하위 메뉴
@@ -211,7 +194,7 @@ export default function InMenuFormView() {
                   id="label_02"
                   className="form_select"
                   value={input.fkno ?? ''}
-                  onChange={(e) => setInput({ ...input, fkno: e.target.value })}
+                  onChange={(e) => setInput({ ...input, fkno: e.target.value === '' ? null : Number(e.target.value) })}
                   style={{ maxWidth: 200 }}
                 >
                   <option value="">선택하세요</option>
