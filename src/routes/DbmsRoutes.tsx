@@ -9,6 +9,7 @@ import InMenuList from '../pages/dbms/menu/InMenuList';
 import InMenuForm from '../pages/dbms/menu/InMenuForm';
 import ShopMenuList from '../pages/dbms/menu/ShopMenuList';
 import ShopMenuForm from '../pages/dbms/menu/ShopMenuForm';
+import CctvIssueList from '../pages/dbms/cctv/CctvIssueList';
 import SurveyForm from '../pages/dbms/survey/SurveyForm';
 import SurveyList from '../pages/dbms/survey/SurveyList';
 import SurveyResponseList from '../pages/dbms/survey/SurveyResponseList';
@@ -30,11 +31,13 @@ export default function DbmsRoutes() {
       <Route path="inmenu/:no/edit" element={<InMenuForm />} />
 
       <Route path="shopmenu" element={<ShopMenuList />} />
-      <Route path="shopmenu/new" element={<SurveyForm />} />
-      <Route path="shopmenu/:no/edit" element={<SurveyForm />} />      
+      <Route path="shopmenu/new" element={<ShopMenuForm />} />
+      <Route path="shopmenu/:no/edit" element={<ShopMenuForm />} />      
 
       <Route path="shop" element={<ShopList />} />
       <Route path="shop/:no/edit" element={<ShopForm />} />
+
+      <Route path="cctvissue" element={<CctvIssueList />} />
       
       <Route path="survey" element={<SurveyList />}/>
       <Route path="survey/create" element={<SurveyForm />} />
