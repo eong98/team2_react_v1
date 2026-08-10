@@ -17,6 +17,12 @@ import MemberList from '../pages/dbms/member/MemberList';
 import DbmsLogin from '../pages/main/DbmsLogin'
 import MemberDetail from '../pages/dbms/member/MemberDetail';
 
+
+import QaForm from '../pages/dbms/board/QaForm';
+import QaList from '../pages/dbms/board/QaList';
+import QaDetail from '../pages/dbms/board/QaDetail';
+
+
 export default function DbmsRoutes() {
   return (
     <Routes>
@@ -25,6 +31,12 @@ export default function DbmsRoutes() {
       <Route path="notice" element={<NoticeList />} />
       <Route path="notice/new" element={<NoticeForm />} />
       <Route path="notice/:no/edit" element={<NoticeForm />} />
+
+      <Route path="qa" element={<QaList />} />
+      <Route path="qa/new" element={<QaForm />} />
+      <Route path="qa/:no/edit" element={<QaForm />} />
+      <Route path="qa/:no" element={<QaDetail />} />
+
 
       <Route path="inmenu" element={<InMenuList />} />
       <Route path="inmenu/new" element={<InMenuForm />} />
