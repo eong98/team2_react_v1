@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react';
 import { AdminToolbar, DataTable, PageHeader, DbmsPagination, type DataTableColumn } from '../../../components/ui';
 import { axiosInstance } from '../../../utils/Tool.ts';
-import type { CctvIssueSearchResult, CctvIssueType } from './CctvIssue.ts';
+import {
+  PAGE_SIZE,
+  CODE_LABELS,
+  STATE_LABELS,
+  STATE_BADGE,
+  EMPTY_FILTERS,
+  type CctvIssueSearchResult,
+  type RowType,
+  type Filters,
+} from './CctvIssue.ts';
 
 // 파일이름 꼭 맞춰주세요
 /* ---------------------------------------------------------------------
@@ -16,56 +25,10 @@ import type { CctvIssueSearchResult, CctvIssueType } from './CctvIssue.ts';
    GET /cctv_issue/search?cno=&code=&state=&noticeyn=&keyword=&cdateFrom=&cdateTo=&page=&size=
      → { content, totalElements, totalPages, page(0-base), size }
 
-   ⚠️ CODE(문제유형코드)/STATE(오탐여부) 값 체계는 참조 테이블이 없어서
-     SentinelEye 5대 이상행동(폭행/기물파손/쓰러짐·응급/무단침입/장시간체류) 기준으로
-     임시 매핑해뒀습니다. 실제 코드값이 다르면 아래 CODE_LABELS/STATE_LABELS만
-     고치면 됩니다 (매핑에 없는 값은 원본 코드/숫자를 그대로 보여주므로 깨지지 않음).
+   상수/타입(PAGE_SIZE, CODE_LABELS, STATE_LABELS, STATE_BADGE, RowType, Filters,
+   EMPTY_FILTERS)은 전부 ./CctvIssue.ts 로 옮겨뒀습니다. CODE/STATE 값 매핑을
+   바꿔야 하면 이 파일이 아니라 CctvIssue.ts를 고치면 됩니다.
 --------------------------------------------------------------------- */
-
-const PAGE_SIZE = 10;
-
-// 문제유형코드(CODE) - VARCHAR2(2) 라서 2자리 코드로 가정
-const CODE_LABELS: Record<string, string> = {
-  '01': '폭행',
-  '02': '기물파손',
-  '03': '쓰러짐/응급',
-  '04': '무단침입',
-  '05': '장시간체류',
-};
-
-// 오탐여부(STATE) - NUMBER(3,0), 처리 상태 워크플로우로 가정
-const STATE_LABELS: Record<number, string> = {
-  0: '미확인',
-  1: '정탐',
-  2: '오탐',
-};
-const STATE_BADGE: Record<number, string> = {
-  0: 'badge_warning',
-  1: 'badge_danger',
-  2: 'badge_neutral',
-};
-
-type RowType = CctvIssueType & { cnt: number };
-
-interface Filters {
-  cno: string;
-  code: string;
-  state: string; // '' | '0' | '1' | '2' ...
-  noticeyn: string; // '' | 'Y' | 'N'
-  keyword: string; // comnet(상황설명) 포함 검색
-  dateFrom: string; // yyyy-MM-dd
-  dateTo: string; // yyyy-MM-dd
-}
-
-const EMPTY_FILTERS: Filters = {
-  cno: '',
-  code: '',
-  state: '',
-  noticeyn: '',
-  keyword: '',
-  dateFrom: '',
-  dateTo: '',
-};
 
 export default function CctvIssueListView() {
   // draft: 입력 중인 값 (타이핑만으로는 검색 안 됨) / applied: "검색" 눌렀을 때 실제 조회에 쓰이는 값

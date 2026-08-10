@@ -37,7 +37,7 @@
 .btn:link {text-decoration:none;}
 
 a.btn,
-.btn {display:inline-flex;align-items:center;gap:7px;padding:9px 16px;font-size:13px;border-radius:7px;font-weight:600;border:1px solid transparent;cursor:pointer;transition:.15s ease;font-family:var(--font-disp);}
+.btn {display:inline-flex;align-items:center;gap:7px;padding:9px 16px;font-size:13px;border-radius:7px;font-weight:600;border:1px solid transparent;cursor:pointer;transition:.15s ease;font-family:var(--font-disp);flex-shrink:0;white-space:nowrap;}
 
 .btn_lg{padding:13px 22px;font-size:15px;}
 .btn_md{padding:10px 18px;font-size:13px;}
@@ -357,12 +357,13 @@ table td {padding:0; word-break:break-all;}
 /* .filter_bar_row .pagination_info {margin-right:auto;} */
 .filter_bar_row .filter_bar{margin-bottom:0; justify-content: flex-end;}
 /* .filter_bar_row .filter_bar:last-of-type {flex-shrink: 0;} */
-.filter_bar{flex:1; display:flex; gap:10px; min-height:36px; margin-bottom:18px; justify-content: flex-end;}
+.filter_bar{flex:1; display:flex; gap:10px; min-height:36px; margin-bottom:18px; justify-content: flex-end; flex-wrap:wrap;}
 .filter_bar select,
 .filter_bar input[type="date"],
 .filter_bar input {
   min-width:100px;
   max-width:220px;
+  flex-shrink:0;
   background:var(--surface);border:1px solid var(--border-strong);color:var(--text);
   padding:4px 12px;border-radius:7px;font-size:12.5px;
 }
@@ -370,7 +371,7 @@ table td {padding:0; word-break:break-all;}
  
 .search_box{
   position:relative;
-  /* flex:1; */
+  flex-shrink:0;
 }
 .search_box input[type="text"],
 .search_box input[type="search"]{
