@@ -15,11 +15,11 @@ import { axiosInstance, enter_chk } from '../../utils/Tool';
 
 --------------------------------------------------------------------- */
 
-// 회원 로그인으로 수정 예정 
 
 
 export default function Login() {
   const navigate = useNavigate();
+
 
   //쿠키 저장소 세팅
   const storeId = GlobalStoreCookie((state) => state.storeId);
@@ -55,8 +55,8 @@ export default function Login() {
   // 버튼 누를 시 테스트 계정 자동 세팅
   const test = () => {
     setInput({
-      id: 'testuser01', // 해당하는 변수의 값을 덮어씀    
-      password: '1234',
+      id: 'admin01', // 해당하는 변수의 값을 덮어씀    
+      password: 'password123!',
     });
   }
 
@@ -66,7 +66,7 @@ export default function Login() {
 
     try{
       // id와 비밀번호 값이 일치하는지 확인
-      const loginResult = await axiosInstance.post(`http://10.1.205.120:9200/v1/user/login?id=${input.id}&password=${input.password}`);
+      const loginResult = await axiosInstance.post(`http://10.1.205.120:9200/v1/dbms/login?id=${input.id}&password=${input.password}`);
       // 결과 저장
       const loginResultData = loginResult.data;
 
@@ -74,18 +74,17 @@ export default function Login() {
         // 로그인에 성공했다면 세션 스토리지에 로그인값과 아이디값을 변경
         GlobalStoreSession.getState().setLogin(true);
         GlobalStoreSession.getState().setId(input.id);
-      
 
         if(storeId) {
           setStoreId(true);
         } else {
-        setStoreId(false);
+          setStoreId(false);
         }
 
         alert("로그인에 성공했습니다!")
 
-        navigate('/');
-      } else{
+        navigate('/dbms');
+      } else {
         alert("아이디 또는 비밀번호가 일치하지 않습니다")
       }
     } catch(err) {
@@ -98,39 +97,38 @@ export default function Login() {
     <section className="view active">
       <PageHeader title="로그인" title_size="xlg" description="allimio 관제 서비스에 오신 것을 환영합니다." />      
       <form onSubmit={send}>
-        <div className="card card_pad_lg">
-          <div className="form_group">
-            <label className="form_label" htmlFor="id">
-              아이디(이메일)<span className="req" title='필수 입력 요소'>*</span>
-            </label>
-            <input id="id" className="form_input" placeholder="you@example.com"
-            autoFocus onKeyDown={e => enter_chk(e, 'id')} onChange={onChange} value={input.id}/>
-          </div>
-          <div className='mb-3 form-check div_row_left'>
-            <input type="checkbox" id="storeId" className="form-check-input"
-              onChange={setStoreIdChange} checked={storeId}
-              style={{ marginTop: '0px' }} />
-            <label className='form-check-label' htmlFor='storeId'>아이디 저장</label>
-          </div>
-
-
-          <div className="form_group">
-            <label className="form_label" htmlFor="password">
-              비밀번호<span className="req"title='필수 입력 요소'>*</span>
-            </label>
-            <input id="password" className="form_input is_error" type="password" placeholder="비밀번호 입력" 
-              onKeyDown={e => enter_chk(e, 'btnSend')} onChange={onChange} value={input.password}/>
-            <div className="form_hint error">비밀번호는 8자 이상이어야 합니다</div>
-          </div>
-          
-          <button type="button" className="btn btn_lg btn_primary" onClick={test}>테스트</button>
-          <button id='btnSend' type="submit" className="btn btn_lg btn_primary" >로그인</button>
-          
-          <div className="link_row">
-            <Link to="/">아이디/비밀번호 찾기</Link>
-            <Link to="/">회원가입</Link>
-          </div>
+      <div className="card card_pad_lg">
+        <div className="form_group">
+          <label className="form_label" htmlFor="id">
+            아이디(이메일)<span className="req" title='필수 입력 요소'>*</span>
+          </label>
+          <input id="id" className="form_input" placeholder="you@example.com"
+          autoFocus onKeyDown={e => enter_chk(e, 'id')} onChange={onChange} value={input.id}/>
         </div>
+        <div className='mb-3 form-check div_row_left'>
+          <input type="checkbox" id="storeId" className="form-check-input"
+            onChange={setStoreIdChange} checked={storeId}
+            style={{ marginTop: '0px' }} />
+          <label className='form-check-label' htmlFor='storeId'>아이디 저장</label>
+        </div>
+
+
+        <div className="form_group">
+          <label className="form_label" htmlFor="password">
+            비밀번호<span className="req"title='필수 입력 요소'>*</span>
+          </label>
+          <input id="password" className="form_input is_error" type="password" placeholder="비밀번호 입력" 
+            onKeyDown={e => enter_chk(e, 'btnSend')} onChange={onChange} value={input.password}/>
+          <div className="form_hint error">비밀번호는 8자 이상이어야 합니다</div>
+        </div>
+        
+        <button type="button" className="btn btn_lg btn_primary" onClick={test}>테스트</button>
+        <button id='btnSend' type="submit" className="btn btn_lg btn_primary" >로그인</button>
+        
+        <div className="link_row">
+          <Link to="/">아이디/비밀번호 찾기</Link>
+        </div>
+      </div>
       </form>
     </section>
   );

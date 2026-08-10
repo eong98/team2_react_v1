@@ -1,5 +1,5 @@
 
-export interface InMenuType {
+export interface MenuType {
   no?: number;
   fkno?: number | null;
   dept?: number;

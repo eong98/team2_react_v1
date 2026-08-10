@@ -6,9 +6,9 @@ import type { MenuType, ParentMenuType } from './Menu.ts';
 
 // 파일이름 꼭 맞춰주세요
 /* ---------------------------------------------------------------------
-   메뉴 작성(/dbms/menu/new) / 수정(/dbms/menu/:no/edit) 페이지.
+   매장관리(/user) 사이드바 메뉴 작성(/dbms/shopmenu/new) / 수정(/dbms/shopmenu/:no/edit) 페이지.
 
-   InMenuDTO (백엔드, dev.jpa.allimio.inmenu)
+   ShopMenuDTO (백엔드, dev.jpa.allimio.shopmenu)
    no     long   - PK, 생성 시엔 보내지 않아도 됨(시퀀스 채번)
    fkno   Long   - 상위(대표) 메뉴 NO, 대표 메뉴 자신은 null
    dept   int    - 1: 대표 메뉴, 2: 하위 메뉴
@@ -18,14 +18,14 @@ import type { MenuType, ParentMenuType } from './Menu.ts';
    tname  String - 테이블명
    mname  String - 메뉴(모듈) 설명
    useYn  String - 사용여부 Y/N (기본 Y)
-   cdate  String - 서버(InMenuService.save)에서 Tool.getDate()로 채움
+   cdate  String - 서버(ShopMenuService.save)에서 Tool.getDate()로 채움
 
-   API (InMenuCont, /inmenu)
-   POST /inmenu/save          - InMenuDTO(JSON) → 등록
-   PUT  /inmenu/update        - InMenuDTO(JSON, no 포함) → 수정
-   GET  /inmenu/{pk}          - 단건 조회
-   GET  /inmenu/find_by_fkno  - fkno 없이 호출 시 최상위(fkno=null, 대표) 메뉴 목록
-   GET  /inmenu/find_by_fkno?fkno=1 - 해당 대표 메뉴의 하위 메뉴 목록
+   API (ShopMenuCont, /shopmenu)
+   POST /shopmenu/save          - ShopMenuDTO(JSON) → 등록
+   PUT  /shopmenu/update        - ShopMenuDTO(JSON, no 포함) → 수정
+   GET  /shopmenu/{pk}          - 단건 조회
+   GET  /shopmenu/find_by_fkno  - fkno 없이 호출 시 최상위(fkno=null, 대표) 메뉴 목록
+   GET  /shopmenu/find_by_fkno?fkno=1 - 해당 대표 메뉴의 하위 메뉴 목록
 
    ※ save/update가 @RequestBody(JSON)이므로 FormData/multipart가 아닌
      JSON으로 전송합니다 (axios에 객체를 그대로 넘기면 자동으로 JSON 전송).
@@ -37,13 +37,13 @@ import type { MenuType, ParentMenuType } from './Menu.ts';
 const DEPT_TOP = 1;   // 대표 메뉴
 const DEPT_SUB = 2;   // 하위 메뉴
 
-export default function InMenuFormView() {
+export default function ShopMenuFormView() {
   const navigate = useNavigate();
   const { no } = useParams<{ no: string }>();
   const [searchParams] = useSearchParams();
   const isEdit = Boolean(no);
 
-  // 목록 화면의 "+ 하위 메뉴" 버튼(/dbms/menu/new?fkno=1)으로 들어온 경우,
+  // 목록 화면의 "+ 하위 메뉴" 버튼(/dbms/shopmenu/new?fkno=1)으로 들어온 경우,
   // 등록 시 하위 메뉴 + 해당 상위 메뉴가 기본으로 선택되도록 함
   const presetFkno = !isEdit ? Number(searchParams.get('fkno')) || null : null;
 
@@ -52,7 +52,7 @@ export default function InMenuFormView() {
 
   useEffect(() => {
     axiosInstance
-      .get('/inmenu/find_by_fkno')
+      .get('/shopmenu/find_by_fkno')
       .then(result => result.data)
       .then((data: ParentMenuType[]) => {
         // 방어적으로 dept=1(대표 메뉴)만, 수정 중인 자기 자신은 제외
@@ -75,11 +75,11 @@ export default function InMenuFormView() {
     if (!isEdit) return;
 
     axiosInstance
-      .get(`/inmenu/${no}`)
+      .get(`/shopmenu/${no}`)
       .then(result => result.data)
       .then((data: MenuType) => {
         setInput(data);
-        console.log('-> inmenu data:', data);
+        console.log('-> shopmenu data:', data);
       })
       .catch(err => console.error(err));
   }, [isEdit, no]);
@@ -102,14 +102,14 @@ export default function InMenuFormView() {
     setInput({ ...input, useYn: value });
   };
 
-  const goBack = () => navigate('/dbms/inmenu');
+  const goBack = () => navigate('/dbms/shopmenu');
 
   const send = async (e: React.SyntheticEvent) => {
     e.preventDefault();
 
     const isTopMenu = Number(input.dept) === DEPT_TOP;
 
-    // InMenuDTO 형태 그대로 JSON으로 전송
+    // ShopMenuDTO 형태 그대로 JSON으로 전송
     const payload: MenuType = {
       ...(isEdit ? { no: Number(no) } : {}),
       fkno: isTopMenu
@@ -130,8 +130,8 @@ export default function InMenuFormView() {
 
     try {
       const response = isEdit
-        ? await axiosInstance.put('/inmenu/update', payload)
-        : await axiosInstance.post('/inmenu/save', payload);
+        ? await axiosInstance.put('/shopmenu/update', payload)
+        : await axiosInstance.post('/shopmenu/save', payload);
 
       if (response.status === 401) { // axios는 상태값 처리, fetch는 안됨.
         alert('저장 권한이 없습니다.\n관리자로 다시 로그인 해주세요.');
@@ -143,7 +143,7 @@ export default function InMenuFormView() {
 
       const result = response.data; // axios
       console.log('서버 응답:', result);
-      navigate('/dbms/inmenu/');
+      navigate('/dbms/shopmenu/');
 
     } catch (err) {
       console.error('네트워크 오류:', err);
@@ -154,11 +154,11 @@ export default function InMenuFormView() {
   return (
     <section className="view active">
       <PageHeader
-        title={isEdit ? '메뉴 수정' : '메뉴 작성'}
+        title={isEdit ? '매장 메뉴 수정' : '매장 메뉴 작성'}
         description={
           isEdit
             ? `No.${no}`
-            : '사이트에 노출될 메뉴를 등록합니다.'
+            : '매장관리(/user) 사이드바에 노출될 메뉴를 등록합니다.'
         }
         actions={
           <button type="button" className="btn btn_md btn_ghost" onClick={goBack}>

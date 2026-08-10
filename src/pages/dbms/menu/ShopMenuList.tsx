@@ -7,7 +7,7 @@ import type { MenuType } from './Menu.ts';
 
 // 파일이름 꼭 맞춰주세요
 /* ---------------------------------------------------------------------
-   관리자 메뉴 목록(/dbms/menu)
+   매장관리(/user) 사이드바 메뉴 목록(/dbms/shopmenu)
 
    - 대표 메뉴(dept=1)를 그룹 카드로 보여주고, 그 안에 하위 메뉴(dept=2)를
      들여쓰기된 목록으로 붙여서 트리처럼 표시합니다.
@@ -20,18 +20,18 @@ import type { MenuType } from './Menu.ts';
        · 다른 그룹으로 하위 메뉴를 옮기는 것(상위 메뉴 변경)은 지원하지 않음 →
          상위 메뉴를 바꾸고 싶으면 수정 화면에서 "상위 메뉴" select로 변경.
    - 드래그가 끝나면(마우스를 놓으면) 순서가 바뀐 항목만 골라
-     PUT /inmenu/update 로 즉시 저장합니다(별도 "저장" 버튼 없음).
+     PUT /shopmenu/update 로 즉시 저장합니다(별도 "저장" 버튼 없음).
 
-   API (InMenuCont, /inmenu)
-   GET    /inmenu/find_by_fkno            - 대표 메뉴 목록(fkno=null)
-   GET    /inmenu/find_by_fkno?fkno={no}  - 해당 대표 메뉴의 하위 메뉴 목록
-   PUT    /inmenu/update                  - 순서(ord) 변경 저장 (InMenuDTO 전체 필드 필요)
-   DELETE /inmenu/{pk}                    - 삭제
+   API (ShopMenuCont, /shopmenu)
+   GET    /shopmenu/find_by_fkno            - 대표 메뉴 목록(fkno=null)
+   GET    /shopmenu/find_by_fkno?fkno={no}  - 해당 대표 메뉴의 하위 메뉴 목록
+   PUT    /shopmenu/update                  - 순서(ord) 변경 저장 (ShopMenuDTO 전체 필드 필요)
+   DELETE /shopmenu/{pk}                    - 삭제
 --------------------------------------------------------------------- */
 
 const PAGE_SIZE = 10; // 대표 메뉴(1뎁스) 기준, 한 페이지에 보여줄 그룹 개수
 
-export default function InMenuListView() {
+export default function ShopMenuListView() {
   const navigate = useNavigate();
 
   const [topList, setTopList] = useState<MenuType[]>([]);
@@ -51,7 +51,7 @@ export default function InMenuListView() {
   const loadAll = () => {
     setLoading(true);
     axiosInstance
-      .get('/inmenu/find_by_fkno')
+      .get('/shopmenu/find_by_fkno')
       .then(res => res.data as MenuType[])
       .then(async (tops) => {
         const sortedTops = [...tops].sort((a, b) => (a.ord ?? 0) - (b.ord ?? 0));
@@ -59,7 +59,7 @@ export default function InMenuListView() {
 
         const entries = await Promise.all(
           sortedTops.map(async (t) => {
-            const childRes = await axiosInstance.get('/inmenu/find_by_fkno', {
+            const childRes = await axiosInstance.get('/shopmenu/find_by_fkno', {
               params: { fkno: t.no },
             });
             const children = (childRes.data as MenuType[]).sort(
@@ -99,7 +99,7 @@ export default function InMenuListView() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
-      await axiosInstance.delete(`/inmenu/${deleteTarget.no}`);
+      await axiosInstance.delete(`/shopmenu/${deleteTarget.no}`);
       setDeleteTarget(null);
       loadAll();
     } catch (err) {
@@ -124,7 +124,7 @@ export default function InMenuListView() {
       await Promise.all(
         changed.map((item) => {
           const idx = list.indexOf(item);
-          return axiosInstance.put('/inmenu/update', { ...item, ord: idx });
+          return axiosInstance.put('/shopmenu/update', { ...item, ord: idx });
         })
       );
     } catch (err) {
@@ -216,7 +216,7 @@ export default function InMenuListView() {
   return (
     <section className="view active">
       <PageHeader
-        title="관리자메뉴생성"
+        title="매장메뉴생성"
         description="대표 메뉴 카드끼리, 또는 같은 그룹의 하위 메뉴끼리 마우스로 끌어서 순서를 바꿀 수 있습니다."
         createLabel="+ 메뉴생성"
         onCreate={() => navigate('new')}
