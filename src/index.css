@@ -1,0 +1,124 @@
+/* ============================================================================
+   전역에서 사용하는 css
+============================================================================ */
+
+:root{
+  /* ---- Base neutrals (dark UI) ---- */
+  --n-950:#05070A; --n-900:#0A0E13; --n-850:#0F151C; --n-800:#141B24;
+  --n-700:#1A222C; --n-600:#232C37; --n-500:#2E3A47; --n-400:#576372;
+  --n-300:#8A96A3; --n-200:#B7C0CA; --n-100:#DDE3E9; --n-50:#E8EDF2;
+
+  /* ---- Brand primary : GREEN (관제 정상/시스템 컬러) ---- */
+  --green-50:#EAFBF3;  --green-100:#C9F5E1; --green-200:#9EEBC9; --green-300:#6FE0AF;
+  --green-400:#4CDA9C; --green-500:#33D68A; --green-600:#22B975; --green-700:#189761;
+  --green-800:#12734B; --green-900:#0B4E34;
+
+  /* ---- Secondary : TEAL ---- */
+  --teal-50:#EAFBF9;  --teal-100:#C7F4EE; --teal-200:#98E9DF; --teal-300:#67DCCE;
+  --teal-400:#42D3C0; --teal-500:#22C4AF; --teal-600:#17A997; --teal-700:#128678;
+  --teal-800:#0D655C; --teal-900:#08423D;
+
+  /* ---- Accent : ORANGE (CTA/긴급 강조) ---- */
+  --orange-50:#FFF2ED; --orange-100:#FFDCCC; --orange-200:#FFB99A; --orange-300:#FF9670;
+  --orange-400:#FF7D50; --orange-500:#FF6A3D; --orange-600:#E14E24; --orange-700:#B53A18;
+  --orange-800:#872A13; --orange-900:#591B0C;
+
+  /* ---- Warning : AMBER ---- */
+  --amber-50:#FFF8E8;  --amber-100:#FFEBB8; --amber-200:#FFDC85; --amber-300:#FFCB53;
+  --amber-400:#FFBD30; --amber-500:#FFB020; --amber-600:#DB8E0E; --amber-700:#AD6E09;
+  --amber-800:#7F5006; --amber-900:#523203;
+
+  /* ---- Danger : RED ---- */
+  --red-50:#FFF0F1;  --red-100:#FFD1D5; --red-200:#FFA4AC; --red-300:#FF7783;
+  --red-400:#FF5D6B; --red-500:#FF4D5E; --red-600:#E01C30; --red-700:#B01424;
+  --red-800:#7F0F1A; --red-900:#4F0910;
+
+  /* ---- Data-viz extra : VIOLET ---- */
+  --violet-50:#F3F0FF; --violet-100:#DED4FF; --violet-200:#BDA8FF; --violet-300:#9C7CFF;
+  --violet-400:#8A66FF; --violet-500:#7C5CFF; --violet-600:#5F3FE0; --violet-700:#492FB0;
+  --violet-800:#352180; --violet-900:#211450;
+
+  /* ---- Semantic aliases (실사용 시 이 변수만 참조) ---- */
+  --bg:var(--n-900); --bg-elevated:var(--n-850); --surface:var(--n-800); --surface-2:var(--n-700);
+  --border:var(--n-600);
+  --border-strong:#5C6B7A;
+  --text:var(--n-50); --text-dim:#ADB7C0;
+  --text-faint:#A4AEB7;
+  --primary:var(--green-500); --primary-dim:rgba(51,214,138,.14);
+  --secondary:var(--teal-500); --secondary-dim:rgba(34,196,175,.14);
+  --danger:var(--red-500); --danger-dim:rgba(255,77,94,.14);
+  --warning:var(--amber-500); --warning-dim:rgba(255,176,32,.14);
+  --cta:var(--orange-500); --cta-dim:rgba(255,106,61,.14);
+
+  --font-disp:'Pretendard',-apple-system,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+
+  --radius-sm:6px; --radius-md:10px; --radius-lg:16px; --radius-full:999px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --sp-8:32px; --sp-10:40px; --sp-12:48px; --sp-16:64px;
+
+  /* 랜딩(index-v2) 전용 강조색  */
+  --cyan:#33D6C0; --cyan-dim:rgba(51,214,192,.14);
+  --amber-dim:rgba(255,176,32,0.14);
+  --maxw:1180px;
+  --tabbar-h:64px;
+}
+
+
+
+/* reset
+========================================================================== */
+* {box-sizing:border-box; -webkit-box-sizing:border-box; -moz-box-sizing:border-box; -webkit-overflow-scrolling:touch;}
+*::before,
+*::after {box-sizing:border-box;}
+
+
+/* 스크롤바 */
+html {scrollbar-color:var(--border-strong) var(--bg); scrollbar-width:thin; scroll-behavior:smooth;}
+::-webkit-scrollbar {width:10px; height:10px;}
+::-webkit-scrollbar-track {background:var(--bg);}
+::-webkit-scrollbar-thumb {background:var(--border-strong); border-radius:100px; border:2px solid var(--bg);}
+::-webkit-scrollbar-thumb:hover {background:var(--text-faint);}
+
+html, body {width:100%; height:100%; margin:0; padding:0;}
+body {font-size:15px; letter-spacing:-0.375px; line-height:1.6; color:var(--text); font-weight:400; font-family:var(--font-disp); background-color:var(--bg);}
+
+
+/* 스크린 리더같은 보조기기는 인식하고 화면에서만 안보이게 처리 */
+.hidden {overflow:hidden; position:absolute; width:1px; height:1px; margin:-1px; border:0; padding:0; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; text-indent:-9999px;}
+
+/* 앵커 */
+a,
+a:active {color:var(--text); text-decoration:none;}
+a:visited,
+/* a:hover,
+a:focus {color:var(--text);} */
+
+/* heading */
+h1, h2, h3, h4, h5, h6 {margin:0; padding:0;}
+
+/* etc */
+iframe {display:inline-block; border:0;}
+figure, figcaption {margin:0; padding:0;}
+address {margin:0; padding:0; font-style:normal;}
+
+b, strong {font-weight:700;}
+em {font-style:normal;}
+
+/* fieldset */
+fieldset {margin:0; padding:0; border:0;}
+legend {overflow:hidden; position:absolute; width:1px; height:1px; margin:-1px; padding:0; font-size:1px; line-height:0.1; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; text-indent:-9999px;}
+
+/* label */
+label {display:inline-block; vertical-align:middle; cursor:pointer;}
+
+/* button */
+button {cursor:pointer; border:0; vertical-align:middle; background:none; color:inherit; font-family:inherit;}
+
+
+
+#root {display:flex; flex-direction:column; min-height:100vh;}
+#allimio {display:flex; flex-direction:column; flex:1;}
+#container{flex:1; display:flex; flex-direction:column; min-width:0; width:100%;}
+/* .container{max-width:1180px;margin:0 auto;padding:0 26px;}
+.container_app{max-width:1400px;margin:0 auto;padding:0 26px;} */

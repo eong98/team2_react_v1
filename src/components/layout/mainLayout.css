@@ -1,0 +1,72 @@
+
+/* =========================================================
+   알리미오 홈페이지 css
+========================================================= */
+.home{
+  --primary:var(--cyan); --primary-dim:var(--cyan-dim);
+  display:flex; flex-direction:column; flex:1;
+}
+
+.home::before{
+  content:"";
+  position:fixed;inset:0;
+  background:
+    linear-gradient(rgba(51,214,192,0.025) 1px, transparent 1px);
+  background-size:100% 3px;
+  pointer-events:none;
+  z-index:2;
+  opacity:.5;
+}
+
+.home::selection{background:var(--cyan-dim);color:var(--cyan);} /* 마우스 드래그 배경 */
+
+.home .wrap{max-width:var(--maxw);margin:0 auto;padding:0 32px;}
+.home #container.wrap{padding:40px 32px 60px;}
+
+
+
+/* ---------- NAV ---------- */
+.home header{
+  position:sticky;top:0;z-index:50;
+  background:rgba(10,14,19,0.86);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--n-600);
+}
+.home nav{
+  max-width:var(--maxw);margin:0 auto;padding:18px 32px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.home .logo {
+  display:flex;align-items:center;gap:9px;
+  font-weight:700;font-size:17px;letter-spacing:-0.01em;
+}
+.home .logo .dot{
+  width:9px;height:9px;border-radius:50%;background:var(--cyan);
+  box-shadow:0 0 0 3px var(--cyan-dim);
+  animation:blink 2.4s ease-in-out infinite;
+}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.35;}}
+
+.home .navlinks{display:flex;gap:36px;font-size:14px;color:var(--text-dim);}
+.home .navlinks a:hover{color:var(--text);}
+.home .nav_cta{
+  display:flex;align-items:center;gap:18px;
+}
+
+.home .btn{
+  gap:8px;
+  padding:10px 20px;
+  font-size:14px;font-weight:600;
+  text-decoration: none;
+}
+.home .btn_primary:hover{background:#4EE3CE;transform:translateY(-1px);}
+.home .btn_ghost{border-color:var(--border-strong);color:var(--text);}
+.home .btn_ghost:hover{border-color:var(--cyan);color:var(--cyan);}
+
+@media(max-width:840px){.home .navlinks{display:none;}}
+
+
+.home footer{margin-top:auto; border-top:1px solid var(--n-600);padding:40px 0;}
+.home .foot_row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;}
+.home .foot_links{display:flex;gap:24px;font-size:13px;color:var(--text-faint);}
+.home .foot_links a:hover{color:var(--text-dim);}
