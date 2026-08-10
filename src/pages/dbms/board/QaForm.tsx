@@ -1,69 +1,19 @@
-import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '../../../components/ui';
 import { axiosInstance, getNowDate } from '../../../utils/Tool';
-import { QA_TYPE_OPTIONS, type FaqCRequest } from '../../user/board/QaType';
+import { QA_TYPE_OPTIONS, type FaqCRequest, type TabKey } from '../../user/board/QaType';
 
 export default function QaForm() {
   const navigate = useNavigate();
   const { no } = useParams<{ no: string }>();
   const isEdit = Boolean(no);
   const location = useLocation();
-  const fromTab = (location.state as { tab?: 'mine' | 'faq' })?.tab;
+  // 목록에서 어느 탭(전체 문의 / 자주 묻는 질문)으로 들어왔는지 — 저장/취소 후 그 탭으로 되돌아가기 위함
+  const fromTab = (location.state as { tab?: TabKey })?.tab;
 
   // 작성자 관리자 번호 (로그인 스토어나 Context에서 가져오거나 설정)
   const ano = 1;
-
-  const qaLoad = () => {
-    axiosInstance.get(`/qa/${no}`)
-      .then((result) => result.data)
-      .then((data) => {
-        console.log(data)
-        setInput((prev) => ({
-          ...prev,
-          ano: ano,
-          type: data.type,
-          title: data.title,
-          content: data.content,
-          answer: data.answer,
-          // cdate: data.cdate,
-          // pw: data.pw,
-          vseq: data.vseq
-
-        }))
-      })
-      .catch((err) => console.error('게시물 상세 조회 실패:', err));
-  }
-  
-  const faqLoad = () => {
-    axiosInstance.get(`/qa/${no}`)
-      .then((result) => result.data)
-      .then((data) => {
-        console.log(data)
-        setInput((prev) => ({
-          ...prev,
-          ano: ano,
-          type: data.type,
-          title: data.title,
-          content: data.content,
-          answer: data.answer,
-          // cdate: data.cdate,
-          // pw: data.pw,
-          vseq: data.vseq
-
-        }))
-      })
-      .catch((err) => console.error('게시물 상세 조회 실패:', err));
-  }
-
-
-  useEffect(() => {
-    if (!isEdit) return;
-
-
-
-    
-  }, [isEdit, no]);
 
   // ==========================================
   // 1. 폼 상태 관리
@@ -79,6 +29,31 @@ export default function QaForm() {
     vseq: ''
   });
 
+  /** 수정 진입 시 기존 데이터를 불러와 폼에 채워 넣는다 */
+  const loadQa = () => {
+    axiosInstance.get(`/qa/${no}`)
+      .then((result) => result.data)
+      .then((data) => {
+        setInput((prev) => ({
+          ...prev,
+          ano: ano,
+          type: data.type,
+          title: data.title,
+          content: data.content,
+          answer: data.answer ?? '',
+          // cdate: data.cdate,
+          // pw: data.pw,
+          vseq: data.vseq != null ? String(data.vseq) : '',
+        }))
+      })
+      .catch((err) => console.error('게시물 상세 조회 실패:', err));
+  }
+
+  useEffect(() => {
+    if (!isEdit) return;
+    loadQa();
+  }, [isEdit, no]);
+
   const onChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setInput({ ...input, [name]: value });
@@ -88,7 +63,8 @@ export default function QaForm() {
   // const [errors, setErrors] = useState<{ title?: string; content?: string }>({});
   // const [submitting, setSubmitting] = useState<boolean>(false);
 
-  const goBack = () => navigate('/dbms/qa');
+  // 목록으로 돌아갈 때 원래 있던 탭 그대로 열리도록 tab을 같이 넘긴다
+  const goBack = () => navigate('/dbms/qa', { state: { tab: fromTab } });
 
   // ==========================================
   // 2. 입력값 유효성 검사
@@ -141,7 +117,7 @@ export default function QaForm() {
     <section className="view active">
       <PageHeader
         title={
-          fromTab === 'mine' ? 
+          fromTab === 'qa' ?
                      (isEdit ? '문의 수정' : '문의 작성') 
                    : (isEdit ? 'FAQ 수정' : 'FAQ 작성')
         }

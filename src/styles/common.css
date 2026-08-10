@@ -109,7 +109,8 @@ select::-ms-expand {display:none;}
 
 .form_input,
 .form_select,
-.form_textarea{width:100%; min-height:36px; line-height:1.6; background:var(--n-900,var(--bg));border:1px solid var(--border-strong);color:var(--text);padding:4px 12px;border-radius:8px;font-size:13px;font-family:var(--font-disp);}
+.form_textarea{width:100%; min-height:36px; line-height:1.6; background-color:var(--n-900,var(--bg));border:1px solid var(--border-strong);color:var(--text);padding:4px 12px;border-radius:8px;font-size:13px;font-family:var(--font-disp);}
+.form_select {background-image:url('../assets/images/icon/ico-arr-down-white.png'); background-position:right 8px center; background-size:16px; background-repeat:no-repeat;}
 
 .form_input:focus,
 .form_select:focus,
@@ -296,6 +297,7 @@ table td {padding:0; word-break:break-all;}
 .acc_panel.open .lt{margin-top:8px;}
 .card_acc .actions {justify-content: flex-end; margin-top:8px;}
 
+.card_acc .list_row {background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);}
 .card_acc .list_row .empty_row {text-align:center;color:var(--text-faint);padding:34px;font-size:13px;}
 
 /* tab
@@ -384,10 +386,11 @@ table td {padding:0; word-break:break-all;}
   min-width:100px;
   max-width:220px;
   flex-shrink:0;
-  background:var(--surface);border:1px solid var(--border-strong);color:var(--text);
+  background-color:var(--surface);border:1px solid var(--border-strong);color:var(--text);
   padding:4px 12px;border-radius:7px;font-size:12.5px;
 }
 .filter_bar input[type="date"]{color-scheme:dark;} 
+.filter_bar .form_select {padding-right:24px;}
  
 .search_box{
   position:relative;
