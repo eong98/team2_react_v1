@@ -1,42 +1,18 @@
-import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { PageHeader } from '../../../components/ui';
+import type { SurveyQuestionForm } from '../../../utils/survey';
+import {
+  TEST_MEMBER_NO,
+  createEmptyQuestion,
+  parseQuestionType,
+  toInputDate,
+  toServerEndDate,
+  toServerStartDate,
+} from '../../../utils/survey';
+import { createSurvey, getSurvey, updateSurvey } from '../../../utils/surveyApi';
 import './SurveyForm.css';
-
-type QuestionType = 'TEXT' | 'SINGLE' | 'MULTIPLE' | 'SCORE';
-
-interface SurveyQuestion {
-  no?: number;
-  surveyNo?: number;
-  qtext: string;
-  qtype: QuestionType;
-  qoptions: string[];
-  requiredYn: 'Y' | 'N';
-  seqNo: number;
-}
-
-const surveyApi = axios.create({ baseURL: 'http://localhost:9103' });
-
-const createEmptyQuestion = (seqNo: number): SurveyQuestion => ({
-  qtext: '',
-  qtype: 'TEXT',
-  qoptions: [],
-  requiredYn: 'Y',
-  seqNo,
-});
-
-const toInputDate = (value?: string) => value ? value.slice(0, 10) : '';
-const toServerStartDate = (value: string) => value ? `${value} 00:00:00` : '';
-const toServerEndDate = (value: string) => value ? `${value} 23:59:59` : '';
-
-const parseQuestionType = (value: string): QuestionType => {
-  if (value === 'SINGLE') return 'SINGLE';
-  if (value === 'MULTIPLE') return 'MULTIPLE';
-  if (value === 'SCORE') return 'SCORE';
-  return 'TEXT';
-};
 
 export default function SurveyForm() {
   const navigate = useNavigate();
@@ -44,13 +20,13 @@ export default function SurveyForm() {
   const isEdit = Boolean(no);
 
   // 로그인 기능 연결 전 임시 관리자 번호
-  const memberNo = 1;
+  const memberNo = TEST_MEMBER_NO;
 
   const [title, setTitle] = useState('');
   const [detail, setDetail] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [questions, setQuestions] = useState<SurveyQuestion[]>([createEmptyQuestion(1)]);
+  const [questions, setQuestions] = useState<SurveyQuestionForm[]>([createEmptyQuestion(1)]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -62,15 +38,14 @@ export default function SurveyForm() {
       try {
         setLoading(true);
 
-        const response = await surveyApi.get(`/api/surveys/${no}`);
-        const survey = response.data;
+        const survey = await getSurvey(no);
 
         setTitle(survey.title ?? '');
         setDetail(survey.detail ?? '');
         setStartDate(toInputDate(survey.startDate));
         setEndDate(toInputDate(survey.endDate));
 
-        const loadedQuestions: SurveyQuestion[] = (survey.questions ?? []).map((question: any, index: number) => ({
+        const loadedQuestions: SurveyQuestionForm[] = (survey.questions ?? []).map((question: any, index: number) => ({
           no: question.no,
           surveyNo: question.surveyNo,
           qtext: question.qtext ?? '',
@@ -259,10 +234,10 @@ export default function SurveyForm() {
       setSaving(true);
 
       if (isEdit && no) {
-        await surveyApi.put(`/api/surveys/${no}`, serverData);
+        await updateSurvey(no, serverData);
         alert('설문이 수정되었습니다.');
       } else {
-        await surveyApi.post('/api/surveys', serverData);
+        await createSurvey(serverData);
         alert('설문이 등록되었습니다.');
       }
 
