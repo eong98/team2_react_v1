@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 
-import '../../style/SurveyForm.css';
+import './SurveyForm.css';
 import { PageHeader } from '../../../components/ui';
 
 

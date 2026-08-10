@@ -7,9 +7,9 @@ import NoticeForm from '../pages/dbms/board/NoticeForm';
 // import ShopForm from '../pages/dbms/shop/ShopForm';
 // import InMenuList from '../pages/dbms/menu/InMenuList';
 // import InMenuForm from '../pages/dbms/menu/InMenuForm';
-// import SurveyForm from '../pages/dbms/survey/SurveyForm';
-// import SurveyList from '../pages/dbms/survey/SurveyList';
-// import SurveyResponseList from '../pages/dbms/survey/SurveyResponseList';
+import SurveyForm from '../pages/dbms/survey/SurveyForm';
+import SurveyList from '../pages/dbms/survey/SurveyList';
+import SurveyResponseList from '../pages/dbms/survey/SurveyResponseList';
 
 
 export default function DbmsRoutes() {
@@ -28,10 +28,10 @@ export default function DbmsRoutes() {
       <Route path="menu/new" element={<InMenuForm />} />
       <Route path="menu/:no/edit" element={<InMenuForm />} /> */}
       
-      {/* <Route path="survey" element={<SurveyList />}/>
+      <Route path="survey" element={<SurveyList />}/>
       <Route path="survey/create" element={<SurveyForm />} />
       <Route path="survey/:no/edit" element={<SurveyForm />} />
-      <Route path="survey/:no/responses" element={<SurveyResponseList />}/> */}
+      <Route path="survey/:no/responses" element={<SurveyResponseList />}/>
     </Routes>
   );
 }
