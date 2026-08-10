@@ -3,7 +3,11 @@ import type { KeyboardEvent } from 'react';
 
 const getIP = () => {
   // return "localhost";
+<<<<<<< HEAD
   return "10.1.205.126"; // 학원
+=======
+  return "10.1.205.118"; // 학원
+>>>>>>> 3d9d2673af0badd3979c826b538b8bda6a664079
   return "1.201.122.5"; // 학원
 }
 
@@ -12,37 +16,37 @@ const getCopyright = () => {
 }
 
 const getNowDate = () => {
-      // 현재 날짜와 시간을 가져옵니다.
-    const now = new Date();
+  // 현재 날짜와 시간을 가져옵니다.
+  const now = new Date();
 
-    // 날짜와 시간을 "YYYY-MM-DD HH:mm:ss" 형식으로 변환합니다.
-    const rdate = now.toLocaleString('ko-KR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
-    }).replace(/\./g, '-').replace(/- /g, '-').replace(/ /, ' ').trim().slice(0, -1);
+  // 날짜와 시간을 "YYYY-MM-DD HH:mm:ss" 형식으로 변환합니다.
+  const rdate = now.toLocaleString('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }).replace(/\./g, '-').replace(/- /g, '-').replace(/ /, ' ').trim().slice(0, -1);
 
-    return rdate.replace(/-([0-9]{2}:)/, ' $1'); // 2024-11-06 16:29:5
+  return rdate.replace(/-([0-9]{2}:)/, ' $1'); // 2024-11-06 16:29:5
 }
 
 // 포커스 이동
-function enter_chk(e: React.KeyboardEvent<HTMLInputElement> | KeyboardEvent, nextTag: string){
-  if(e.key === 'Enter'){ // 엔터키
+function enter_chk(e: React.KeyboardEvent<HTMLInputElement> | KeyboardEvent, nextTag: string) {
+  if (e.key === 'Enter') { // 엔터키
     e.preventDefault();
     const nextElement = document.getElementById(nextTag);
-    if(nextElement) {
+    if (nextElement) {
       nextElement.focus();
     }
   }
 }
 
-function set_focus(nextTag: string){
+function set_focus(nextTag: string) {
   const nextElement = document.getElementById(nextTag);
-  if(nextElement) {
+  if (nextElement) {
     nextElement.focus();
   }
 }
@@ -62,7 +66,7 @@ const axiosInstance = axios.create({
 
 
 // 파일 다운로드 함수
-const download = async (dir:string, filename:string, downname:string) => {
+const download = async (dir: string, filename: string, downname: string) => {
   try {
     // ① Spring Boot의 /download 엔드포인트 호출
     // dir: 폴더명, filename: 서버에 저장된 파일명, downname: 원래 파일명
@@ -101,16 +105,16 @@ const isImage = (file1 = "") => {
   // console.log('-> file1.toLowerCase():', "ABC.jpg".toLowerCase());
   // console.log('-> file1.toLowerCase().endsWith(\'jpg\'):', "ABC.jpg".toLowerCase().endsWith('jpg'));
 
-  if(file1 != null){
-    return ['jpg', 'jpeg', 'png', 'gif','jfif','webp','avif'].some(ext => file1.toLowerCase().endsWith(ext));
-  }else{
+  if (file1 != null) {
+    return ['jpg', 'jpeg', 'png', 'gif', 'jfif', 'webp', 'avif'].some(ext => file1.toLowerCase().endsWith(ext));
+  } else {
     return false;
   }
-  
+
 }
 
 
-export {getIP, getCopyright, getNowDate, enter_chk, set_focus, axiosInstance, download, isImage}; 
+export { getIP, getCopyright, getNowDate, enter_chk, set_focus, axiosInstance, download, isImage };
 // import {getIP, getCopyright, getNowDate, enter_chk, set_focus} from 'Tool';
 
 

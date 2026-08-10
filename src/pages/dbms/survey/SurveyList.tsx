@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -14,244 +13,16 @@ import {
 import type {
   DataTableColumn,
 } from '../../../components/ui';
+import type { Survey, SurveyStatus } from '../../../utils/survey';
+import {
+  SURVEY_LIST_PAGE_SIZE,
+  formatDate,
+  getStatusClass,
+  getStatusLabel,
+  getSurveyStatus,
+} from '../../../utils/survey';
+import { deleteSurvey, getSurveys } from '../../../utils/surveyApi';
 
-
-/* =========================================================
-   설문 목록 데이터 타입
-========================================================= */
-
-/**
- * GET /api/surveys 응답에서
- * 목록 화면에 필요한 값만 정의합니다.
- *
- * questions는 목록 화면에서는 사용하지 않지만,
- * 백엔드 응답에 포함될 수 있으므로 optional로 둡니다.
- */
-interface Survey {
-  no: number;
-
-  memberNo: number;
-
-  title: string;
-
-  detail: string;
-
-  startDate: string;
-
-  endDate: string;
-
-  cdate: string;
-
-  questions?: unknown[];
-}
-
-
-/* =========================================================
-   설문 상태 타입
-========================================================= */
-
-/**
- * 설문 기간을 기준으로 프론트에서 상태를 계산합니다.
- *
- * READY  : 시작 전
- * ACTIVE : 진행 중
- * END    : 종료
- */
-type SurveyStatus =
-  | 'READY'
-  | 'ACTIVE'
-  | 'END';
-
-
-/* =========================================================
-   API
-========================================================= */
-
-/**
- * 현재 설문 백엔드는 9103 포트에서 테스트 중입니다.
- *
- * 추후 팀 백엔드 포트가 통합되면
- * 공통 axiosInstance로 교체하면 됩니다.
- */
-const surveyApi = axios.create({
-  baseURL: 'http://localhost:9103',
-});
-
-
-/* =========================================================
-   페이지 설정
-========================================================= */
-
-/**
- * 한 페이지에 표시할 설문 개수
- */
-const PAGE_SIZE = 3;
-
-
-/* =========================================================
-   날짜 유틸
-========================================================= */
-
-/**
- * 서버 날짜:
- * 2026-08-07 00:00:00
- *
- * 목록 표시:
- * 2026-08-07
- */
-const formatDate = (
-  value?: string
-) => {
-
-  if (!value) {
-    return '-';
-  }
-
-  return value.slice(0, 10);
-};
-
-
-/**
- * 서버의 yyyy-MM-dd HH:mm:ss 형식을
- * Date로 변환하기 위한 함수입니다.
- *
- * 브라우저에서
- * "2026-08-07 00:00:00"
- * 형식을 바로 Date로 처리하면
- * 환경에 따라 결과가 달라질 수 있으므로
- * 공백을 T로 변경합니다.
- */
-const toDate = (
-  value: string
-) => {
-
-  return new Date(
-    value.replace(' ', 'T')
-  );
-};
-
-
-/* =========================================================
-   설문 진행 상태 계산
-========================================================= */
-
-/**
- * 현재 시간과
- * 설문의 시작일 / 종료일을 비교해서
- * 상태를 계산합니다.
- *
- * 백엔드 STATUS 컬럼을 쓰지 않는 현재 구조에서는
- * 목록 화면에서 날짜 기준으로 상태를 판단합니다.
- */
-const getSurveyStatus = (
-  survey: Survey
-): SurveyStatus => {
-
-  const now =
-    new Date();
-
-  const start =
-    toDate(
-      survey.startDate
-    );
-
-  const end =
-    toDate(
-      survey.endDate
-    );
-
-
-  if (
-    now < start
-  ) {
-
-    return 'READY';
-
-  }
-
-
-  if (
-    now > end
-  ) {
-
-    return 'END';
-
-  }
-
-
-  return 'ACTIVE';
-};
-
-
-/* =========================================================
-   상태 표시 문구
-========================================================= */
-
-const getStatusLabel = (
-  status: SurveyStatus
-) => {
-
-  if (
-    status === 'READY'
-  ) {
-
-    return '예정';
-
-  }
-
-
-  if (
-    status === 'ACTIVE'
-  ) {
-
-    return '진행중';
-
-  }
-
-
-  return '종료';
-};
-
-
-/* =========================================================
-   상태 Badge 클래스
-========================================================= */
-
-/**
- * 기존 dbms.css의 badge 계열 클래스를 재사용합니다.
- *
- * 프로젝트 CSS에 정확한 badge 클래스가 다를 경우
- * 디자인 담당자가 나중에 조정하면 됩니다.
- */
-const getStatusClass = (
-  status: SurveyStatus
-) => {
-
-  if (
-    status === 'ACTIVE'
-  ) {
-
-    return 'badge badge_success';
-
-  }
-
-
-  if (
-    status === 'READY'
-  ) {
-
-    return 'badge badge_info';
-
-  }
-
-
-  return 'badge';
-};
-
-
-/* =========================================================
-   SurveyList Component
-========================================================= */
 
 export default function SurveyList() {
 
@@ -342,23 +113,13 @@ export default function SurveyList() {
          *
          * GET /api/surveys
          */
-        const response =
-          await surveyApi.get(
-            '/api/surveys'
-          );
+        const list = await getSurveys();
 
 
         /**
          * 최신 설문이 위로 오도록
          * no 기준 내림차순 정렬합니다.
          */
-        const list:
-          Survey[] =
-          Array.isArray(
-            response.data
-          )
-            ? response.data
-            : [];
 
 
         const sorted =
@@ -373,7 +134,7 @@ export default function SurveyList() {
         );
 
       } catch (
-        error: any
+      error: any
       ) {
 
         console.error(
@@ -484,7 +245,7 @@ export default function SurveyList() {
       1,
       Math.ceil(
         filtered.length
-        / PAGE_SIZE
+        / SURVEY_LIST_PAGE_SIZE
       )
     );
 
@@ -496,10 +257,10 @@ export default function SurveyList() {
   const paged =
     filtered.slice(
       (page - 1)
-      * PAGE_SIZE,
+      * SURVEY_LIST_PAGE_SIZE,
 
       page
-      * PAGE_SIZE
+      * SURVEY_LIST_PAGE_SIZE
     );
 
 
@@ -598,9 +359,7 @@ export default function SurveyList() {
          * 백엔드 테스트에서
          * 204 No Content 정상 동작을 확인했습니다.
          */
-        await surveyApi.delete(
-          `/api/surveys/${deleteTarget.no}`
-        );
+        await deleteSurvey(deleteTarget.no);
 
 
         /**
@@ -627,7 +386,7 @@ export default function SurveyList() {
         );
 
       } catch (
-        error: any
+      error: any
       ) {
 
         console.error(
@@ -1076,7 +835,7 @@ export default function SurveyList() {
         }
 
         pageSize={
-          PAGE_SIZE
+          SURVEY_LIST_PAGE_SIZE
         }
 
         onChange={
