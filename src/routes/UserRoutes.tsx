@@ -12,6 +12,8 @@ import List from '../pages/user/form/List';
 import SendForm from '../pages/user/send/Form';
 import SendList from '../pages/user/send/List';
 
+import SurveyAnswerForm from '../pages/user/survey/SurveyAnswerForm';
+
 
 export default function UserRoutes() {
   return (
@@ -37,6 +39,8 @@ export default function UserRoutes() {
       <Route path="list" element={<List />} />
       <Route path="send/form" element={<SendForm />} />
       <Route path="send/list" element={<SendList />} />
+
+      <Route path="survey/:no" element={<SurveyAnswerForm />} />
     </Routes>
   );
 }
