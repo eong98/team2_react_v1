@@ -27,8 +27,8 @@ export default function DbmsRoutes() {
       <Route path="inmenu/:no/edit" element={<InMenuForm />} />
 
       <Route path="shopmenu" element={<ShopMenuList />} />
-      <Route path="shopmenu/new" element={<SurveyForm />} />
-      <Route path="shopmenu/:no/edit" element={<SurveyForm />} />      
+      <Route path="shopmenu/new" element={<ShopMenuForm />} />
+      <Route path="shopmenu/:no/edit" element={<ShopMenuForm />} />      
 
       <Route path="shop" element={<ShopList />} />
       <Route path="shop/:no/edit" element={<ShopForm />} />
