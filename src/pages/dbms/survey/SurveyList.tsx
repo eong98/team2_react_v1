@@ -85,7 +85,7 @@ const surveyApi = axios.create({
 /**
  * 한 페이지에 표시할 설문 개수
  */
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 3;
 
 
 /* =========================================================
