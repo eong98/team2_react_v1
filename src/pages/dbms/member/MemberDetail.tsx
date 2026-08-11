@@ -1,7 +1,7 @@
 import { useState, useEffect, type ChangeEvent, type SyntheticEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../../components/ui'; // 공통 UI 컴포넌트 경로에 맞게 확인
-import { axiosInstance } from '../../../utils/Tool';
+import { axiosInstance, getIP } from '../../../utils/Tool';
 import type { TotalMemberUser } from '../../../store/DbmsStore';
 
 export default function MemberDetail() {
@@ -30,8 +30,8 @@ export default function MemberDetail() {
       try {
         // role(USER/ADMIN)에 따라 각각 알맞은 단건 조회 API를 호출합니다.
         const endpoint = role === 'ADMIN' 
-          ? `http://10.1.205.120:9102/v1/dbms/find/${no}`  // 관리자 단건 조회 API (예시)
-          : `http://10.1.205.120:9102/v1/member/find/${no}`; // 일반회원 단건 조회 API (예시)
+          ? `http://${getIP()}:9102/v1/dbms/find/${no}`  // 관리자 단건 조회 API (예시)
+          : `http://${getIP()}:9102/v1/member/find/${no}`; // 일반회원 단건 조회 API (예시)
 
         const res = await axiosInstance.get(endpoint);
         if (res.data) {
@@ -85,7 +85,7 @@ export default function MemberDetail() {
   return (
     <section className="view active">
       <PageHeader 
-        title={`${role === 'ADMIN' ? '🔑 관리자' : '👤 일반 회원'} 상세 정보 수정`} 
+        title={`${role === 'ADMIN' ? '관리자' : ' 일반 회원'} 상세 정보 수정`} 
         description={`선택한 계정(No. ${no})의 계정 상태 및 개인 신상 정보를 수정할 수 있습니다.`} 
       />
 

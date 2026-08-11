@@ -26,6 +26,8 @@ interface SessionStore {
   setLogin: (value: boolean) => void;
   id: string;
   setId: (value: string) => void;
+  grade: number;
+  setGrade: (value: number) => void;
 }
 
 export const GlobalStoreSession = create<SessionStore>()(
@@ -35,6 +37,8 @@ export const GlobalStoreSession = create<SessionStore>()(
       setLogin: (value) => set({ login: value }),
       id: '',
       setId: (value) => set({ id: value }),
+      grade: 99,
+      setGrade: (value) => set({ grade: value})
     }),
     {
       name: 'auth-cookie-store',

@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState, type ChangeEvent, type SyntheticEvent } from 'react'
 import { GlobalStoreCookie, GlobalStoreSession } from '../../store/LoginStore';
 import PageHeader from '../../components/ui/common/PageHeader';
-import { axiosInstance, enter_chk } from '../../utils/Tool';
+import { axiosInstance, enter_chk, getIP } from '../../utils/Tool';
 
 /* ---------------------------------------------------------------------
   
@@ -66,20 +66,24 @@ export default function Login() {
 
     try{
       // id와 비밀번호 값이 일치하는지 확인
-      const loginResult = await axiosInstance.post(`http://10.1.205.120:9102/v1/user/login?id=${input.id}&password=${input.password}`);
+      const loginResult = await axiosInstance.post(`http://${getIP()}:9102/v1/user/login?id=${input.id}&password=${input.password}`);
       // 결과 저장
-      const loginResultData = loginResult.data;
+      const { success, user } = loginResult.data;
 
-      if(loginResultData){
+      if(success){
         // 로그인에 성공했다면 세션 스토리지에 로그인값과 아이디값을 변경
         GlobalStoreSession.getState().setLogin(true);
         GlobalStoreSession.getState().setId(input.id);
+        GlobalStoreSession.getState().setGrade(user.grade);
+        
+        console.log("-> 회원등급", user.grade)
+        console.log(user.mname+"님이 로그인 하였습니다.")
       
 
         if(storeId) {
           setStoreId(true);
         } else {
-        setStoreId(false);
+          setStoreId(false);
         }
 
         alert("로그인에 성공했습니다!")
