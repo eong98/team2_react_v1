@@ -2,7 +2,6 @@ Tool.ts
 src/utils/Tool.ts
 vite.config.ts
 
-
 # Logs
 logs
 *.log

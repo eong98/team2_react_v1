@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { MOCK_NOTICES, type Notice } from './notice.mock';
 import PageHeader from '../../../components/ui/common/PageHeader';
 
 /* ---------------------------------------------------------------------
@@ -13,8 +12,6 @@ import PageHeader from '../../../components/ui/common/PageHeader';
     인풋 사용시 checkbox,radio 외 모든 인풋요소에 label htmlFor / input id 값 매칭 필수
 
 --------------------------------------------------------------------- */
-
-const TAG_OPTIONS: Notice['tag'][] = ['긴급', '중요', '신규', '일반'];
 
 export default function Form() {
   const navigate = useNavigate();
