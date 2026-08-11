@@ -9,7 +9,6 @@ import {BrowserRouter, Routes, Route, Navigate} from 'react-router-dom'
 import MainLayout from '../components/layout/MainLayout'
 import Home from '../pages/main/Home';
 import Login from '../pages/main/Login'
-
 /* 서비스페이지 import */
 import BaseLayout from '../components/layout/BaseLayout';
 import UserRoutes from './UserRoutes';

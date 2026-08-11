@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState, type ChangeEvent, type SyntheticEvent } from 'react'
 import { GlobalStoreCookie, GlobalStoreSession } from '../../store/LoginStore';
 import PageHeader from '../../components/ui/common/PageHeader';
-import { axiosInstance, enter_chk } from '../../utils/Tool';
+import { axiosInstance, enter_chk, getIP } from '../../utils/Tool';
 
 /* ---------------------------------------------------------------------
   
@@ -66,7 +66,7 @@ export default function Login() {
 
     try{
       // id와 비밀번호 값이 일치하는지 확인
-      const loginResult = await axiosInstance.post(`http://10.1.205.120:9200/v1/dbms/login?id=${input.id}&password=${input.password}`);
+      const loginResult = await axiosInstance.post(`http://${getIP()}:9102/v1/dbms/login?id=${input.id}&password=${input.password}`);
       // 결과 저장
       const loginResultData = loginResult.data;
 

@@ -13,6 +13,8 @@ import SendForm from '../pages/user/send/Form';
 import SendList from '../pages/user/send/List';
 import QaList from '../pages/user/board/QaList';
 import QaForm from '../pages/user/board/QaForm';
+import ShopList from '../pages/user/shop/ShopList';
+import ShopForm from '../pages/user/shop/ShopForm';
 
 import SurveyAnswerForm from '../pages/user/survey/SurveyAnswerForm';
 import QaDetail from '../pages/dbms/board/QaDetail';
@@ -32,6 +34,10 @@ export default function UserRoutes() {
       <Route path="qa/:no/edit" element={<QaForm />} />
       <Route path="qa/:no" element={<QaDetail />} />
 
+      <Route path="shop" element={<ShopList />} />
+      <Route path="shop/new" element={<ShopForm />} />
+      <Route path="shop/:no/edit" element={<ShopForm />} />
+
       
       {/* 예시용 */}
       <Route element={<DashboardLayout />}>{/* 대시보드용 레이아웃 적용 */}
@@ -48,6 +54,8 @@ export default function UserRoutes() {
       <Route path="send/list" element={<SendList />} />
 
       <Route path="survey/:no" element={<SurveyAnswerForm />} />
+
+      
     </Routes>
   );
 }
