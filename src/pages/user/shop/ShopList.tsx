@@ -11,7 +11,6 @@ import {
   type Filters,
 } from './Shop.ts';
 import { GlobalStoreSession } from '../../../store/LoginStore.ts'; 
-
 // 파일이름 꼭 맞춰주세요
 /* ---------------------------------------------------------------------
    매장 목록(/user/shop) - 로그인한 회원(mno) 소유 매장만 카드 그리드로 노출.
@@ -149,6 +148,7 @@ export default function ShopListView() {
           </>
         }
       />
+      
 
       <div className="store_grid">
         {loading ? (
