@@ -1,4 +1,4 @@
-import { axiosInstance } from './Tool';
+import { axiosInstance } from '../../utils/Tool';
 
 /* ---------------------------------------------------------------------
    Sidebar(관리자/매장관리 공용)에서 쓰는 메뉴 트리 로더.
@@ -18,7 +18,6 @@ export interface MenuNavItem {
   fkno: number | null;
   dept: number;
   ord: number;
-  title: string;
   purl: string;
   useYn?: 'Y' | 'N';
 }

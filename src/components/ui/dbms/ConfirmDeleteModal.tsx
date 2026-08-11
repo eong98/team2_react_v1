@@ -45,7 +45,6 @@ export default function ConfirmDeleteModal({
   requirePassword = false, // 비밀번호 없음(false)
 }: ConfirmDeleteModalProps) {
   const [pw, setPw] = useState('');
-  console.log(pw)
   // 모달이 닫히거나 열릴 때 비밀번호 초기화
   useEffect(() => {
     if (!open) {

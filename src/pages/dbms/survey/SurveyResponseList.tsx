@@ -3,20 +3,20 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { DataTable, DbmsPagination, PageHeader } from '../../../components/ui';
 import type { DataTableColumn } from '../../../components/ui';
-import type { SurveyInfo, SurveyResponse } from '../../../utils/survey';
+import type { SurveyInfo, SurveyResponse } from '../../../components/ts/survey';
 import {
   SURVEY_RESPONSE_PAGE_SIZE,
   formatDate,
   formatDateTime,
   getAnswerText,
   getQuestionTypeLabel,
-} from '../../../utils/survey';
+} from '../../../components/ts/survey';
 import {
   checkSurveyResponse,
   getSurvey,
   getSurveyResponse,
   getSurveyResponses,
-} from '../../../utils/surveyApi';
+} from '../../../components/ts/surveyApi';
 
 export default function SurveyResponseList() {
   const navigate = useNavigate();

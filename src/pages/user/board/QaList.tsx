@@ -1,101 +1,183 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { PageHeader } from '../../../components/ui';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { AdminToolbar, AlertModal, ConfirmDeleteModal, DbmsPagination, PageHeader } from '../../../components/ui';
 import type { DataCardColumn } from '../../../components/ui/common/DataCard';
 import DataCard from '../../../components/ui/common/DataCard';
 import { axiosInstance } from '../../../utils/Tool';
-import type { QaTypes } from './QaType';
-
+import { QA_STATUS_MAP, QA_TYPE_MAP, QA_TYPE_OPTIONS, type QaTypes, type TabKey } from '../../user/board/QaType';
+import type { AccordionCardColumn } from '../../../components/ui/common/DataAcc';
+import DataAcc from '../../../components/ui/common/DataAcc';
 
 const PAGE_SIZE = 6;
+
 export default function QaList() {
   const navigate = useNavigate();
-  // 임시 번호
+  const location = useLocation();
+  // 임시 회원 번호
   const mno = 1;
+
+  // 내 문의 / 자주 묻는 질문 / 전체 문의 탭 — 작성/수정 화면에서 돌아올 때 넘겨준 tab이 있으면 그걸로 시작
+  const initialTab = (location.state as { tab?: TabKey })?.tab ?? 'qa';
+  const [tab, setTab] = useState<TabKey>(initialTab);
+
+  // 💡 탭 상태 조건 분기
+  const isFaq = tab === 'faq';
+  const isQaType = tab === 'qa' || tab === 'my'; // Q&A 카드로 표출할 탭 (전체 문의 or 내 문의)
 
   const [qaList, setQaList] = useState<QaTypes[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
   // 검색 키워드 상태
   const [keyword, setKeyword] = useState<string>('');
-  // 태그로 검색
+  // 유형(접수유형) 필터
   const [tagFilter, setTagFilter] = useState<QaTypes['type'] | ''>('');
+  // 상태(답변상태) 필터 — 전체 문의/내 문의 탭에서 사용
+  const [statusFilter, setStatusFilter] = useState<QaTypes['status'] | ''>('');
+  // 등록자(회원번호) 필터 — 전체 문의 탭에서만 사용
+  const [writerFilter, setWriterFilter] = useState<string>('');
 
   // 현재 페이지 번호 상태
   const [page, setPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [totalCount, setTotalCount] = useState<number>(0);
 
-  // 삭제 모달 대상 Q&A
+  // 삭제 모달 대상 Q&A 및 삭제 중 상태
   const [deleteTarget, setDeleteTarget] = useState<QaTypes | null>(null);
+  const [deleting, setDeleting] = useState<boolean>(false);
+
+  const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
 
   // ==========================================
   // 2. API 데이터 조회 (Axios GET)
   // ==========================================
+  const urlMap: Record<TabKey, string> = {
+    my: `/qa/my/${mno}`,     // 내 문의 엔드포인트
+    faq: '/qa/faq',   // 자주 묻는 질문
+    qa: '/qa/list',   // 전체 문의
+  };
+
   const fetchQaList = async () => {
-    if (!mno) return;
+    if (tab === 'qa' && !mno) return;
+
     setLoading(true);
+
     try {
-      const response = await axiosInstance.get(`/qa/my/${mno}`, {
+      const url = urlMap[tab];
+      const response = await axiosInstance.get(url, {
         params: {
-          word: keyword.trim() || undefined, // 검색어가 없으면 요청 파라미터에서 제외
-          page: page - 1,   // 💡 Spring Pageable은 0부터 시작
+          word: keyword.trim() || undefined,
+          type: tagFilter === '' ? undefined : tagFilter,
+          status: isQaType && statusFilter !== '' ? statusFilter : undefined,
+          mno: tab === 'qa' && writerFilter.trim() !== '' ? writerFilter.trim() : undefined,
+          page: page - 1,
           size: PAGE_SIZE,
         },
       });
-      
+
       const data = response.data;
-      // PageResponse의 필드에 맞게 추출 (content / dtoList 확인 필요)
+      console.log(response)
       setQaList(data.content || []);
       setTotalPages(data.totalPages || 1);
       setTotalCount(data.totalElements || 0);
     } catch (error) {
-      console.error('Q&A 목록 조회 실패:', error);
+      console.error('목록 조회 실패:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // 페이지 번호나 검색 키워드가 변경될 때마다 API 호출
   useEffect(() => {
     fetchQaList();
-  }, [page, keyword]);
+  }, [page, keyword, tab, tagFilter, statusFilter, writerFilter]);
 
   // ==========================================
   // 3. 이벤트 핸들러 (Event Handlers)
   // ==========================================
-  /** 검색어 변경 핸들러 */
-  const handleSearch = (value: string) => {
-    setKeyword(value);
-    setPage(1); // 새로운 검색 시 첫 페이지로 이동
+  const handleTabChange = (next: TabKey) => {
+    if (next === tab) return;
+    setTab(next);
+    setKeyword('');
+    setTagFilter('');
+    setStatusFilter('');
+    setWriterFilter('');
+    setPage(1);
+    navigate(location.pathname, { replace: true, state: { tab: next } });
   };
 
-  /** Q&A 삭제 핸들러 */
-  const handleDelete = async () => {
+  const handleSearch = (value: string) => {
+    setKeyword(value);
+    setPage(1);
+  };
+
+  const handleTypeFilter = (value: QaTypes['type'] | '') => {
+    setTagFilter(value);
+    setPage(1);
+  };
+
+  const handleStatusFilter = (value: QaTypes['status'] | '') => {
+    setStatusFilter(value);
+    setPage(1);
+  };
+
+  const handleWriterFilter = (value: string) => {
+    setWriterFilter(value);
+    setPage(1);
+  };
+
+  /** 🔑 Q&A / FAQ 삭제 핸들러 */
+  const handleDeleteWithPw = async (inputPw: string = '') => {
     if (!deleteTarget) return;
 
+    setDeleting(true);
+
     try {
-      await axiosInstance.delete(`/api/qa/${deleteTarget.no}`);
+      await axiosInstance.delete('/qa', {
+        data: {
+          no: deleteTarget.no,
+          pw: inputPw,
+        },
+      });
+
+      setAlert({ message: '삭제되었습니다.', variant: 'success', onConfirm: fetchQaList });
       setDeleteTarget(null);
-      fetchQaList(); // 삭제 성공 시 목록 재조회
     } catch (error) {
-      console.error('Q&A 삭제 실패:', error);
+      console.error('삭제 실패:', error);
+
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        const data = error.response?.data;
+
+        if (status === 400 || status === 401) {
+          setAlert({ message: '비밀번호가 올바르지 않거나 입력값이 잘못되었습니다.', variant: 'error' });
+        } else if (status === 404) {
+          setAlert({ message: '존재하지 않거나 이미 삭제된 항목입니다.', variant: 'error' });
+        } else if (status === 500) {
+          if (data?.message?.includes('비밀번호') || data?.message?.includes('password')) {
+            setAlert({ message: '비밀번호가 일치하지 않습니다.', variant: 'error' });
+          } else {
+            setAlert({ message: '서버 내부 오류가 발생했습니다. 관리자에게 문의하세요.', variant: 'error' });
+          }
+        } else {
+          setAlert({ message: `오류가 발생했습니다. (에러 코드: ${status || 'Unknown'})`, variant: 'error' });
+        }
+      } else {
+        setAlert({ message: '알 수 없는 오류가 발생했습니다.', variant: 'error' });
+      }
+    } finally {
+      setDeleting(false);
     }
   };
 
   // ==========================================
-  // 4. DataCard 컬럼 정의
+  // 4. DataCard / DataAcc 컬럼 정의
   // ==========================================
-  const columns: DataCardColumn<QaTypes>[] = [
+  const qaColumns: DataCardColumn<QaTypes>[] = [
     {
       header: '상태',
       render: (n) => (
-        <span
-          className={`badge ${
-            n.status === 2 ? 'badge_success' : 'badge_warning'
-          }`}
-        >
-          {n.status}
+        <span className={`badge ${QA_STATUS_MAP[n.status].className}`}>
+          {QA_STATUS_MAP[n.status].label}
         </span>
       ),
     },
@@ -104,11 +186,29 @@ export default function QaList() {
       render: (n) => (
         <div className="lt">
           <div className="cell_title">
-            <Link to={`/qa/${n.no}`}>{n.title}</Link>
+            <Link to={`/user/qa/${n.no}`} >
+              {n.title}
+              {n.vmode === 'Y' ? 
+                (<span className='lock'>
+                  <span className='hidden'>비밀글</span>
+                </span> ) : null
+              }
+            </Link>
           </div>
           <div className="cell_sub">
-            {n.cdate} · 접수유형: {n.type}
+            {n.cdate} · 접수유형: {QA_TYPE_OPTIONS.find((t) => t.value === n.type)?.label ?? n.type}
           </div>
+        </div>
+      ),
+    },
+  ];
+
+  const faqColumns: AccordionCardColumn<QaTypes>[] = [
+    {
+      header: 'A. 답변 내용',
+      render: (n) => (
+        <div className="lt">
+          <div className="cell_title">{n.answer}</div>
         </div>
       ),
     },
@@ -117,39 +217,157 @@ export default function QaList() {
   return (
     <section className="view active">
       <PageHeader
-        title="고객의 소리"
-        description="문의 등록 및 FAQ를 확인할 수 있습니다."
-        createLabel="+ 문의 작성"
-        onCreate={() => navigate('new')}
+        title="문의사항"
+        description="자주 묻는 질문과 등록한 문의, 답변 상태를 확인할 수 있습니다."
+        createLabel={isFaq ? undefined : '+ 문의 작성'}
+        onCreate={() => navigate('new', { state: { tab } })}
       />
 
-      <DataCard
-        columns={columns}
-        data={qaList}
-        rowKey={(n) => n.no}
-        loading={loading}
-        onEdit={(n) => navigate(`${n.no}/edit`)}
-        onDelete={(n) => setDeleteTarget(n)}
+      {/* 💡 탭 선택 버튼 3개 분기 */}
+      <div className="tabs" role="tablist" aria-label="문의 보기 전환">
+        <button
+          type="button"
+          role="tab"
+          className={`tab${tab === 'qa' ? ' on' : ''}`}
+          aria-selected={tab === 'qa'}
+          onClick={() => handleTabChange('qa')}
+        >
+          전체 문의
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          className={`tab${tab === 'my' ? ' on' : ''}`}
+          aria-selected={tab === 'my'}
+          onClick={() => handleTabChange('my')}
+        >
+          내 문의
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          className={`tab${tab === 'faq' ? ' on' : ''}`}
+          aria-selected={tab === 'faq'}
+          onClick={() => handleTabChange('faq')}
+        >
+          자주 묻는 질문
+        </button>
+      </div>
+
+      <AdminToolbar
+        searchValue={keyword}
+        onSearchChange={handleSearch}
+        searchPlaceholder={isFaq ? 'FAQ 제목·답변으로 검색' : '제목으로 검색'}
+        filters={
+          <>
+            {/* 접수 유형 필터 */}
+            <select
+              className="form_select"
+              value={tagFilter}
+              onChange={(e) => handleTypeFilter(e.target.value === '' ? '' : Number(e.target.value))}
+              aria-label="접수 유형 필터"
+              style={{ width: 'auto' }}
+            >
+              <option value="">전체 유형</option>
+              {QA_TYPE_OPTIONS.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+
+            {/* 답변 상태 필터 (전체 문의 및 내 문의 탭) */}
+            {isQaType && (
+              <select
+                className="form_select"
+                value={statusFilter}
+                onChange={(e) => handleStatusFilter(e.target.value === '' ? '' : Number(e.target.value))}
+                aria-label="답변 상태 필터"
+                style={{ width: 'auto' }}
+              >
+                <option value="">전체 상태</option>
+                {Object.entries(QA_STATUS_MAP).map(([value, s]) => (
+                  <option key={value} value={value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {/* 회원번호 필터 (전체 문의 탭에서만 표시) */}
+            {tab === 'qa' && (
+              <input
+                type="text"
+                className="form_input"
+                placeholder="회원번호로 검색"
+                value={writerFilter}
+                onChange={(e) => handleWriterFilter(e.target.value)}
+                aria-label="회원번호로 필터"
+                style={{ maxWidth: 160 }}
+              />
+            )}
+          </>
+        }
       />
+
+      {/* 💡 isQaType (전체 문의/내 문의)인 경우 DataCard, FAQ인 경우 DataAcc 렌더링 */}
+      {isQaType ? (
+        <DataCard
+          columns={qaColumns}
+          data={qaList}
+          rowKey={(n) => n.no}
+          loading={loading}
+          emptyMessage="등록된 문의가 없습니다."
+        />
+      ) : (
+        <DataAcc
+          title={(r) => (
+            <>
+              <span className={`badge ${QA_TYPE_MAP[r.type]?.className ?? ''}`}>
+                {QA_TYPE_MAP[r.type]?.label ?? r.type}
+              </span>{' '}
+              Q. {r.title}
+            </>
+          )}
+          columns={faqColumns}
+          data={qaList}
+          rowKey={(r) => r.no}
+          emptyMessage="등록된 FAQ가 없습니다."
+          allowMultiple={false}
+        />
+      )}
 
       {/* 페이지네이션 컴포넌트 */}
-      {/* <DbmsPagination
+      <DbmsPagination
         page={page}
         totalPages={totalPages}
         totalCount={totalCount}
         pageSize={PAGE_SIZE}
         onChange={setPage}
-      /> */}
+      />
 
       {/* 삭제 확인 모달 */}
-      {/* <ConfirmDeleteModal
+      <ConfirmDeleteModal
         open={deleteTarget !== null}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDelete}
+        onConfirm={(pw) => handleDeleteWithPw(pw || '')}
+        loading={deleting}
         targetLabel={
           deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.title}` : undefined
         }
-      /> */}
+        requirePassword={true}
+      />
+
+      {/* 알림 모달 */}
+      <AlertModal
+        open={alert !== null}
+        onClose={() => setAlert(null)}
+        onConfirm={alert?.onConfirm}
+        message={alert?.message ?? ''}
+        variant={alert?.variant}
+      />
     </section>
   );
 }

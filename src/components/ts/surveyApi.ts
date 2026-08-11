@@ -1,4 +1,4 @@
-import { axiosInstance } from './Tool';
+import { axiosInstance } from '../../utils/Tool';
 import type {
   Survey,
   SurveyResponse,

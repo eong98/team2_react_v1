@@ -160,6 +160,7 @@ select::-ms-expand {display:none;}
 [type='checkbox'],
 [type='radio'] {width:24px; height:24px; vertical-align:middle; accent-color:var(--primary);}
 .form_check{display:flex;align-items:center;gap:9px;margin-bottom:10px;}
+.form_check:only-child{margin-bottom:0;}
 .form_check input{width:16px;height:16px;accent-color:var(--primary);}
 
 /* 스위치 */
@@ -223,6 +224,10 @@ select::-ms-expand {display:none;}
 .cell_sub{font-size:11px;color:var(--text-faint);margin-top:2px;}
 
 
+
+/* icons
+========================================================================== */
+.lock {display:inline-block; width:14px; height:14px; margin-left:4px; vertical-align: text-top; background:url('../assets/images/icon/ico-lock.png') no-repeat center; background-size:contain;}
 
 /* badge
 ========================================================================== */
@@ -295,6 +300,7 @@ table td {padding:0; word-break:break-all;}
 .acc_panel{max-height:0;overflow:hidden;padding:0 16px;font-size:13px;color:var(--text-dim);transition:max-height .2s ease;}
 .acc_panel.open{max-height:200px;padding:8px 16px 16px;border-top:1px solid var(--border);}
 .acc_panel.open .lt{margin-top:8px;}
+.acc_panel.open .lt .cell_sub {text-align:right;}
 .card_acc .actions {justify-content: flex-end; margin-top:8px;}
 
 .card_acc .list_row {background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);}
@@ -359,18 +365,20 @@ table td {padding:0; word-break:break-all;}
 
 /* 카드형 리스트 */
 /* 재정의 필요 */
-.list_row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border)}
-.link_row{display:flex;justify-content:space-between;margin-top:14px;font-size:12.5px;color:var(--text-faint);}
-.link_row a:hover{color:var(--primary);}
+/* .list_row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border)} */
+/* .link_row{display:flex;justify-content:space-between;margin-top:14px;font-size:12.5px;color:var(--text-faint);} */
 .list_row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);width:100%;text-align:left;background:none;border-left:none;border-right:none;border-top:none;font-family:var(--font-disp);color:var(--text);}
-
+.list_row a{transition:.3s;}
 .list_row:hover{background:var(--surface-2);}
+.list_row:hover a{color:var(--primary); text-decoration: underline; text-underline-offset: 4px;}
+
 .list_row:last-child{border-bottom:none;}
 .list_row .lt{flex:1;min-width:0;}
 /* .list_row .lt .ti{font-size:13.5px;font-weight:600;margin-bottom:3px;} */
 .list_row .lt .me{font-size:11.5px;color:var(--text-faint);font-family:var(--font-mono);}
 .list_row .empty_row {text-align:center;color:var(--text-faint);padding:34px;font-size:13px;}
 
+.link_row a:hover{color:var(--primary);}
 
 /* ---------------------------------------------------------------------
    검색창 (filter_bar 안에서 select/input[date]와 같은 톤으로 사용)

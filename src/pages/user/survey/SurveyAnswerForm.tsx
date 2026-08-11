@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { PageHeader } from '../../../components/ui';
-import type { AnswerState, Survey } from '../../../utils/survey';
-import { TEST_MEMBER_NO, formatDate, getOptions } from '../../../utils/survey';
-import { getSurvey, submitSurveyResponse } from '../../../utils/surveyApi';
+import type { AnswerState, Survey } from '../../../components/ts/survey';
+import { TEST_MEMBER_NO, formatDate, getOptions } from '../../../components/ts/survey';
+import { getSurvey, submitSurveyResponse } from '../../../components/ts/surveyApi';
 import './SurveyAnswerForm.css';
 
 

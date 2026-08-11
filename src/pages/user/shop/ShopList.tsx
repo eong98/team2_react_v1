@@ -28,12 +28,9 @@ import { GlobalStoreSession } from '../../../store/LoginStore.ts';
    전부 ./Shop.ts 로 옮겨뒀습니다.
 --------------------------------------------------------------------- */
 
-// 회원번호 사용
-const mno = 1;
-// const { no:mno } = GlobalStoreSession();
-
 export default function ShopListView() {
   const navigate = useNavigate();
+  const { no: mno } = GlobalStoreSession(); 
 
   // draft: 입력 중인 값(타이핑만으로는 검색 안 됨) / applied: "검색" 눌렀을 때 실제 조회에 쓰이는 값
   const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS);
@@ -135,6 +132,7 @@ export default function ShopListView() {
         searchValue={draft.keyword}
         onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
         searchPlaceholder="매장명·주소로 검색"
+        onSearchEnter={onSearch}
         left={
           <span className="pagination_info">
             전체 {totalElements}건 중 {from}–{to}건 표시
@@ -182,11 +180,11 @@ export default function ShopListView() {
                 </button>
                 <div className="store_card_actions">
                   <button type="button" className="btn btn_sm btn_ghost" onClick={() => navigate(`${s.no}/edit`)}>
-                    수정
+                    관리
                   </button>
-                  <button type="button" className="btn btn_sm btn_danger" onClick={() => setDeleteTarget(s)}>
+                  {/* <button type="button" className="btn btn_sm btn_danger" onClick={() => setDeleteTarget(s)}>
                     삭제
-                  </button>
+                  </button> */}
                 </div>
               </div>
             </div>
