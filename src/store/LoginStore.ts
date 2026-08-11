@@ -38,11 +38,12 @@ export const GlobalStoreSession = create<SessionStore>()(
     (set) => ({
       login: false,
       setLogin: (value) => set({ login: value }),
+      // no가 0이면 손님
       no: 0,
       setNo: (value) => set({ no: value }),
       id: '',
       setId: (value) => set({ id: value }),
-      // 1~5 관리자, 6~10 사용자
+      // 1: 최상위 관리자, 2~5: 일반 관리자, 6~10 사용자, 99: 손님
       grade: 99,  
       setGrade: (value) => set({ grade: value})
     }),
