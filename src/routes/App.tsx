@@ -36,7 +36,7 @@ function App() {
 
             {/* 회원가입, 구독권 등.... */}
             <Route path='/singup' element={<Singup />} />
-            {/* <Route path="/dbms/login" element={<Login />} />관리자 로그인 */}
+        
           </Route>
 
           {/* 서비스 영역 - 사용자 */}
