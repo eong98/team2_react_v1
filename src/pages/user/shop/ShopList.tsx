@@ -132,6 +132,7 @@ export default function ShopListView() {
         searchValue={draft.keyword}
         onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
         searchPlaceholder="매장명·주소로 검색"
+        onSearchEnter={onSearch}
         left={
           <span className="pagination_info">
             전체 {totalElements}건 중 {from}–{to}건 표시
@@ -181,9 +182,9 @@ export default function ShopListView() {
                   <button type="button" className="btn btn_sm btn_ghost" onClick={() => navigate(`${s.no}/edit`)}>
                     관리
                   </button>
-                  <button type="button" className="btn btn_sm btn_danger" onClick={() => setDeleteTarget(s)}>
+                  {/* <button type="button" className="btn btn_sm btn_danger" onClick={() => setDeleteTarget(s)}>
                     삭제
-                  </button>
+                  </button> */}
                 </div>
               </div>
             </div>
