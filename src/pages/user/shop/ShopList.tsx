@@ -10,6 +10,7 @@ import {
   type ShopSearchResult,
   type Filters,
 } from './Shop.ts';
+import { GlobalStoreSession } from '../../../store/LoginStore.ts'; 
 
 // 파일이름 꼭 맞춰주세요
 /* ---------------------------------------------------------------------
@@ -27,10 +28,8 @@ import {
    전부 ./Shop.ts 로 옮겨뒀습니다.
 --------------------------------------------------------------------- */
 
-// TODO: 로그인 세션(GlobalStoreSession)에 회원번호(mno) 필드가 아직 없어서
-// 우선 고정값으로 둡니다. 로그인 연동 완료되면 세션에서 꺼내 쓰도록 교체해주세요.
-// (QaForm.tsx의 mno 처리와 동일한 임시 패턴입니다)
-const mno = 1;
+// 회원번호,그레이드 사용
+const { mno,grade } = GlobalStoreSession();
 
 export default function ShopListView() {
   const navigate = useNavigate();
