@@ -42,7 +42,7 @@ export const GlobalStoreSession = create<SessionStore>()(
       setMno: (value) => set({ mno: value }),
       id: '',
       setId: (value) => set({ id: value }),
-      // 1~5 관리자, 5~10 사용자
+      // 1~5 관리자, 6~10 사용자
       grade: 99,  
       setGrade: (value) => set({ grade: value})
     }),
