@@ -116,6 +116,3 @@ const isImage = (file1 = "") => {
 
 export { getIP, getCopyright, getNowDate, enter_chk, set_focus, axiosInstance, download, isImage };
 // import {getIP, getCopyright, getNowDate, enter_chk, set_focus} from 'Tool';
-
-
-
