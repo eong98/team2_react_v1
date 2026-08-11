@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import PageHeader from '../../../components/ui/common/PageHeader';
 import { axiosInstance, enter_chk, set_focus } from '../../../utils/Tool.ts';
 import { EMPTY_SHOP, type ShopType } from './Shop.ts';
-// import { GlobalStoreSession } from '../../../store/LoginStore.ts'; 
+import { GlobalStoreSession } from '../../../store/LoginStore.ts'; 
 // 파일이름 꼭 맞춰주세요
 /* ---------------------------------------------------------------------
    매장 등록(/user/shop/new) / 수정(/user/shop/:no/edit) 페이지 - 한 화면에서 처리.
@@ -64,7 +64,6 @@ interface DaumPostcodeResult {
 // 우선 고정값으로 둡니다. 로그인 연동 완료되면 세션에서 꺼내 쓰도록 교체해주세요.
 // (QaForm.tsx의 mno 처리와 동일한 임시 패턴입니다)
 // const { mno,grade } = GlobalStoreSession();
-const mno=1;
 interface FieldErrors {
   title?: string;
   zip?: string;
@@ -73,6 +72,7 @@ interface FieldErrors {
 
 export default function ShopFormView() {
   const navigate = useNavigate();
+  const { no: mno } = GlobalStoreSession(); 
   const { no } = useParams<{ no: string }>();
   const isEdit = Boolean(no);
 

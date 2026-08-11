@@ -28,12 +28,9 @@ import { GlobalStoreSession } from '../../../store/LoginStore.ts';
    전부 ./Shop.ts 로 옮겨뒀습니다.
 --------------------------------------------------------------------- */
 
-// 회원번호 사용
-const mno = 1;
-// const { no:mno } = GlobalStoreSession();
-
 export default function ShopListView() {
   const navigate = useNavigate();
+  const { no: mno } = GlobalStoreSession(); 
 
   // draft: 입력 중인 값(타이핑만으로는 검색 안 됨) / applied: "검색" 눌렀을 때 실제 조회에 쓰이는 값
   const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS);
