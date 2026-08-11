@@ -10,6 +10,7 @@ import MainLayout from '../components/layout/MainLayout'
 import Home from '../pages/main/Home';
 import Login from '../pages/main/Login'
 import Singup from '../pages/main/Signup'
+
 /* 서비스페이지 import */
 import BaseLayout from '../components/layout/BaseLayout';
 import UserRoutes from './UserRoutes';
@@ -32,9 +33,10 @@ function App() {
 
             <Route path='/index' element={<Home />} />
             <Route path='/login' element={<Login />} />{/* 로그인 */}
+
             {/* 회원가입, 구독권 등.... */}
             <Route path='/singup' element={<Singup />} />
-            <Route path="/dbms/login" element={<Login />} />{/* 관리자 로그인 */}
+        
           </Route>
 
           {/* 서비스 영역 - 사용자 */}

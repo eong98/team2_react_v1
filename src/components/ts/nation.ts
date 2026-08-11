@@ -1,3 +1,4 @@
+// 국가 검색 필터 넣을 때 사용
 export const NATION_OPTIONS = [
   '대한민국',
   '미국',

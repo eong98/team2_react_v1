@@ -2,7 +2,7 @@ import { useState, type ChangeEvent, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../components/ui'; // 프로젝트 경로에 맞춰 확인
 import { axiosInstance, getIP } from '../../utils/Tool';
-import { NATION_OPTIONS } from './nation';
+import { NATION_OPTIONS } from '../../components/ts/nation';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -124,6 +124,16 @@ export default function Register() {
       return;
     }
 
+    if (!isAgreedTerms) {
+      alert('서비스 이용 약관에 동의해주세요.');
+      return;
+    }
+
+    if (!isAgreedPrivacy) {
+      alert('개인정보 수집 및 이용에 동의해주세요.');
+      return;
+    }
+
     const EXCLUDE_FIELDS = ['grade', 'status']
 
     // ⭐️ 모든 필드가 입력되었는지 2차 체크 (전체 필수입력)
@@ -151,6 +161,8 @@ export default function Register() {
         addrDetail: formData.addrDetail,
         grade: 6,
         status: 1,
+        termsAgreeYn: isAgreedTerms ? 'Y' : 'N',
+        isAgreedPrivacy: isAgreedPrivacy? 'Y' : 'N',
         nation: formData.nation,
       };
 
@@ -399,7 +411,7 @@ export default function Register() {
           </div>
 
           {/* 하단 제어 버튼 행 배열 */}
-          <div className="div_row_right" style={{ gap: '10px', marginTop: '20px' }}>
+          <div className="div_row_right" style={{ display: 'flex', alignItems: 'center', marginTop: '20px'}}>
             <button
               type="button"
               className="btn btn_lg btn_outline_primary"
@@ -411,6 +423,7 @@ export default function Register() {
             <button
               type="submit"
               className="btn btn_lg btn_primary"
+              style={{ marginLeft: 'auto'}}
               disabled={isSubmitting}
             >
               {isSubmitting ? '가입 처리 중...' : '회원가입 완료'}
