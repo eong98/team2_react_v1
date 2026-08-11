@@ -11,6 +11,8 @@ import {
   type Filters,
 } from './Shop.ts';
 import { GlobalStoreSession } from '../../../store/LoginStore.ts'; 
+import { GlobalCurrentShop } from '../../../store/UserStore.ts';
+
 // 파일이름 꼭 맞춰주세요
 /* ---------------------------------------------------------------------
    매장 목록(/user/shop) - 로그인한 회원(mno) 소유 매장만 카드 그리드로 노출.
@@ -30,6 +32,7 @@ import { GlobalStoreSession } from '../../../store/LoginStore.ts';
 export default function ShopListView() {
   const navigate = useNavigate();
   const { no: mno } = GlobalStoreSession(); 
+  const { setShop } = GlobalCurrentShop();
 
   // draft: 입력 중인 값(타이핑만으로는 검색 안 됨) / applied: "검색" 눌렀을 때 실제 조회에 쓰이는 값
   const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS);
@@ -91,11 +94,12 @@ export default function ShopListView() {
   const from = totalElements === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const to = Math.min(page * PAGE_SIZE, totalElements);
 
-  // TODO: 매장 전환 상태를 여러 화면(Topbar 등)이 같이 봐야 하면 전역 상태/API로 옮겨야 합니다.
-  // 지금은 우선 실시간 관제 화면으로 이동만 시킵니다.
+  // 2026-08-11: 매장 전환 상태를 GlobalCurrentShop(store/UserStore.ts)에 저장해서
+  // Topbar 등 /user 하위 모든 화면이 같이 보도록 옮겼습니다(기존 TODO 처리).
   const enterStore = (shop: ShopType) => {
-    console.log('매장 전환:', shop.title);
-    navigate('../test1');
+    if (!shop.no) return;
+    setShop({ no: shop.no, title: shop.title ?? '' });
+    navigate('/user/dashboard/test1');
   };
 
   const handleDelete = async () => {
@@ -148,7 +152,6 @@ export default function ShopListView() {
           </>
         }
       />
-      
 
       <div className="store_grid">
         {loading ? (
