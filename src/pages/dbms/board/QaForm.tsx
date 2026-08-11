@@ -1,22 +1,27 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AlertModal, PageHeader } from '../../../components/ui';
-import { axiosInstance, getNowDate } from '../../../utils/Tool';
+import { axiosInstance, getNowDate, set_focus } from '../../../utils/Tool';
 import { QA_TYPE_OPTIONS, type FaqCRequest, type TabKey } from '../../user/board/QaType';
 import axios from 'axios';
 
+/**
+ * 
+ * DBMS 쪽 QaForm.tsx 는 자주묻는질문(FAQ) 만 수정이 가능합니다.
+ * 
+ */
 export default function QaForm() {
   const navigate = useNavigate();
   const { no } = useParams<{ no: string }>();
+  // 작성자 관리자 번호 (로그인 스토어나 Context에서 가져오거나 설정)
+  const ano = 1; /* 임시 */
   const isEdit = Boolean(no);
   const location = useLocation();
   // 목록에서 어느 탭(전체 문의 / 자주 묻는 질문)으로 들어왔는지 — 저장/취소 후 그 탭으로 되돌아가기 위함
   const fromTab = (location.state as { tab?: TabKey })?.tab;
 
-  // 작성자 관리자 번호 (로그인 스토어나 Context에서 가져오거나 설정)
-  const ano = 1;
-  const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
-
+  // 목록으로 돌아갈 때 원래 있던 탭 그대로 열리도록 tab을 같이 넘긴다
+  const goBack = () => navigate('/dbms/qa', { state: { tab: fromTab } });
 
   // ==========================================
   // 1. 폼 상태 관리
@@ -29,12 +34,12 @@ export default function QaForm() {
     answer: '',
     cdate: '',
     pw: '',
-    vseq: ''
+    vseq: 1
   });
 
   /** 수정 진입 시 기존 데이터를 불러와 폼에 채워 넣는다 */
   const loadQa = () => {
-    axiosInstance.get(`/qa/${no}`)
+    axiosInstance.get(`/qa/faq/${no}`)
       .then((result) => result.data)
       .then((data) => {
         setInput((prev) => ({
@@ -46,7 +51,7 @@ export default function QaForm() {
           answer: data.answer ?? '',
           // cdate: data.cdate,
           // pw: data.pw,
-          vseq: data.vseq != null ? String(data.vseq) : '',
+          vseq: data.vseq != null ? Number(data.vseq) : 1,
         }))
       })
       .catch((err) => console.error('게시물 상세 조회 실패:', err));
@@ -66,25 +71,37 @@ export default function QaForm() {
   };
 
   // 유효성 검사 에러 메시지
-  const [errors, setErrors] = useState<{ title?: string; content?: string; answer?: string }>({});
+  type FormErrors = Partial<Record<keyof FaqCRequest, string>>;
+  const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
 
-  // 목록으로 돌아갈 때 원래 있던 탭 그대로 열리도록 tab을 같이 넘긴다
-  const goBack = () => navigate('/dbms/qa', { state: { tab: fromTab } });
 
   // ==========================================
   // 2. 입력값 유효성 검사
   // ==========================================
+  // 필수 항목이 늘어나면 이 배열에 한 줄만 추가하면 됩니다.
+  const REQUIRED_FIELDS: { field: keyof FormErrors; label: string, id: string }[] = [
+    { field: 'type', label: '유형', id: 'label_01' },
+    { field: 'title', label: '문의 제목', id: 'label_03' },
+    { field: 'content', label: '문의 내용', id: 'label_04' },
+    { field: 'answer', label: '답변 내용', id: 'label_05' },
+    { field: 'pw', label: '게시글 비밀번호', id: 'password' }
+  ];
+
+
   const validate = () => {
-    const newErrors: { title?: string; content?: string; answer?: string } = {};
-    if (!input.title.trim()) newErrors.title = '제목을 입력해주세요.';
-    if (!input.content.trim()) newErrors.content = '내용을 입력해주세요.';
-    if (!input.answer.trim()) newErrors.answer = '답변 내용을 입력해주세요.';
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    for (const { field, label, id } of REQUIRED_FIELDS) {
+      if (!String(input[field]).trim()) {
+        setErrors({ [field]: `${label}을(를) 입력해주세요.` });
+        set_focus(id);
+        return false;
+      }
+    }
+    setErrors({});
+    return true;
   };
-
+  
   // ==========================================
   // 3. API 저장 처리 (POST /qa/faq)
   // ==========================================
@@ -92,7 +109,6 @@ export default function QaForm() {
     if (!validate() || submitting) return;
 
     setSubmitting(true);
-    let res;
     try {
       const payload: FaqCRequest = {
         ano,
@@ -109,10 +125,10 @@ export default function QaForm() {
 
       if (isEdit) {
         // FAQ 작성 (수정) API 호출
-        res = await axiosInstance.put(`/qa/faq/${no}`, payload);
+        await axiosInstance.put(`/qa/faq/${no}`, payload);
       } else {
         // FAQ 작성 (등록) API 호출
-        res = await axiosInstance.post('/qa/faq', payload);
+        await axiosInstance.post('/qa/faq', payload);
       }
 
       // 여기서 바로 goBack()을 부르면 모달이 뜨기도 전에 페이지가 이동해버려서
@@ -163,15 +179,11 @@ export default function QaForm() {
   return (
     <section className="view active">
       <PageHeader
-        title={
-          fromTab === 'qa' ?
-                     (isEdit ? '문의 수정' : '문의 작성') 
-                   : (isEdit ? 'FAQ 수정' : 'FAQ 작성')
-        }
+        title={isEdit ? 'FAQ 수정' : 'FAQ 작성'}
         description={
           isEdit
             ? `No.${no} FAQ 항목을 수정합니다.`
-            : '서비스 업데이트, 점검, 안내 사항 등 자주 묻는 질문을 등록합니다.'
+            : '자주 묻는 질문을 등록합니다.'
         }
         actions={
           <button type="button" className="btn btn_md btn_ghost" onClick={goBack}>
@@ -184,7 +196,7 @@ export default function QaForm() {
         {/* 태그 (접수 유형) */}
         <div className="form_group">
           <label className="form_label" htmlFor="label_01">
-            유형<span className="req" title="필수 입력 요소">*</span>
+            문의 유형<span className="req" title="필수 입력 요소">*</span>
           </label>
 
           <div className="form_control">
@@ -202,6 +214,7 @@ export default function QaForm() {
                 </option>
               ))}
             </select>
+            <div className="form_hint">유형을 선택하지 않을 경우 기타유형으로 등록됩니다.</div>
           </div>
         </div>
 
@@ -226,7 +239,7 @@ export default function QaForm() {
         {/* 제목 */}
         <div className="form_group">
           <label className="form_label" htmlFor="label_03">
-            제목<span className="req" title="필수 입력 요소">*</span>
+            문의 제목<span className="req" title="필수 입력 요소">*</span>
           </label>
           <div className="form_control">
             <input
@@ -245,7 +258,7 @@ export default function QaForm() {
         {/* 내용 */}
         <div className="form_group">
           <label className="form_label" htmlFor="label_04">
-            내용<span className="req" title="필수 입력 요소">*</span>
+            문의 내용<span className="req" title="필수 입력 요소">*</span>
           </label>
           <div className="form_control">
             <textarea
@@ -268,7 +281,7 @@ export default function QaForm() {
         {/* 답변내용 */}
         <div className="form_group">
           <label className="form_label" htmlFor="label_05">
-            답변내용<span className="req" title="필수 입력 요소">*</span>
+            답변 내용<span className="req" title="필수 입력 요소">*</span>
           </label>
           <div className="form_control">
             <textarea
@@ -287,18 +300,19 @@ export default function QaForm() {
         {/* 게시글 비밀번호 */}
         <div className="form_group">
           <label className="form_label" htmlFor="password">
-            비밀번호
+            게시글 비밀번호<span className="req" title="필수 입력 요소">*</span>
           </label>
           <div className="form_control">
             <input
               type='password'
               id="password"
               name='pw'
-              className="form_input"
+              className={`form_input ${errors.pw ? 'is_error' : ''}`}
               value={input.pw}
               onChange={onChange}
               style={{ maxWidth: 200 }}
             />
+            {errors.pw && <div className="form_hint error">{errors.pw}</div>}
           </div>
         </div>
 
@@ -318,6 +332,7 @@ export default function QaForm() {
               onChange={onChange}
               style={{ maxWidth: 200 }}
             />
+            <div className="form_hint">출력순서 미지정시 등록일 순으로 노출됩니다.</div>
           </div>
         </div>
 

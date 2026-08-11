@@ -15,6 +15,7 @@ import QaList from '../pages/user/board/QaList';
 import QaForm from '../pages/user/board/QaForm';
 
 import SurveyAnswerForm from '../pages/user/survey/SurveyAnswerForm';
+import QaDetail from '../pages/dbms/board/QaDetail';
 
 
 export default function UserRoutes() {
@@ -28,6 +29,8 @@ export default function UserRoutes() {
       */}
       <Route path="qa" element={<QaList />} />
       <Route path="qa/new" element={<QaForm />} />
+      <Route path="qa/:no/edit" element={<QaForm />} />
+      <Route path="qa/:no" element={<QaDetail />} />
 
       
       {/* 예시용 */}
