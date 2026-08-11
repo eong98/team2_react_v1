@@ -1,126 +1,177 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PageHeader, AdminToolbar, DataTable, ConfirmDeleteModal } from  '../../../components/ui';
-import type { DataTableColumn } from  '../../../components/ui';
-import { MOCK_NOTICES, TAG_LIST, TAG_TONE, type Notice } from './Shop.mock';
-import Pagination from '../../../components/ui/dbms/DbmsPagination';
+import { AdminToolbar, DataTable, PageHeader, DbmsPagination, ConfirmDeleteModal, type DataTableColumn } from '../../../components/ui';
+import { axiosInstance } from '../../../utils/Tool.ts';
+import { PAGE_SIZE, EMPTY_FILTERS, type ShopSearchResult, type RowType, type Filters } from '../../../components/ts/Shop.ts';
 
-// 파일이름 꼭 맞춰주세요 
 /* ---------------------------------------------------------------------
-   ⚠️ 이 파일은 "관리자 CRUD 리스트" 공용 디자인 틀 사용 예시입니다.
-   검색 / 생성 / 수정 / 삭제 / 페이지네이션이 모두 붙어있는 기본 패턴이라
-   CCTV, 이슈, 유형코드, 매장 등 다른 리스트 화면도 이 구조를 그대로 복사해서
-   columns / 상태값 / API 연동 부분만 바꾸면 됩니다.
-   (공용 컴포넌트: src/components/dbms/common/*, 스타일: src/components/style/dbms.css)
+   매장관리(/dbms/shop) - 관리자 목록. mno 상관없이 전체 매장을 대상으로 합니다.
 
-   ※ 생성/수정은 모달이 아니라 전용 라우트(페이지)로 분리했습니다.
-     - 작성: /dbms/board/notice/new
-     - 수정: /dbms/board/notice/:no/edit
-     - 삭제는 그대로 확인 모달(ConfirmDeleteModal) 사용.
-     → 폼 화면 구현은 NoticeFormView.tsx 참고.
+   SHOP 컬럼: no/mno/title/zip/address/address2/tel/coment/phone/snum/udate/cdate
+   - 매장 생성은 관리자 화면에서 하지 않음(매장 소유자가 /user/shop에서 생성).
+     관리자는 전체 매장 조회 + 수정 + 삭제만 담당.
+   - 맨 앞 "번호" 컬럼은 실제 PK(no)가 아니라, 검색 결과 총 건수 기준으로
+     내림차순 매긴 가상의 순번(cnt)입니다. (CctvIssueList.tsx와 동일 패턴)
+
+   API (ShopCont, /shop)
+   GET    /shop/admin/search?keyword=&page=&size=  - mno 상관없이 전체 매장 검색 + 페이징
+     → { content, totalElements, totalPages, page(0-base), size }
+   DELETE /shop/{pk}
+
+   상수/타입(PAGE_SIZE, Filters, EMPTY_FILTERS, RowType, ShopSearchResult)은
+   전부 ./Shop.ts 로 옮겨뒀습니다.
 --------------------------------------------------------------------- */
 
-const PAGE_SIZE = 6;
-
-export default function NoticeView() {
+export default function ShopListView() {
   const navigate = useNavigate();
 
-  const [keyword, setKeyword] = useState('');
-  const [tagFilter, setTagFilter] = useState<Notice['tag'] | ''>('');
-  const [page, setPage] = useState(1);
+  // draft: 입력 중인 값 (타이핑만으로는 검색 안 됨) / applied: "검색" 눌렀을 때 실제 조회에 쓰이는 값
+  const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS);
+  const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
+  const [page, setPage] = useState(1); // 화면 표시는 1부터, 서버는 0부터
 
-  const [deleteTarget, setDeleteTarget] = useState<Notice | null>(null);
+  const [rows, setRows] = useState<RowType[]>([]);
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = useMemo(() => {
-    return MOCK_NOTICES.filter((n) => {
-      const matchKeyword = keyword.trim() === '' || n.title.toLowerCase().includes(keyword.trim().toLowerCase());
-      const matchTag = tagFilter === '' || n.tag === tagFilter;
-      return matchKeyword && matchTag;
-    });
-  }, [keyword, tagFilter]);
+  const [deleteTarget, setDeleteTarget] = useState<RowType | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const loadList = async () => {
+    setLoading(true);
+    try {
+      const res = await axiosInstance.get<ShopSearchResult>('/shop/admin/search', {
+        params: {
+          page: page - 1,
+          size: PAGE_SIZE,
+          keyword: applied.keyword.trim() || undefined,
+        },
+      });
 
-  const goSearch = (value: string) => {
-    setKeyword(value);
+      const { content, totalElements: total, totalPages: pages, page: serverPage, size } = res.data;
+
+      const withCnt: RowType[] = content.map((item, idx) => ({
+        ...item,
+        cnt: total - (serverPage * size + idx),
+      }));
+
+      setRows(withCnt);
+      setTotalElements(total);
+      setTotalPages(Math.max(1, pages));
+    } catch (err) {
+      console.error(err);
+      setRows([]);
+      setTotalElements(0);
+      setTotalPages(1);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadList();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [applied, page]);
+
+  const onSearch = () => {
     setPage(1);
+    setApplied(draft);
   };
 
-  const selectTag = (tag: Notice['tag'] | '') => {
-    setTagFilter(tag);
+  const onReset = () => {
+    const empty = { ...EMPTY_FILTERS };
+    setDraft(empty);
     setPage(1);
+    setApplied(empty);
   };
 
-  const handleDelete = () => {
-    // TODO: 실제 삭제 API 연동 (DELETE /api/notice/{no})
-    setDeleteTarget(null);
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await axiosInstance.delete(`/shop/${deleteTarget.no}`);
+      setDeleteTarget(null);
+      // 마지막 페이지의 마지막 1건을 지운 경우 빈 페이지가 보이지 않도록 보정
+      if (rows.length === 1 && page > 1) {
+        setPage(page - 1);
+      } else {
+        loadList();
+      }
+    } catch (err) {
+      console.error(err);
+      alert('삭제에 실패했습니다.\n다시 시도해주세요.');
+    } finally {
+      setDeleting(false);
+    }
   };
 
-  const columns: DataTableColumn<Notice>[] = [
+  const columns: DataTableColumn<RowType>[] = [
+    { header: '번호', width: '64px', mono: true, render: (r) => r.cnt },
+    { header: '회원번호', width: '90px', mono: true, render: (r) => `#${r.mno}` },
     {
-      header: '태그',
-      render: (n) => <span className={`badge ${TAG_TONE[n.tag]}`}>{n.tag}</span>,
-    },
-    {
-      header: '제목',
-      render: (n) => (
+      header: '매장명',
+      width: '18%',
+      render: (r) => (
         <div>
-          <div className="cell_title">{n.title}</div>
-          <div className="cell_sub">
-            No.{n.no} · {n.writer}
-          </div>
+          <div className="cell_title">{r.title}</div>
+          <div className="cell_sub">No.{r.no}</div>
         </div>
       ),
     },
-    { header: '조회수', mono: true, accessor: 'hit' },
-    { header: '등록일', mono: true, accessor: 'cdate' },
+    {
+      header: '주소',
+      width: '28%',
+      render: (r) => (
+        <span title={`${r.address ?? ''} ${r.address2 ?? ''}`}>
+          {r.address}
+          {r.address2 ? ` ${r.address2}` : ''}
+        </span>
+      ),
+    },
+    { header: '매장연락처', width: '130px', mono: true, render: (r) => r.tel || '-' },
+    { header: '사업자번호', width: '120px', mono: true, render: (r) => r.snum || '-' },
+    { header: '등록일', width: '110px', mono: true, render: (r) => r.cdate },
   ];
 
   return (
     <section className="view active">
-      <PageHeader
-        title="매장관리"
-        description="관리자 매장관리"
-      />
+      <PageHeader title="매장관리" description="전체 회원의 매장을 관리자 권한으로 조회·수정·삭제합니다. (SHOP 테이블 기준, mno 상관없이 전체 대상)" />
 
       <AdminToolbar
-        searchValue={keyword}
-        onSearchChange={goSearch}
-        searchPlaceholder="매장명 검색"
-        filters={
-          <select
-            className="form_select"
-            value={tagFilter}
-            onChange={(e) => selectTag(e.target.value as Notice['tag'] | '')}
-            aria-label="태그 필터"
-          >
-            <option value="">태그 전체</option>
-            {TAG_LIST.map((tag) => (
-              <option key={tag} value={tag}>
-                {tag}
-              </option>
-            ))}
-          </select>
+        searchValue={draft.keyword}
+        onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
+        searchPlaceholder="매장명·주소로 검색"
+        extra={
+          <>
+            <button type="button" className="btn btn_primary" onClick={onSearch}>
+              검색
+            </button>
+            <button type="button" className="btn btn_outline_primary" onClick={onReset}>
+              초기화
+            </button>
+          </>
         }
       />
 
       <DataTable
         columns={columns}
-        data={paged}
-        rowKey={(n) => n.no}
-        onEdit={(n) => navigate(`${n.no}/edit`)}
-        onDelete={(n) => setDeleteTarget(n)}
+        data={rows}
+        rowKey={(r) => r.no}
+        loading={loading}
+        onEdit={(r) => navigate(`${r.no}/edit`)}
+        onDelete={(r) => setDeleteTarget(r)}
         emptyMessage="검색 결과가 없습니다."
       />
 
-      <Pagination page={page} totalPages={totalPages} totalCount={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
+      <DbmsPagination page={page} totalPages={totalPages} totalCount={totalElements} pageSize={PAGE_SIZE} onChange={setPage} />
 
       <ConfirmDeleteModal
         open={deleteTarget !== null}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        targetLabel={deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.title}` : undefined}
+        targetLabel={deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.title} (회원 #${deleteTarget.mno})` : undefined}
+        loading={deleting}
       />
     </section>
   );
