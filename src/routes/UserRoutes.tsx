@@ -13,6 +13,8 @@ import SendForm from '../pages/user/send/Form';
 import SendList from '../pages/user/send/List';
 import QaList from '../pages/user/board/QaList';
 import QaForm from '../pages/user/board/QaForm';
+import ShopList from '../pages/user/shop/ShopList';
+import ShopForm from '../pages/user/shop/ShopForm';
 
 import SurveyAnswerForm from '../pages/user/survey/SurveyAnswerForm';
 
@@ -28,6 +30,10 @@ export default function UserRoutes() {
       */}
       <Route path="qa" element={<QaList />} />
       <Route path="qa/new" element={<QaForm />} />
+
+      <Route path="shop" element={<ShopList />} />
+      <Route path="shop/new" element={<ShopForm />} />
+      <Route path="shop/:no/edit" element={<ShopForm />} />
 
       
       {/* 예시용 */}
