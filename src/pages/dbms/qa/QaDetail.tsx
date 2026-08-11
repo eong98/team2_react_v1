@@ -4,15 +4,17 @@ import { AlertModal, ConfirmDeleteModal, PageHeader } from '../../../components/
 import { axiosInstance } from '../../../utils/Tool';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import axios from 'axios';
-import { QA_STATUS_MAP, QA_TYPE_MAP, type QaTypes, type TabKey } from '../../user/qa/QaType';
+import { QA_STATUS_MAP, QA_TYPE_MAP, type QaTypes, type TabKey } from '../../../components/ts/QaType';
 
 export default function QaDetail() {
   const { no } = useParams<{ no: string }>();
-  const { no:ano, id } = GlobalStoreSession();
-  const accessno = GlobalStoreSession((state) => state.no);
-  const grade = GlobalStoreSession((state) => state.grade);
+  // const { no:ano, id } = GlobalStoreSession();
+  // const accessno = GlobalStoreSession((state) => state.no);
+  // const grade = GlobalStoreSession((state) => state.grade);
   const navigate = useNavigate();
   const location = useLocation();
+  const ano = 1;
+  const grade = 1;
 
   // 목록에서 어느 탭에서 들어왔는지 확인하여 돌아갈 때 상태 전달
   const fromTab = (location.state as { tab?: TabKey })?.tab;
@@ -31,7 +33,7 @@ export default function QaDetail() {
     axiosInstance
       .get(`/qa/${no}`, {
         headers: {
-          'accessNo': String(accessno),
+          'accessNo': String(ano),
           'grade': String(grade),
         }
       })
@@ -158,7 +160,7 @@ export default function QaDetail() {
           <div className='title_area'>
             <h2 className='title md'>{qa.title}</h2>
             <p className="b_title">
-              <span>작성자 {id}</span>
+              <span>작성자 No.{qa.mno}</span>
               <span className='right'>{qa.cdate}</span>
             </p>
 
@@ -172,23 +174,30 @@ export default function QaDetail() {
         <div className="card card_pad_lg">
           <h3 style={{ fontSize: 14, marginBottom: 10 }}>답변</h3>
           {answered ? (
-            <>
-              <p style={{ fontSize: 13.5, lineHeight: 1.7, color: 'var(--text-dim)', whiteSpace: 'pre-wrap' }}>
-                {qa.answer}
-              </p>
-              {qa.adate && (
-                <div className="cell_sub" style={{ marginTop: 12 }}>
-                  답변일 · {qa.adate}
-                </div>
-              )}
-            </>
+            <div className="form_group">
+              <label className="form_label" htmlFor="label_05">
+                답변 내용<span className="req" title="필수 입력 요소">*</span>
+              </label>
+              {/* <div className="form_control">
+                <textarea
+                  id="label_05"
+                  className={`form_textarea ${errors.answer ? 'is_error' : ''}`}
+                  placeholder="FAQ 답변 내용을 입력하세요"
+                  name='answer'
+                  value={input.answer}
+                  onChange={onChange}
+                  style={{ minHeight: 220 }}
+                />
+                {errors.answer && <div className="form_hint error">{errors.answer}</div>}
+              </div> */}
+            </div>
           ) : (
             <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>아직 답변이 등록되지 않았습니다.</p>
           )}
         </div>
       </div>
 
-
+{/* 
       {ano === qa.mno && 
       (
         <div className='actions both'>
@@ -202,7 +211,7 @@ export default function QaDetail() {
             </button>
           )}
         </div>
-      )}
+      )} */}
 
       
       {/* 삭제 확인 모달 */}

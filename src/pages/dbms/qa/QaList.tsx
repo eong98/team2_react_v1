@@ -5,7 +5,7 @@ import { AdminToolbar, AlertModal, ConfirmDeleteModal, DbmsPagination, PageHeade
 import type { DataCardColumn } from '../../../components/ui/common/DataCard';
 import DataCard from '../../../components/ui/common/DataCard';
 import { axiosInstance } from '../../../utils/Tool';
-import { QA_STATUS_MAP, QA_TYPE_MAP, QA_TYPE_OPTIONS, type QaTypes, type TabKey } from '../../user/qa/QaType';
+import { QA_STATUS_MAP, QA_TYPE_MAP, QA_TYPE_OPTIONS, type QaTypes, type TabKey } from '../../../components/ts/QaType';
 import type { AccordionCardColumn } from '../../../components/ui/common/DataAcc';
 import DataAcc from '../../../components/ui/common/DataAcc';
 import { GlobalStoreSession } from '../../../store/LoginStore';
@@ -13,7 +13,9 @@ import { GlobalStoreSession } from '../../../store/LoginStore';
 const PAGE_SIZE = 6;
 
 export default function QaList() {
-  const { no:ano, id } = GlobalStoreSession();
+  // const { no:ano, id } = GlobalStoreSession();
+  const ano = 1;
+  const grade = 1;
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -202,13 +204,13 @@ export default function QaList() {
             </button>
           </div>
           <div className="cell_sub">
-            {n.cdate} · 접수유형: {QA_TYPE_OPTIONS[n.type].label}
+            접수유형: {QA_TYPE_OPTIONS[n.type].label}
           </div>
         </div>
       ),
     },
     {
-      header: '등록일, 작성자 정보',
+      header: '등록일 정보',
       render: (n) => (
         <div className='me' style={{'textAlign':'right', 'alignSelf':'flex-end'}}>
           <div className="cell_sub">

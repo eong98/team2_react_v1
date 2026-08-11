@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { AlertModal, PageHeader } from '../../../components/ui';
 import { axiosInstance, getNowDate, set_focus } from '../../../utils/Tool';
-import { QA_TYPE_OPTIONS, type QCRequest, type TabKey } from './QaType';
+import { QA_TYPE_OPTIONS, type QCRequest, type TabKey } from '../../../components/ts/QaType';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 
 /**

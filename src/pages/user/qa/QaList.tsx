@@ -6,7 +6,7 @@ import { AdminToolbar, AlertModal, ConfirmDeleteModal, DbmsPagination, PageHeade
 import type { DataCardColumn } from '../../../components/ui/common/DataCard';
 import DataCard from '../../../components/ui/common/DataCard';
 import { axiosInstance } from '../../../utils/Tool';
-import { QA_STATUS_MAP, QA_TYPE_MAP, QA_TYPE_OPTIONS, type QaTypes, type TabKey } from './QaType';
+import { QA_STATUS_MAP, QA_TYPE_MAP, QA_TYPE_OPTIONS, type QaTypes, type TabKey } from '../../../components/ts/QaType';
 import type { AccordionCardColumn } from '../../../components/ui/common/DataAcc';
 import DataAcc from '../../../components/ui/common/DataAcc';
 
@@ -151,7 +151,7 @@ export default function QaList() {
       ),
     },
     {
-      header: '등록일, 작성자 정보',
+      header: '등록일 정보',
       render: (n) => (
         <div className='me' style={{'textAlign':'right', 'alignSelf':'flex-end'}}>
           <div className="cell_sub">

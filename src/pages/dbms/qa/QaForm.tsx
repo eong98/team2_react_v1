@@ -2,7 +2,7 @@ import { useEffect, useState, type ChangeEvent } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AlertModal, PageHeader } from '../../../components/ui';
 import { axiosInstance, getNowDate, set_focus } from '../../../utils/Tool';
-import { QA_TYPE_OPTIONS, type FaqCRequest, type TabKey } from '../../user/qa/QaType';
+import { QA_TYPE_OPTIONS, type FaqCRequest, type TabKey } from '../../../components/ts/QaType';
 import axios from 'axios';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 

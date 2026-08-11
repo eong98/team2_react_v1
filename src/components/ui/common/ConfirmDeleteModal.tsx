@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import Modal from '../../../components/ui/Modal';
+import Modal from '../Modal';
 
 interface ConfirmDeleteModalProps {
   open: boolean;

@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AlertModal, ConfirmDeleteModal, PageHeader } from '../../../components/ui';
 import { axiosInstance } from '../../../utils/Tool';
-import { QA_STATUS_MAP, QA_TYPE_MAP, type QaTypes, type TabKey } from './QaType';
+import { QA_STATUS_MAP, QA_TYPE_MAP, type QaTypes, type TabKey } from '../../../components/ts/QaType';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import axios from 'axios';
 
 export default function QaDetail() {
   const { no } = useParams<{ no: string }>();
-  const { no:mno, id } = GlobalStoreSession();
+  const { no:mno } = GlobalStoreSession();
   const accessno = GlobalStoreSession((state) => state.no);
   const grade = GlobalStoreSession((state) => state.grade);
   const navigate = useNavigate();
@@ -157,7 +157,7 @@ export default function QaDetail() {
           <div className='title_area'>
             <h2 className='title md'>{qa.title}</h2>
             <p className="b_title">
-              <span>작성자 {id}</span>
+              <span>작성자 No.{qa.mno}</span>
               <span className='right'>{qa.cdate}</span>
             </p>
 
