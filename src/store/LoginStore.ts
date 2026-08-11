@@ -24,8 +24,8 @@ const cookieStorage = {
 interface SessionStore {
   login: boolean;
   setLogin: (value: boolean) => void;
-  mno: number;
-  setMno: (value: number) => void;
+  no: number;
+  setNo: (value: number) => void;
   id: string;
   setId: (value: string) => void;
   // 1~5 관리자, 5~10 사용자
@@ -38,8 +38,8 @@ export const GlobalStoreSession = create<SessionStore>()(
     (set) => ({
       login: false,
       setLogin: (value) => set({ login: value }),
-      mno: 99,
-      setMno: (value) => set({ mno: value }),
+      no: 99,
+      setNo: (value) => set({ no: value }),
       id: '',
       setId: (value) => set({ id: value }),
       // 1~5 관리자, 5~10 사용자

@@ -73,11 +73,13 @@ export default function Login() {
       if(success){
         // 로그인에 성공했다면 세션 스토리지에 로그인값과 아이디값을 변경
         GlobalStoreSession.getState().setLogin(true);
-        GlobalStoreSession.getState().setId(input.id);
+        GlobalStoreSession.getState().setId(input.id);       
+        GlobalStoreSession.getState().setNo(user.no);  
         GlobalStoreSession.getState().setGrade(user.grade);
         
         console.log("-> 회원등급", user.grade)
         console.log(user.mname+"님이 로그인 하였습니다.")
+        // console.log("유저번호 테스트"+user.no)
       
 
         if(storeId) {
