@@ -2,7 +2,7 @@
 // 관리자 관련 store
 //===================================================
 import { create } from 'zustand';
-import { axiosInstance } from '../utils/Tool';
+import { axiosInstance, getIP } from '../utils/Tool';
 
 export interface TotalMemberUser {
   no: number;         // 고유 일련번호
@@ -40,8 +40,8 @@ export const useDbmsStore = create<DbmsAdminState>((set) => ({
     set({ isLoading: true });
     try {
       const [resUsers, resAdmins] = await Promise.all([
-        axiosInstance.get('http://10.1.205.120:9200/v1/member/find'),  // 회원정보 조회 
-        axiosInstance.get('http://10.1.205.120:9200/v1/dbms/find'),   // 관리자정보 조회
+        axiosInstance.get(`http://${getIP()}:9102/v1/user/find`),  // 회원정보 조회 
+        axiosInstance.get(`http://${getIP()}:9102/v1/dbms/find`),   // 관리자정보 조회
       ]);
 
       // 회원이면 role에 USER를, 관리자면 ADMIN을 부여
