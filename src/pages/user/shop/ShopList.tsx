@@ -1,129 +1,193 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PageHeader, UserPagination } from '../../../components/ui';
+import { PageHeader, UserPagination, ConfirmDeleteModal } from '../../../components/ui';
 import Filterbar from '../../../components/ui/user/Filterbar';
+import { axiosInstance } from '../../../utils/Tool.ts';
+import {
+  PAGE_SIZE,
+  EMPTY_FILTERS,
+  type ShopType,
+  type ShopSearchResult,
+  type Filters,
+} from './Shop.ts';
 
-interface Store {
-  name: string;
-  addr: string;
-  cams: number;
-  todayEvents: number;
-  status: 'danger' | 'warning' | 'success';
-  statusText: string;
-}
+// 파일이름 꼭 맞춰주세요
+/* ---------------------------------------------------------------------
+   매장 목록(/user/shop) - 로그인한 회원(mno) 소유 매장만 카드 그리드로 노출.
 
-const STORES: Store[] = [
-  { name: '본점 · 스터디카페 A', addr: '서울 강남구 · 카메라 6대', cams: 6, todayEvents: 5, status: 'danger', statusText: '이상 감지' },
-  { name: '2호점 · 무인카페 B', addr: '서울 마포구 · 카메라 4대', cams: 4, todayEvents: 0, status: 'success', statusText: '정상' },
-  { name: '3호점 · 스터디카페 C', addr: '경기 성남시 · 카메라 8대', cams: 8, todayEvents: 2, status: 'warning', statusText: '주의' },
-  { name: '4호점 · 무인카페 D', addr: '인천 부평구 · 카메라 4대', cams: 4, todayEvents: 0, status: 'success', statusText: '정상' },
-];
+   SHOP 컬럼: no/mno/title/zip/address/address2/tel/coment/phone/snum/udate/cdate
+   ※ 2026-08-11 PAYSTATE/QRIMG 컬럼은 테이블에서 제거되어 더 이상 쓰지 않습니다.
 
-const STATUS_LIST: { value: Store['status']; label: string }[] = [
-  { value: 'danger', label: '이상 감지' },
-  { value: 'warning', label: '주의' },
-  { value: 'success', label: '정상' },
-];
+   API (ShopCont, /shop)
+   GET /shop/search?mno=&keyword=&page=&size=
+     → { content, totalElements, totalPages, page(0-base), size }
+   DELETE /shop/{pk}
 
-const PAGE_SIZE = 6;
+   상수/타입(PAGE_SIZE, Filters, EMPTY_FILTERS, ShopType, ShopSearchResult)은
+   전부 ./Shop.ts 로 옮겨뒀습니다.
+--------------------------------------------------------------------- */
 
-export default function Test4() {
+// TODO: 로그인 세션(GlobalStoreSession)에 회원번호(mno) 필드가 아직 없어서
+// 우선 고정값으로 둡니다. 로그인 연동 완료되면 세션에서 꺼내 쓰도록 교체해주세요.
+// (QaForm.tsx의 mno 처리와 동일한 임시 패턴입니다)
+const mno = 1;
+
+export default function ShopListView() {
   const navigate = useNavigate();
 
-  const [keyword, setKeyword] = useState('');
-  const [statusFilter, setStatusFilter] = useState<Store['status'] | ''>('');
-  const [page, setPage] = useState(1);
+  // draft: 입력 중인 값(타이핑만으로는 검색 안 됨) / applied: "검색" 눌렀을 때 실제 조회에 쓰이는 값
+  const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS);
+  const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
+  const [page, setPage] = useState(1); // 화면 표시는 1부터, 서버는 0부터
 
-  const filtered = useMemo(() => {
-    const kw = keyword.trim().toLowerCase();
-    return STORES.filter((s) => {
-      const matchKeyword = kw === '' || s.name.toLowerCase().includes(kw) || s.addr.toLowerCase().includes(kw);
-      const matchStatus = statusFilter === '' || s.status === statusFilter;
-      return matchKeyword && matchStatus;
-    });
-  }, [keyword, statusFilter]);
+  const [rows, setRows] = useState<ShopType[]>([]);
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const from = filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const to = Math.min(page * PAGE_SIZE, filtered.length);
+  const [deleteTarget, setDeleteTarget] = useState<ShopType | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const goSearch = (value: string) => {
-    setKeyword(value);
-    setPage(1);
+  const loadList = async () => {
+    setLoading(true);
+    try {
+      const res = await axiosInstance.get<ShopSearchResult>('/shop/search', {
+        params: {
+          mno,
+          page: page - 1,
+          size: PAGE_SIZE,
+          keyword: applied.keyword.trim() || undefined,
+        },
+      });
+
+      const { content, totalElements: total, totalPages: pages } = res.data;
+
+      setRows(content);
+      setTotalElements(total);
+      setTotalPages(Math.max(1, pages));
+    } catch (err) {
+      console.error(err);
+      setRows([]);
+      setTotalElements(0);
+      setTotalPages(1);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const selectStatus = (status: Store['status'] | '') => {
-    setStatusFilter(status);
+  useEffect(() => {
+    loadList();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [applied, page]);
+
+  const onSearch = () => {
     setPage(1);
+    setApplied(draft);
   };
+
+  const onReset = () => {
+    const empty = { ...EMPTY_FILTERS };
+    setDraft(empty);
+    setPage(1);
+    setApplied(empty);
+  };
+
+  const from = totalElements === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const to = Math.min(page * PAGE_SIZE, totalElements);
 
   // TODO: 매장 전환 상태를 여러 화면(Topbar 등)이 같이 봐야 하면 전역 상태/API로 옮겨야 합니다.
   // 지금은 우선 실시간 관제 화면으로 이동만 시킵니다.
-  const enterStore = (name: string) => {
-    console.log('매장 전환:', name);
+  const enterStore = (shop: ShopType) => {
+    console.log('매장 전환:', shop.title);
     navigate('../test1');
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget?.no) return;
+    setDeleting(true);
+    try {
+      await axiosInstance.delete(`/shop/${deleteTarget.no}`);
+      setDeleteTarget(null);
+      // 마지막 페이지의 마지막 1건을 지운 경우 빈 페이지가 보이지 않도록 보정
+      if (rows.length === 1 && page > 1) {
+        setPage(page - 1);
+      } else {
+        loadList();
+      }
+    } catch (err) {
+      console.error(err);
+      alert('삭제에 실패했습니다.\n다시 시도해주세요.');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
     <section className="view active">
-      <PageHeader 
-      title="매장 목록" 
-      description="운영 중인 매장을 선택해 관제 화면으로 전환합니다." 
-      createLabel="+ 매장생성"
-      onCreate={() => navigate('new')}
+      <PageHeader
+        title="매장 목록"
+        description="운영 중인 매장을 선택해 관제 화면으로 전환합니다."
+        createLabel="+ 매장생성"
+        onCreate={() => navigate('new')}
       />
 
       <Filterbar
-        searchValue={keyword}
-        onSearchChange={goSearch}
+        searchValue={draft.keyword}
+        onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
         searchPlaceholder="매장명·주소로 검색"
         left={
           <span className="pagination_info">
-            전체 {filtered.length}건 중 {from}–{to}건 표시
+            전체 {totalElements}건 중 {from}–{to}건 표시
           </span>
         }
-        filters={
-          <select
-            className="form_select"
-            value={statusFilter}
-            onChange={(e) => selectStatus(e.target.value as Store['status'] | '')}
-            aria-label="상태 필터"
-          >
-            <option value="">전체 상태</option>
-            {STATUS_LIST.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
+        extra={
+          <>
+            <button type="button" className="btn btn_primary" onClick={onSearch}>
+              검색
+            </button>
+            <button type="button" className="btn btn_outline_primary" onClick={onReset}>
+              초기화
+            </button>
+          </>
         }
       />
 
       <div className="store_grid">
-        {paged.length === 0 ? (
+        {loading ? (
+          <p style={{ color: 'var(--text-faint)', fontSize: 13 }}>불러오는 중...</p>
+        ) : rows.length === 0 ? (
           <p style={{ color: 'var(--text-faint)', fontSize: 13 }}>조건에 맞는 매장이 없습니다.</p>
         ) : (
-          paged.map((s) => (
-            <div className="card store_card" key={s.name}>
+          rows.map((s) => (
+            <div className="card store_card" key={s.no}>
               <div className="store_thumb">
                 <div className="noise" />
-                <div className={`sdot badge badge_${s.status}`}>{s.statusText}</div>
               </div>
               <div className="store_body">
-                <div className="sname">{s.name}</div>
-                <div className="saddr">{s.addr}</div>
+                <div className="sname">{s.title}</div>
+                <div className="saddr">
+                  {s.address}
+                  {s.address2 ? ` ${s.address2}` : ''}
+                </div>
                 <div className="store_meta">
                   <div>
-                    카메라<b>{s.cams}대</b>
+                    매장연락처<b>{s.tel || '-'}</b>
                   </div>
                   <div>
-                    오늘 이벤트<b>{s.todayEvents}건</b>
+                    사업자번호<b>{s.snum || '-'}</b>
                   </div>
                 </div>
-                <button type="button" className="btn btn_primary" onClick={() => enterStore(s.name)}>
+                <button type="button" className="btn btn_primary" onClick={() => enterStore(s)}>
                   입장하기
                 </button>
+                <div className="store_card_actions">
+                  <button type="button" className="btn btn_sm btn_ghost" onClick={() => navigate(`${s.no}/edit`)}>
+                    수정
+                  </button>
+                  <button type="button" className="btn btn_sm btn_danger" onClick={() => setDeleteTarget(s)}>
+                    삭제
+                  </button>
+                </div>
               </div>
             </div>
           ))
@@ -133,10 +197,18 @@ export default function Test4() {
       <UserPagination
         page={page}
         totalPages={totalPages}
-        totalCount={filtered.length}
+        totalCount={totalElements}
         pageSize={PAGE_SIZE}
         onChange={setPage}
         showInfo={false}
+      />
+
+      <ConfirmDeleteModal
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        targetLabel={deleteTarget?.title}
+        loading={deleting}
       />
     </section>
   );
