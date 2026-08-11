@@ -11,13 +11,17 @@ import Form from '../pages/user/form/Form';
 import List from '../pages/user/form/List';
 import SendForm from '../pages/user/send/Form';
 import SendList from '../pages/user/send/List';
-import QaList from '../pages/user/board/QaList';
-import QaForm from '../pages/user/board/QaForm';
+
+
+import QaList from '../pages/user/qa/QaList';
+import QaForm from '../pages/user/qa/QaForm';
+import QaDetail from '../pages/user/qa/QaDetail';
+
+
 import ShopList from '../pages/user/shop/ShopList';
 import ShopForm from '../pages/user/shop/ShopForm';
 
 import SurveyAnswerForm from '../pages/user/survey/SurveyAnswerForm';
-import QaDetail from '../pages/dbms/board/QaDetail';
 
 
 export default function UserRoutes() {

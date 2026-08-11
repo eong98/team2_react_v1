@@ -1,21 +1,21 @@
 import { useEffect, useState } from 'react';
+import { GlobalStoreSession } from '../../../store/LoginStore';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { AdminToolbar, AlertModal, ConfirmDeleteModal, DbmsPagination, PageHeader } from '../../../components/ui';
+import { AdminToolbar, AlertModal, ConfirmDeleteModal, DbmsPagination, PageHeader, UserPagination } from '../../../components/ui';
 import type { DataCardColumn } from '../../../components/ui/common/DataCard';
 import DataCard from '../../../components/ui/common/DataCard';
 import { axiosInstance } from '../../../utils/Tool';
-import { QA_STATUS_MAP, QA_TYPE_MAP, QA_TYPE_OPTIONS, type QaTypes, type TabKey } from '../../user/board/QaType';
+import { QA_STATUS_MAP, QA_TYPE_MAP, QA_TYPE_OPTIONS, type QaTypes, type TabKey } from './QaType';
 import type { AccordionCardColumn } from '../../../components/ui/common/DataAcc';
 import DataAcc from '../../../components/ui/common/DataAcc';
 
 const PAGE_SIZE = 6;
 
 export default function QaList() {
+  const { no:mno, id } = GlobalStoreSession();
   const navigate = useNavigate();
   const location = useLocation();
-  // 임시 회원 번호
-  const mno = 1;
 
   // 내 문의 / 자주 묻는 질문 / 전체 문의 탭 — 작성/수정 화면에서 돌아올 때 넘겨준 tab이 있으면 그걸로 시작
   const initialTab = (location.state as { tab?: TabKey })?.tab ?? 'qa';
@@ -41,12 +41,6 @@ export default function QaList() {
   const [page, setPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [totalCount, setTotalCount] = useState<number>(0);
-
-  // 삭제 모달 대상 Q&A 및 삭제 중 상태
-  const [deleteTarget, setDeleteTarget] = useState<QaTypes | null>(null);
-  const [deleting, setDeleting] = useState<boolean>(false);
-
-  const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
 
   // ==========================================
   // 2. API 데이터 조회 (Axios GET)
@@ -76,7 +70,6 @@ export default function QaList() {
       });
 
       const data = response.data;
-      console.log(response)
       setQaList(data.content || []);
       setTotalPages(data.totalPages || 1);
       setTotalCount(data.totalElements || 0);
@@ -125,50 +118,6 @@ export default function QaList() {
     setPage(1);
   };
 
-  /** 🔑 Q&A / FAQ 삭제 핸들러 */
-  const handleDeleteWithPw = async (inputPw: string = '') => {
-    if (!deleteTarget) return;
-
-    setDeleting(true);
-
-    try {
-      await axiosInstance.delete('/qa', {
-        data: {
-          no: deleteTarget.no,
-          pw: inputPw,
-        },
-      });
-
-      setAlert({ message: '삭제되었습니다.', variant: 'success', onConfirm: fetchQaList });
-      setDeleteTarget(null);
-    } catch (error) {
-      console.error('삭제 실패:', error);
-
-      if (axios.isAxiosError(error)) {
-        const status = error.response?.status;
-        const data = error.response?.data;
-
-        if (status === 400 || status === 401) {
-          setAlert({ message: '비밀번호가 올바르지 않거나 입력값이 잘못되었습니다.', variant: 'error' });
-        } else if (status === 404) {
-          setAlert({ message: '존재하지 않거나 이미 삭제된 항목입니다.', variant: 'error' });
-        } else if (status === 500) {
-          if (data?.message?.includes('비밀번호') || data?.message?.includes('password')) {
-            setAlert({ message: '비밀번호가 일치하지 않습니다.', variant: 'error' });
-          } else {
-            setAlert({ message: '서버 내부 오류가 발생했습니다. 관리자에게 문의하세요.', variant: 'error' });
-          }
-        } else {
-          setAlert({ message: `오류가 발생했습니다. (에러 코드: ${status || 'Unknown'})`, variant: 'error' });
-        }
-      } else {
-        setAlert({ message: '알 수 없는 오류가 발생했습니다.', variant: 'error' });
-      }
-    } finally {
-      setDeleting(false);
-    }
-  };
-
   // ==========================================
   // 4. DataCard / DataAcc 컬럼 정의
   // ==========================================
@@ -186,17 +135,27 @@ export default function QaList() {
       render: (n) => (
         <div className="lt">
           <div className="cell_title">
-            <Link to={`/user/qa/${n.no}`} >
+            <button className='link' onClick={() => navigate(`${n.no}`, { state: { tab } })} >
               {n.title}
               {n.vmode === 'Y' ? 
                 (<span className='lock'>
                   <span className='hidden'>비밀글</span>
                 </span> ) : null
               }
-            </Link>
+            </button>
           </div>
           <div className="cell_sub">
-            {n.cdate} · 접수유형: {QA_TYPE_OPTIONS.find((t) => t.value === n.type)?.label ?? n.type}
+            접수유형: {QA_TYPE_OPTIONS.find((t) => t.value === n.type)?.label ?? n.type}
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: '등록일, 작성자 정보',
+      render: (n) => (
+        <div className='me' style={{'textAlign':'right', 'alignSelf':'flex-end'}}>
+          <div className="cell_sub">
+            {n.cdate.split(' ')[0]}
           </div>
         </div>
       ),
@@ -340,7 +299,7 @@ export default function QaList() {
       )}
 
       {/* 페이지네이션 컴포넌트 */}
-      <DbmsPagination
+      <UserPagination
         page={page}
         totalPages={totalPages}
         totalCount={totalCount}
@@ -348,26 +307,6 @@ export default function QaList() {
         onChange={setPage}
       />
 
-      {/* 삭제 확인 모달 */}
-      <ConfirmDeleteModal
-        open={deleteTarget !== null}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={(pw) => handleDeleteWithPw(pw || '')}
-        loading={deleting}
-        targetLabel={
-          deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.title}` : undefined
-        }
-        requirePassword={true}
-      />
-
-      {/* 알림 모달 */}
-      <AlertModal
-        open={alert !== null}
-        onClose={() => setAlert(null)}
-        onConfirm={alert?.onConfirm}
-        message={alert?.message ?? ''}
-        variant={alert?.variant}
-      />
     </section>
   );
 }

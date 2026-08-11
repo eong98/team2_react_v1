@@ -5,17 +5,17 @@ import { AdminToolbar, AlertModal, ConfirmDeleteModal, DbmsPagination, PageHeade
 import type { DataCardColumn } from '../../../components/ui/common/DataCard';
 import DataCard from '../../../components/ui/common/DataCard';
 import { axiosInstance } from '../../../utils/Tool';
-import { QA_STATUS_MAP, QA_TYPE_MAP, QA_TYPE_OPTIONS, type QaTypes, type TabKey } from '../../user/board/QaType';
+import { QA_STATUS_MAP, QA_TYPE_MAP, QA_TYPE_OPTIONS, type QaTypes, type TabKey } from '../../user/qa/QaType';
 import type { AccordionCardColumn } from '../../../components/ui/common/DataAcc';
 import DataAcc from '../../../components/ui/common/DataAcc';
+import { GlobalStoreSession } from '../../../store/LoginStore';
 
 const PAGE_SIZE = 6;
 
 export default function QaList() {
+  const { no:ano, id } = GlobalStoreSession();
   const navigate = useNavigate();
   const location = useLocation();
-  // 임시 번호
-  const ano = 1;
 
   // 내 문의 / 자주 묻는 질문 탭 — 작성/수정 화면에서 돌아올 때 넘겨준 tab이 있으면 그걸로 시작
   const initialTab = (location.state as { tab?: TabKey })?.tab ?? 'qa';
@@ -192,17 +192,27 @@ export default function QaList() {
       render: (n) => (
         <div className="lt">
           <div className="cell_title">
-            <Link to={`/dbms/qa/${n.no}`} >
+            <button className='link' onClick={() => navigate(`${n.no}`, { state: { tab } })} >
               {n.title}
               {n.vmode === 'Y' ? 
                 (<span className='lock'>
                   <span className='hidden'>비밀글</span>
                 </span> ) : null
               }
-            </Link>
+            </button>
           </div>
           <div className="cell_sub">
             {n.cdate} · 접수유형: {QA_TYPE_OPTIONS[n.type].label}
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: '등록일, 작성자 정보',
+      render: (n) => (
+        <div className='me' style={{'textAlign':'right', 'alignSelf':'flex-end'}}>
+          <div className="cell_sub">
+            {n.cdate.split(' ')[0]}
           </div>
         </div>
       ),

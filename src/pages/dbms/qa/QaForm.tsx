@@ -2,8 +2,9 @@ import { useEffect, useState, type ChangeEvent } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AlertModal, PageHeader } from '../../../components/ui';
 import { axiosInstance, getNowDate, set_focus } from '../../../utils/Tool';
-import { QA_TYPE_OPTIONS, type FaqCRequest, type TabKey } from '../../user/board/QaType';
+import { QA_TYPE_OPTIONS, type FaqCRequest, type TabKey } from '../../user/qa/QaType';
 import axios from 'axios';
+import { GlobalStoreSession } from '../../../store/LoginStore';
 
 /**
  * 
@@ -13,8 +14,7 @@ import axios from 'axios';
 export default function QaForm() {
   const navigate = useNavigate();
   const { no } = useParams<{ no: string }>();
-  // 작성자 관리자 번호 (로그인 스토어나 Context에서 가져오거나 설정)
-  const ano = 1; /* 임시 */
+  const { no:ano, id } = GlobalStoreSession();
   const isEdit = Boolean(no);
   const location = useLocation();
   // 목록에서 어느 탭(전체 문의 / 자주 묻는 질문)으로 들어왔는지 — 저장/취소 후 그 탭으로 되돌아가기 위함
@@ -229,7 +229,7 @@ export default function QaForm() {
               id="label_02"
               name='ano'
               className="form_input"
-              value={`Admin (No.${ano})`}
+              value={`${id} (No.${ano})`}
               readOnly
               style={{ maxWidth: 200 }}
             />

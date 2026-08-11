@@ -3,7 +3,8 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { AlertModal, PageHeader } from '../../../components/ui';
 import { axiosInstance, getNowDate, set_focus } from '../../../utils/Tool';
-import { QA_TYPE_OPTIONS, type QCRequest, type TabKey } from '../../user/board/QaType';
+import { QA_TYPE_OPTIONS, type QCRequest, type TabKey } from './QaType';
+import { GlobalStoreSession } from '../../../store/LoginStore';
 
 /**
  * USER 쪽 QaForm.tsx는 내 문의만 작성/수정이 가능합니다.
@@ -11,9 +12,9 @@ import { QA_TYPE_OPTIONS, type QCRequest, type TabKey } from '../../user/board/Q
 export default function QaForm() {
   const navigate = useNavigate();
   const { no } = useParams<{ no: string }>();
-  
-  // 작성자 관리자/회원 번호 (임시)
-  const mno = 1;
+  const { no:mno, id } = GlobalStoreSession();
+  const accessno = GlobalStoreSession((state) => state.no);
+  const grade = GlobalStoreSession((state) => state.grade);
   const isEdit = Boolean(no);
   const location = useLocation();
 
@@ -43,10 +44,17 @@ export default function QaForm() {
 
   /** 수정 진입 시 기존 데이터를 불러와 폼에 채워 넣음 */
   const loadQa = () => {
+    console.log(no)
     axiosInstance
-      .get(`/qa/${no}`)
+      .get(`/qa/${no}`, {
+        headers: {
+          'accessNo': String(accessno),
+          'grade': String(grade),
+        }
+      })
       .then((result) => result.data)
       .then((data) => {
+        console.log(data)
         setInput((prev) => ({
           ...prev,
           mno: mno,
@@ -208,7 +216,7 @@ export default function QaForm() {
               id="label_02"
               name="ano"
               className="form_input"
-              value={`No.${mno}`}
+              value={`${id} (No.${mno})`}
               readOnly
               style={{ maxWidth: 200 }}
             />
