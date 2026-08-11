@@ -10,7 +10,7 @@ import {
   type CctvIssueSearchResult,
   type RowType,
   type Filters,
-} from './CctvIssue.ts';
+} from '../../../components/ts/CctvIssue.ts';
 
 // 파일이름 꼭 맞춰주세요
 /* ---------------------------------------------------------------------

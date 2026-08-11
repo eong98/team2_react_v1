@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { PageHeader } from '../../../components/ui';
-import type { SurveyQuestionForm } from '../../../utils/survey';
+import type { SurveyQuestionForm } from '../../../components/ts/survey';
 import {
   TEST_MEMBER_NO,
   createEmptyQuestion,
@@ -10,8 +10,8 @@ import {
   toInputDate,
   toServerEndDate,
   toServerStartDate,
-} from '../../../utils/survey';
-import { createSurvey, getSurvey, updateSurvey } from '../../../utils/surveyApi';
+} from '../../../components/ts/survey';
+import { createSurvey, getSurvey, updateSurvey } from '../../../components/ts/surveyApi';
 import './SurveyForm.css';
 
 export default function SurveyForm() {

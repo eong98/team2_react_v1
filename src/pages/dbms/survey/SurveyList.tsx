@@ -13,15 +13,15 @@ import {
 import type {
   DataTableColumn,
 } from '../../../components/ui';
-import type { Survey, SurveyStatus } from '../../../utils/survey';
+import type { Survey, SurveyStatus } from '../../../components/ts/survey';
 import {
   SURVEY_LIST_PAGE_SIZE,
   formatDate,
   getStatusClass,
   getStatusLabel,
   getSurveyStatus,
-} from '../../../utils/survey';
-import { deleteSurvey, getSurveys } from '../../../utils/surveyApi';
+} from '../../../components/ts/survey';
+import { deleteSurvey, getSurveys } from '../../../components/ts/surveyApi';
 
 
 export default function SurveyList() {

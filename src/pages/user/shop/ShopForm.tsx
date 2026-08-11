@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import PageHeader from '../../../components/ui/common/PageHeader';
+import { ConfirmDeleteModal } from '../../../components/ui';
 import { axiosInstance, enter_chk, set_focus } from '../../../utils/Tool.ts';
 import { EMPTY_SHOP, type ShopType } from './Shop.ts';
 import { GlobalStoreSession } from '../../../store/LoginStore.ts'; 
@@ -81,6 +82,10 @@ export default function ShopFormView() {
   const [notFound, setNotFound] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
+
+  // 매장 삭제(수정 모드에서만 사용)
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // 수정모드일 때 기존 데이터 조회
   useEffect(() => {
@@ -178,6 +183,21 @@ export default function ShopFormView() {
       alert('네트워크 오류가 발생했습니다.\n다시 시도해주세요.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!no) return;
+    setDeleting(true);
+    try {
+      await axiosInstance.delete(`/shop/${no}`);
+      navigate('/user/shop');
+    } catch (err) {
+      console.error(err);
+      alert('삭제에 실패했습니다.\n다시 시도해주세요.');
+    } finally {
+      setDeleting(false);
+      setDeleteOpen(false);
     }
   };
 
@@ -361,6 +381,25 @@ export default function ShopFormView() {
             </div>
           </div>
 
+          {/* 매장 삭제 - 수정 모드에서만 노출 */}
+          {isEdit && (
+            <div className="card card_pad_md danger" style={{ marginTop: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                <div>
+                  <div className="b_title">매장 삭제</div>
+                  <div className="form_hint">삭제한 매장 정보는 복구할 수 없습니다.</div>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn_md btn_danger"
+                  onClick={() => setDeleteOpen(true)}
+                >
+                  매장 삭제
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="form_page_footer">
             <button type="button" className="btn btn_md btn_ghost" onClick={goBack}>
               취소
@@ -371,6 +410,14 @@ export default function ShopFormView() {
           </div>
         </div>
       </form>
+
+      <ConfirmDeleteModal
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={handleDelete}
+        targetLabel={input.title}
+        loading={deleting}
+      />
     </section>
   );
 }

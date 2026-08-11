@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { fetchMenuNav, type MenuNavBase, type MenuNavGroup } from '../../utils/menuNav';
+import { fetchMenuNav, type MenuNavBase, type MenuNavGroup } from '../ts/menuNav';
 
 interface SidebarProps {
   open: boolean;

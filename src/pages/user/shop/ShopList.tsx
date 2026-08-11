@@ -179,7 +179,7 @@ export default function ShopListView() {
                 </button>
                 <div className="store_card_actions">
                   <button type="button" className="btn btn_sm btn_ghost" onClick={() => navigate(`${s.no}/edit`)}>
-                    수정
+                    관리
                   </button>
                   <button type="button" className="btn btn_sm btn_danger" onClick={() => setDeleteTarget(s)}>
                     삭제
