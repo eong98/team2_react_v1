@@ -46,3 +46,15 @@ export const checkSurveyResponse = async (responseNo: number): Promise<SurveyRes
 export const submitSurveyResponse = async (surveyNo: string | number, data: SurveySubmitRequest) => {
   return axiosInstance.post(`/api/surveys/${surveyNo}/responses`, data);
 };
+
+// 로그인한 회원의 해당 설문 응답 조회
+export const getMemberSurveyResponse = async (
+  surveyNo: string | number,
+  memberNo: number
+): Promise<SurveyResponse> => {
+  const response = await axiosInstance.get<SurveyResponse>(
+    `/api/surveys/${surveyNo}/responses/member/${memberNo}`
+  );
+
+  return response.data;
+};

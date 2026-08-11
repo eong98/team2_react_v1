@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { GlobalStoreSession } from '../../../store/LoginStore';
+
 import { PageHeader } from '../../../components/ui';
 import type { SurveyQuestionForm } from '../../../components/ts/survey';
 import {
-  TEST_MEMBER_NO,
   createEmptyQuestion,
   parseQuestionType,
   toInputDate,
@@ -19,8 +20,8 @@ export default function SurveyForm() {
   const { no } = useParams<{ no: string }>();
   const isEdit = Boolean(no);
 
-  // 로그인 기능 연결 전 임시 관리자 번호
-  const memberNo = TEST_MEMBER_NO;
+  const memberNo = GlobalStoreSession(
+    (state) => state.no);
 
   const [title, setTitle] = useState('');
   const [detail, setDetail] = useState('');
@@ -281,7 +282,7 @@ export default function SurveyForm() {
           <div className="field_label">작성자</div>
           <div className="field_control">
             <input type="text" className="form_input survey_writer_input" value={`관리자 ${memberNo}`} disabled />
-            <div className="field_hint">로그인 기능 연결 전까지 관리자 회원번호 1번을 사용합니다.</div>
+            <div className="field_hint"> 현재 로그인한 관리자 회원번호입니다. </div>
           </div>
         </div>
 

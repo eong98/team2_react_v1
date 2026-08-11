@@ -4,7 +4,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { PageHeader } from '../../../components/ui';
 import type { AnswerState, Survey } from '../../../components/ts/survey';
-import { TEST_MEMBER_NO, formatDate, getOptions } from '../../../components/ts/survey';
+import { formatDate, getOptions } from '../../../components/ts/survey';
+import { GlobalStoreSession } from '../../../store/LoginStore';
 import { getSurvey, submitSurveyResponse } from '../../../components/ts/surveyApi';
 import './SurveyAnswerForm.css';
 
@@ -21,6 +22,16 @@ export default function SurveyAnswerForm() {
 
   const navigate =
     useNavigate();
+
+
+  /* =======================================================
+     로그인 회원번호
+  ======================================================= */
+
+  const memberNo =
+    GlobalStoreSession(
+      (state) => state.no
+    );
 
 
   /* =======================================================
@@ -344,13 +355,12 @@ export default function SurveyAnswerForm() {
 
 
     /*
-     * 로그인 기능 연결 전이므로
-     * 테스트 회원번호 사용
+     * 현재 로그인한 회원번호로
+     * 설문 응답 제출
      */
     const serverData = {
 
-      memberNo:
-        TEST_MEMBER_NO,
+      memberNo,
 
       answers:
         answerData,
@@ -363,7 +373,10 @@ export default function SurveyAnswerForm() {
       setError('');
 
 
-      await submitSurveyResponse(no, serverData);
+      await submitSurveyResponse(
+        no,
+        serverData
+      );
 
 
       alert(
@@ -372,10 +385,15 @@ export default function SurveyAnswerForm() {
 
 
       /*
-       * 제출 성공 후
-       * 입력값 초기화
+       * 제출 완료 후
+       * 사용자 설문 목록으로 이동
+       *
+       * 목록으로 돌아가면
+       * 참여완료 상태로 표시됨
        */
-      setAnswers({});
+      navigate(
+        '/user/survey'
+      );
 
 
     } catch (err) {
@@ -419,10 +437,6 @@ export default function SurveyAnswerForm() {
 
   const handleCancel = () => {
 
-    /*
-     * 이전 페이지가 있으면
-     * 이전 화면으로 이동
-     */
     navigate(-1);
   };
 
@@ -497,7 +511,6 @@ export default function SurveyAnswerForm() {
       "
     >
 
-      {/* 페이지 제목 */}
       <PageHeader
         title="설문조사"
         description="설문 문항에 응답해주세요."
@@ -887,9 +900,6 @@ export default function SurveyAnswerForm() {
 
         {/* ===============================================
             하단 버튼
-
-            관리자 설문 작성 화면과 동일하게
-            공통 btn 스타일 사용
         ================================================ */}
 
         <div className="survey-form-actions">
