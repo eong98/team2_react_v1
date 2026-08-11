@@ -61,6 +61,7 @@ export const QA_STATUS_MAP: Record<number, { label: string; className: string }>
 };
 
 
+export type TabKey = 'mine' | 'faq' | 'qa';
 
 // 백엔드 QaDTO.FaqCRequest와 매핑되는 인터페이스
 export interface FaqCRequest {
@@ -83,5 +84,8 @@ export interface QCRequest {
   vmode: string;
 }
 
-
-export type TabKey = 'mine' | 'faq' | 'qa';
+// export interface DeleteRequest {
+//   no: number;
+//   pw: string;
+//   ddate?: string;
+// }

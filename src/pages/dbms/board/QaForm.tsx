@@ -1,8 +1,9 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { PageHeader } from '../../../components/ui';
+import { AlertModal, PageHeader } from '../../../components/ui';
 import { axiosInstance, getNowDate } from '../../../utils/Tool';
 import { QA_TYPE_OPTIONS, type FaqCRequest, type TabKey } from '../../user/board/QaType';
+import axios from 'axios';
 
 export default function QaForm() {
   const navigate = useNavigate();
@@ -14,6 +15,8 @@ export default function QaForm() {
 
   // 작성자 관리자 번호 (로그인 스토어나 Context에서 가져오거나 설정)
   const ano = 1;
+  const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
+
 
   // ==========================================
   // 1. 폼 상태 관리
@@ -57,11 +60,14 @@ export default function QaForm() {
   const onChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setInput({ ...input, [name]: value });
+    if (name in errors) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
   };
 
-  // // 유효성 검사 에러 메시지
-  // const [errors, setErrors] = useState<{ title?: string; content?: string }>({});
-  // const [submitting, setSubmitting] = useState<boolean>(false);
+  // 유효성 검사 에러 메시지
+  const [errors, setErrors] = useState<{ title?: string; content?: string; answer?: string }>({});
+  const [submitting, setSubmitting] = useState<boolean>(false);
 
   // 목록으로 돌아갈 때 원래 있던 탭 그대로 열리도록 tab을 같이 넘긴다
   const goBack = () => navigate('/dbms/qa', { state: { tab: fromTab } });
@@ -69,22 +75,24 @@ export default function QaForm() {
   // ==========================================
   // 2. 입력값 유효성 검사
   // ==========================================
-  // const validate = () => {
-  //   const newErrors: { title?: string; content?: string } = {};
-  //   if (!title.trim()) newErrors.title = '제목을 입력해주세요.';
-  //   if (!content.trim()) newErrors.content = '내용을 입력해주세요.';
-    
-  //   setErrors(newErrors);
-  //   return Object.keys(newErrors).length === 0;
-  // };
+  const validate = () => {
+    const newErrors: { title?: string; content?: string; answer?: string } = {};
+    if (!input.title.trim()) newErrors.title = '제목을 입력해주세요.';
+    if (!input.content.trim()) newErrors.content = '내용을 입력해주세요.';
+    if (!input.answer.trim()) newErrors.answer = '답변 내용을 입력해주세요.';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   // ==========================================
-  // 3. API 저장 처리 (POST /api/qa/faq)
+  // 3. API 저장 처리 (POST /qa/faq)
   // ==========================================
   const handleSave = async () => {
-    // if (!validate() || submitting) return;
+    if (!validate() || submitting) return;
 
-    // setSubmitting(true);
+    setSubmitting(true);
+    let res;
     try {
       const payload: FaqCRequest = {
         ano,
@@ -96,22 +104,61 @@ export default function QaForm() {
         pw: input.pw,
         vseq: input.vseq
       };
+      
+
 
       if (isEdit) {
-        // TODO: 수정 API 연동 필요시 (예: PUT /api/qa/faq/{no})
-        // await axiosInstance.put(`/api/qa/faq/${no}`, payload);
+        // FAQ 작성 (수정) API 호출
+        res = await axiosInstance.put(`/qa/faq/${no}`, payload);
       } else {
-        // 8. FAQ 작성 (등록) API 호출
-        await axiosInstance.post('/qa/faq', payload);
+        // FAQ 작성 (등록) API 호출
+        res = await axiosInstance.post('/qa/faq', payload);
       }
 
-      alert(isEdit ? 'FAQ가 수정되었습니다.' : 'FAQ가 등록되었습니다.');
-      goBack();
+      // 여기서 바로 goBack()을 부르면 모달이 뜨기도 전에 페이지가 이동해버려서
+      // (컴포넌트가 언마운트되어) 알림이 안 보였습니다. onConfirm으로 넘겨서
+      // 알림을 실제로 닫을 때(확인 클릭/배경클릭/ESC 전부) 이동하도록 처리합니다.
+      setAlert({ message: isEdit ? 'FAQ가 수정되었습니다.' : 'FAQ가 등록되었습니다.', variant: 'success', onConfirm: goBack });
     } catch (error) {
-      console.error('FAQ 저장 중 오류 발생:', error);
-      alert('저장 중 오류가 발생했습니다.');
-    } 
+      console.error('FAQ 저장 중 오류 발생:', error);// Axios 에러인지 확인
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status; // HTTP 상태 코드 (400, 401, 404, 500 등)
+        const data = error.response?.data; // 백엔드가 보내준 JSON 데이터
+
+        // ----------------------------------------------------
+        // 1. HTTP 상태 코드(Status)에 따른 에러 처리
+        // ----------------------------------------------------
+        if (status === 400 || status === 401) {
+          // 비밀번호 틀림 / 잘못된 입력값인 경우
+          // const msg = data?.message || '비밀번호가 올바르지 않거나 입력값이 잘못되었습니다.';
+          // alert(msg);
+
+        } else if (status === 404) {
+          // 존재하지 않는 글번호(no)인 경우
+          setAlert({ message: '존재하지 않거나 이미 삭제된 FAQ입니다.', variant: 'error' });
+
+        } else if (status === 500) {
+          // 🚨 500 에러일 때: 백엔드 메시지에 "비밀번호"라는 단어가 포함되어 있는지 체크
+          if (data?.message?.includes('비밀번호') || data?.message?.includes('password')) {
+            setAlert({ message: '비밀번호가 일치하지 않습니다.', variant: 'error' });
+          } else {
+            setAlert({ message: '서버 내부 오류가 발생했습니다. 관리자에게 문의하세요.', variant: 'error' });
+          }
+          
+        } else {
+          // 기타 상태 코드 처리
+          setAlert({ message: `오류가 발생했습니다. (에러 코드: ${status || 'Unknown'})`, variant: 'error' });
+        }
+        
+      } else {
+        // Axios 에러가 아닌 일반 자바스크립트 오류
+        setAlert({ message: '알 수 없는 오류가 발생했습니다.' , variant: 'error' });
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
+
 
   return (
     <section className="view active">
@@ -185,14 +232,13 @@ export default function QaForm() {
             <input
               type='text'
               id="label_03"
-              // className={`form_input ${errors.title ? 'is_invalid' : ''}`}
-              className={`form_input`}
+              className={`form_input ${errors.title ? 'is_error' : ''}`}
               placeholder="FAQ 제목을 입력하세요"
               name='title'
               value={input.title}
               onChange={onChange}
             />
-            {/* {errors.title && <div className="form_hint error">{errors.title}</div>} */}
+            {errors.title && <div className="form_hint error">{errors.title}</div>}
           </div>
         </div>
 
@@ -204,19 +250,18 @@ export default function QaForm() {
           <div className="form_control">
             <textarea
               id="label_04"
-              className={`form_textarea`}
-              // className={`form_textarea ${errors.content ? 'is_invalid' : ''}`}
+              className={`form_textarea ${errors.content ? 'is_error' : ''}`}
               placeholder="FAQ 상세 내용을 입력하세요"
               value={input.content}
               name='content'
               onChange={onChange}
               style={{ minHeight: 220 }}
             />
-            {/* {errors.content ? (
+            {errors.content ? (
               <div className="form_hint error">{errors.content}</div>
             ) : (
               <div className="form_hint">등록 후에도 관리자 목록에서 수정할 수 있습니다.</div>
-            )} */}
+            )}
           </div>
         </div>
 
@@ -228,19 +273,14 @@ export default function QaForm() {
           <div className="form_control">
             <textarea
               id="label_05"
-              className={`form_textarea`}
-              // className={`form_textarea ${errors.content ? 'is_invalid' : ''}`}
+              className={`form_textarea ${errors.answer ? 'is_error' : ''}`}
               placeholder="FAQ 답변 내용을 입력하세요"
               name='answer'
               value={input.answer}
               onChange={onChange}
               style={{ minHeight: 220 }}
             />
-            {/* {errors.content ? (
-              <div className="form_hint error">{errors.content}</div>
-            ) : (
-              <div className="form_hint">등록 후에도 관리자 목록에서 수정할 수 있습니다.</div>
-            )} */}
+            {errors.answer && <div className="form_hint error">{errors.answer}</div>}
           </div>
         </div>
 
@@ -290,13 +330,21 @@ export default function QaForm() {
             type="button"
             className="btn btn_md btn_primary"
             onClick={handleSave}
-            // disabled={submitting}
+            disabled={submitting}
           >
-            저장
-            {/* {submitting ? '저장 중...' : '저장'} */}
+            {submitting ? '저장 중...' : '저장'}
           </button>
         </div>
       </div>
+
+
+      <AlertModal
+        open={alert !== null}
+        onClose={() => setAlert(null)}
+        onConfirm={alert?.onConfirm}
+        message={alert?.message ?? ''}
+        variant={alert?.variant}
+      />
     </section>
   );
 }

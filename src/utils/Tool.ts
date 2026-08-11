@@ -4,7 +4,7 @@ import type { KeyboardEvent } from 'react';
 const getIP = () => {
   // return "localhost";
   return "10.1.205.126"; // 학원
-  return "1.201.122.5"; // 학원
+  // return "1.201.122.5"; // 학원
 }
 
 const getCopyright = () => {
@@ -12,10 +12,9 @@ const getCopyright = () => {
 }
 
 const getNowDate = () => {
-  // 현재 날짜와 시간을 가져옵니다.
   const now = new Date();
 
-  // 날짜와 시간을 "YYYY-MM-DD HH:mm:ss" 형식으로 변환합니다.
+  // 💡 1. 24시간제를 확실하게 보장하기 위해 hourCycle: 'h23'을 사용합니다.
   const rdate = now.toLocaleString('ko-KR', {
     year: 'numeric',
     month: '2-digit',
@@ -23,12 +22,17 @@ const getNowDate = () => {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    hour12: false
-  }).replace(/\./g, '-').replace(/- /g, '-').replace(/ /, ' ').trim().slice(0, -1);
+    hourCycle: 'h23' // 👈 24시간 형식 강제 (오전/오후 텍스트 제거)
+  }).replace(/\./g, '-').replace(/- /g, '-').replace(/ /, ' ').trim();
 
+  // rdate 결과물 예시: "2026. 07. 12. 14:12:00" (맨 끝에 마침표가 안 붙음)
+  
+  // 💡 2. 점(.)과 공백을 하이픈(-)과 한 칸 공백으로 깔끔하게 정리합니다.
+  // return rdate.
+  
   return rdate.replace(/-([0-9]{2}:)/, ' $1'); // 2024-11-06 16:29:5
-}
-
+  // 최종 결과: "2026-07-12 14:12:00" (초 단위 00까지 완벽하게 보존!)
+};
 // 포커스 이동
 function enter_chk(e: React.KeyboardEvent<HTMLInputElement> | KeyboardEvent, nextTag: string) {
   if (e.key === 'Enter') { // 엔터키

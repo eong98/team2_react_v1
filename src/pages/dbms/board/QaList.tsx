@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { AdminToolbar, ConfirmDeleteModal, DbmsPagination, PageHeader } from '../../../components/ui';
+import axios from 'axios'; // 👈 Axios 에러 타입 체크용 추가
+import { AdminToolbar, AlertModal, ConfirmDeleteModal, DbmsPagination, PageHeader } from '../../../components/ui';
 import type { DataCardColumn } from '../../../components/ui/common/DataCard';
 import DataCard from '../../../components/ui/common/DataCard';
 import { axiosInstance } from '../../../utils/Tool';
@@ -29,7 +30,7 @@ export default function QaList() {
   const [tagFilter, setTagFilter] = useState<QaTypes['type'] | ''>('');
   // 상태(답변상태)로 필터 — 전체 문의 탭에서만 사용
   const [statusFilter, setStatusFilter] = useState<QaTypes['status'] | ''>('');
-  // 등록자(회원번호)로 필터 — 전체 문의 탭에서만 사용 (QaTypes에 등록자 이름 필드가 없어 mno로 검색)
+  // 등록자(회원번호)로 필터 — 전체 문의 탭에서만 사용
   const [writerFilter, setWriterFilter] = useState<string>('');
 
   // 현재 페이지 번호 상태
@@ -37,15 +38,15 @@ export default function QaList() {
   const [totalPages, setTotalPages] = useState<number>(1);
   const [totalCount, setTotalCount] = useState<number>(0);
 
-  // 삭제 모달 대상 Q&A
+  // 삭제 모달 대상 Q&A 및 삭제 중 상태
   const [deleteTarget, setDeleteTarget] = useState<QaTypes | null>(null);
+  const [deleting, setDeleting] = useState<boolean>(false); // 👈 삭제 진행 로딩 상태 추가
 
+  const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
   // ==========================================
   // 2. API 데이터 조회 (Axios GET)
   // ==========================================
   const fetchQaList = async () => {
-    // 탭에 따라 "내 문의"(회원별 조회) / "자주 묻는 질문"(공개 FAQ) 엔드포인트가 다릅니다.
-    // TODO: 실제 FAQ 조회 엔드포인트 경로가 다르면 여기만 바꿔주세요.
     if (tab === 'qa' && !ano) return;
 
     setLoading(true);
@@ -54,22 +55,19 @@ export default function QaList() {
       const url = tab === 'qa' ? `/qa/admin/list` : '/qa/faq';
       const response = await axiosInstance.get(url, {
         params: {
-          word: keyword.trim() || undefined, // 검색어가 없으면 요청 파라미터에서 제외
+          word: keyword.trim() || undefined,
           type: tagFilter === '' ? undefined : tagFilter,
           status: tab === 'qa' && statusFilter !== '' ? statusFilter : undefined,
-          // TODO: 실제 백엔드 파라미터명이 mno가 아니면 여기만 바꿔주세요.
           mno: tab === 'qa' && writerFilter.trim() !== '' ? writerFilter.trim() : undefined,
-          page: page - 1, // 💡 Spring Pageable은 0부터 시작
+          page: page - 1,
           size: PAGE_SIZE,
         },
       });
 
       const data = response.data;
-      // PageResponse의 필드에 맞게 추출 (content / dtoList 확인 필요)
       setQaList(data.content || []);
       setTotalPages(data.totalPages || 1);
       setTotalCount(data.totalElements || 0);
-      console.log(data)
     } catch (error) {
       console.error('목록 조회 실패:', error);
     } finally {
@@ -77,7 +75,6 @@ export default function QaList() {
     }
   };
 
-  // 페이지 번호·검색 키워드·탭이 바뀔 때마다 API 재호출
   useEffect(() => {
     fetchQaList();
   }, [page, keyword, tab, tagFilter, statusFilter, writerFilter]);
@@ -85,7 +82,6 @@ export default function QaList() {
   // ==========================================
   // 3. 이벤트 핸들러 (Event Handlers)
   // ==========================================
-  /** 탭 전환 핸들러 — 탭 바뀌면 검색어/필터/페이지 초기화 */
   const handleTabChange = (next: TabKey) => {
     if (next === tab) return;
     setTab(next);
@@ -96,54 +92,92 @@ export default function QaList() {
     setPage(1);
   };
 
-  /** 검색어 변경 핸들러 */
   const handleSearch = (value: string) => {
     setKeyword(value);
-    setPage(1); // 새로운 검색 시 첫 페이지로 이동
+    setPage(1);
   };
 
-  /** 유형 필터 변경 핸들러 */
   const handleTypeFilter = (value: QaTypes['type'] | '') => {
     setTagFilter(value);
     setPage(1);
   };
 
-  /** 상태 필터 변경 핸들러 */
   const handleStatusFilter = (value: QaTypes['status'] | '') => {
     setStatusFilter(value);
     setPage(1);
   };
 
-  /** 등록자 필터 변경 핸들러 */
   const handleWriterFilter = (value: string) => {
     setWriterFilter(value);
     setPage(1);
   };
 
-  /** Q&A 삭제 핸들러 */
-  const handleDelete = async () => {
+  /** 🔑 Q&A / FAQ 삭제 핸들러 (수정됨) */
+  const handleDeleteWithPw = async (inputPw: string = '') => {
     if (!deleteTarget) return;
 
+    setDeleting(true);
+
     try {
-      await axiosInstance.delete(`/api/qa/${deleteTarget.no}`);
+      // Axios DELETE 요청 시 Body로 데이터를 전달할 때는 { data: ... } 옵션을 사용합니다.
+      await axiosInstance.delete('/qa', {
+        data: {
+          no: deleteTarget.no,
+          pw: inputPw, // 👈 모달에서 사용자가 입력한 비밀번호 전달
+        },
+      });
+
+      setAlert({ message: '삭제되었습니다.', variant: 'success', onConfirm: fetchQaList });
       setDeleteTarget(null);
-      fetchQaList(); // 삭제 성공 시 목록 재조회
+
     } catch (error) {
-      console.error('Q&A 삭제 실패:', error);
+      console.error('삭제 실패:', error);
+
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status; // HTTP 상태 코드 (400, 401, 404, 500 등)
+        const data = error.response?.data; // 백엔드가 보내준 JSON 데이터
+                // ----------------------------------------------------
+        // 1. HTTP 상태 코드(Status)에 따른 에러 처리
+        // ----------------------------------------------------
+        if (status === 400 || status === 401) {
+          // 비밀번호 틀림 / 잘못된 입력값인 경우
+          // const msg = data?.message || '비밀번호가 올바르지 않거나 입력값이 잘못되었습니다.';
+          // alert(msg);
+
+        } else if (status === 404) {
+          // 존재하지 않는 글번호(no)인 경우
+          setAlert({ message: '존재하지 않거나 이미 삭제된 FAQ입니다.', variant: 'error' });
+
+        } else if (status === 500) {
+          // 🚨 500 에러일 때: 백엔드 메시지에 "비밀번호"라는 단어가 포함되어 있는지 체크
+          if (data?.message?.includes('비밀번호') || data?.message?.includes('password')) {
+            setAlert({ message: '비밀번호가 일치하지 않습니다.', variant: 'error' });
+          } else {
+            setAlert({ message: '서버 내부 오류가 발생했습니다. 관리자에게 문의하세요.', variant: 'error' });
+          }
+          
+        } else {
+          // 기타 상태 코드 처리
+          setAlert({ message: `오류가 발생했습니다. (에러 코드: ${status || 'Unknown'})`, variant: 'error' });
+        }
+        
+      } else {
+        // Axios 에러가 아닌 일반 자바스크립트 오류
+        setAlert({ message: '알 수 없는 오류가 발생했습니다.' , variant: 'error' });
+      }
+    } finally {
+      setDeleting(false);
     }
   };
 
   // ==========================================
   // 4. DataCard 컬럼 정의
   // ==========================================
-
   const qaColumns: DataCardColumn<QaTypes>[] = [
     {
       header: '상태',
       render: (n) => (
-        <span
-          className={`badge ${QA_STATUS_MAP[n.status].className}`}
-        >
+        <span className={`badge ${QA_STATUS_MAP[n.status].className}`}>
           {QA_STATUS_MAP[n.status].label}
         </span>
       ),
@@ -163,19 +197,13 @@ export default function QaList() {
     },
   ];
 
-
-
   const faqColumns: AccordionCardColumn<QaTypes>[] = [
     {
       header: 'A. 답변 내용',
       render: (n) => (
         <div className="lt">
-          <div className="cell_title">
-            {n.answer}
-          </div>
-          <div className="cell_sub">
-            {n.cdate}
-          </div>
+          <div className="cell_title">{n.answer}</div>
+          <div className="cell_sub">{n.cdate}</div>
         </div>
       ),
     },
@@ -224,7 +252,7 @@ export default function QaList() {
               value={tagFilter}
               onChange={(e) => handleTypeFilter(e.target.value === '' ? '' : Number(e.target.value))}
               aria-label="접수 유형 필터"
-              style={{'width':'auto'}}
+              style={{ width: 'auto' }}
             >
               <option value="">전체 유형</option>
               {QA_TYPE_OPTIONS.map((t) => (
@@ -239,7 +267,7 @@ export default function QaList() {
                 value={statusFilter}
                 onChange={(e) => handleStatusFilter(e.target.value === '' ? '' : Number(e.target.value))}
                 aria-label="답변 상태 필터"
-                style={{'width':'auto'}}
+                style={{ width: 'auto' }}
               >
                 <option value="">전체 상태</option>
                 {Object.entries(QA_STATUS_MAP).map(([value, s]) => (
@@ -270,23 +298,27 @@ export default function QaList() {
           data={qaList}
           rowKey={(n) => n.no}
           loading={loading}
-          emptyMessage='등록된 문의가 없습니다.'
-          // onEdit={(n) => navigate(`${n.no}/edit`)}
+          emptyMessage="등록된 문의가 없습니다."
         />
-
       ) : (
         <DataAcc
-          title={(r) => <><span className={`badge ${QA_TYPE_MAP[r.type].className}`}>{QA_TYPE_MAP[r.type].label}</span> Q. {r.title}</>}
+          title={(r) => (
+            <>
+              <span className={`badge ${QA_TYPE_MAP[r.type].className}`}>
+                {QA_TYPE_MAP[r.type].label}
+              </span>{' '}
+              Q. {r.title}
+            </>
+          )}
           columns={faqColumns}
           data={qaList}
           rowKey={(r) => r.no}
-          emptyMessage='등록된 FAQ가 없습니다.'
+          emptyMessage="등록된 FAQ가 없습니다."
           onEdit={(n) => navigate(`${n.no}/edit`, { state: { tab } })}
           onDelete={(n) => setDeleteTarget(n)}
           allowMultiple={false}
         />
       )}
-
 
       {/* 페이지네이션 컴포넌트 */}
       <DbmsPagination
@@ -297,14 +329,26 @@ export default function QaList() {
         onChange={setPage}
       />
 
-      {/* 삭제 확인 모달 */}
+      {/* 🔑 삭제 확인 모달 (수정됨) */}
       <ConfirmDeleteModal
         open={deleteTarget !== null}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDelete}
+        onConfirm={(pw) => handleDeleteWithPw(pw || '')}
+        loading={deleting}
         targetLabel={
           deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.title}` : undefined
         }
+        requirePassword={true}
+      />
+
+      
+      
+      <AlertModal
+        open={alert !== null}
+        onClose={() => setAlert(null)}
+        onConfirm={alert?.onConfirm}
+        message={alert?.message ?? ''}
+        variant={alert?.variant}
       />
     </section>
   );

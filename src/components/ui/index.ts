@@ -1,6 +1,7 @@
 export { default as PageHeader } from './common/PageHeader';
 export { default as DataTable } from './common/DataTable';
 export type { DataTableColumn } from './common/DataTable';
+export { default as AlertModal } from './common/AlertModal';
 
 export { default as ConfirmDeleteModal } from './dbms/ConfirmDeleteModal';
 export { default as AdminToolbar } from './dbms/AdminToolbar';
