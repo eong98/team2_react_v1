@@ -30,8 +30,8 @@ export default function MemberDetail() {
       try {
         // role(USER/ADMIN)에 따라 각각 알맞은 단건 조회 API를 호출합니다.
         const endpoint = role === 'ADMIN' 
-          ? `http://10.1.205.120:9200/v1/dbms/find/${no}`  // 관리자 단건 조회 API (예시)
-          : `http://10.1.205.120:9200/v1/member/find/${no}`; // 일반회원 단건 조회 API (예시)
+          ? `http://10.1.205.120:9102/v1/dbms/find/${no}`  // 관리자 단건 조회 API (예시)
+          : `http://10.1.205.120:9102/v1/member/find/${no}`; // 일반회원 단건 조회 API (예시)
 
         const res = await axiosInstance.get(endpoint);
         if (res.data) {

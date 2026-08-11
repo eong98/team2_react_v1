@@ -66,7 +66,11 @@ export default function Login() {
 
     try{
       // id와 비밀번호 값이 일치하는지 확인
+<<<<<<< HEAD
       const loginResult = await axiosInstance.post(`http://10.1.205.119:9102/v1/user/login?id=${input.id}&password=${input.password}`);
+=======
+      const loginResult = await axiosInstance.post(`http://10.1.205.120:9102/v1/user/login?id=${input.id}&password=${input.password}`);
+>>>>>>> db53f8f06a974d0a41a29d1ebd3b59b04fa2c727
       // 결과 저장
       const loginResultData = loginResult.data;
 
