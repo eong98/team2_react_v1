@@ -1,63 +1,22 @@
-import axios from 'axios';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { DataTable, DbmsPagination, PageHeader } from '../../../components/ui';
 import type { DataTableColumn } from '../../../components/ui';
-
-interface SurveyAnswer {
-  no: number;
-  responseNo: number;
-  questionNo: number;
-  qtext: string;
-  qtype: string;
-  atext: string | null;
-  evalScore: number | null;
-  cdate: string;
-}
-
-interface SurveyResponse {
-  no: number;
-  surveyNo: number;
-  memberNo: number;
-  checkYn: 'Y' | 'N';
-  checkDate: string | null;
-  cdate: string;
-  answers: SurveyAnswer[];
-}
-
-interface SurveyInfo {
-  no: number;
-  title: string;
-  detail: string;
-  startDate: string;
-  endDate: string;
-}
-
-const surveyApi = axios.create({ baseURL: 'http://localhost:9103' });
-const PAGE_SIZE = 10;
-
-const formatDateTime = (value?: string | null) => value ? value.slice(0, 16) : '-';
-const formatDate = (value?: string | null) => value ? value.slice(0, 10) : '-';
-
-const getQuestionTypeLabel = (qtype: string) => {
-  if (qtype === 'SCORE') return '만족도';
-  if (qtype === 'SINGLE') return '단일 선택';
-  if (qtype === 'MULTIPLE') return '복수 선택';
-  return '주관식';
-};
-
-const getSatisfactionLabel = (value?: string | null) => {
-  if (value === '1') return '매우 불만족';
-  if (value === '2') return '불만족';
-  if (value === '3') return '보통';
-  if (value === '4') return '만족';
-  if (value === '5') return '매우 만족';
-  return value ?? '-';
-};
-
-const getAnswerText = (answer: SurveyAnswer) =>
-  answer.qtype === 'SCORE' ? getSatisfactionLabel(answer.atext) : (answer.atext ?? '-');
+import type { SurveyInfo, SurveyResponse } from '../../../utils/survey';
+import {
+  SURVEY_RESPONSE_PAGE_SIZE,
+  formatDate,
+  formatDateTime,
+  getAnswerText,
+  getQuestionTypeLabel,
+} from '../../../utils/survey';
+import {
+  checkSurveyResponse,
+  getSurvey,
+  getSurveyResponse,
+  getSurveyResponses,
+} from '../../../utils/surveyApi';
 
 export default function SurveyResponseList() {
   const navigate = useNavigate();
@@ -79,16 +38,12 @@ export default function SurveyResponseList() {
     try {
       setLoading(true);
 
-      const [surveyResponse, responseListResponse] = await Promise.all([
-        surveyApi.get(`/api/surveys/${no}`),
-        surveyApi.get(`/api/surveys/${no}/responses`),
+      const [surveyData, list] = await Promise.all([
+        getSurvey(no),
+        getSurveyResponses(no),
       ]);
 
-      setSurvey(surveyResponse.data);
-
-      const list: SurveyResponse[] = Array.isArray(responseListResponse.data)
-        ? responseListResponse.data
-        : [];
+      setSurvey(surveyData);
 
       setResponses([...list].sort((a, b) => b.no - a.no));
       setPage(1);
@@ -108,8 +63,8 @@ export default function SurveyResponseList() {
   const loadResponseDetail = async (responseNo: number) => {
     try {
       setDetailLoading(true);
-      const response = await surveyApi.get(`/api/surveys/responses/${responseNo}`);
-      setSelectedResponse(response.data);
+      const response = await getSurveyResponse(responseNo);
+      setSelectedResponse(response);
     } catch (error: any) {
       console.error(error);
       alert(error.response?.data?.message ?? '응답 상세정보를 불러오지 못했습니다.');
@@ -130,11 +85,7 @@ export default function SurveyResponseList() {
     try {
       setChecking(true);
 
-      const response = await surveyApi.patch(
-        `/api/surveys/responses/${selectedResponse.no}/check`
-      );
-
-      const updated: SurveyResponse = response.data;
+      const updated = await checkSurveyResponse(selectedResponse.no);
       setSelectedResponse(updated);
 
       setResponses((prev) =>
@@ -162,8 +113,8 @@ export default function SurveyResponseList() {
   }, [responses]);
 
   /* 페이징 */
-  const totalPages = Math.max(1, Math.ceil(responses.length / PAGE_SIZE));
-  const pagedResponses = responses.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(responses.length / SURVEY_RESPONSE_PAGE_SIZE));
+  const pagedResponses = responses.slice((page - 1) * SURVEY_RESPONSE_PAGE_SIZE, page * SURVEY_RESPONSE_PAGE_SIZE);
 
   const columns: DataTableColumn<SurveyResponse>[] = [
     {
@@ -231,7 +182,7 @@ export default function SurveyResponseList() {
           page={page}
           totalPages={totalPages}
           totalCount={responses.length}
-          pageSize={PAGE_SIZE}
+          pageSize={SURVEY_RESPONSE_PAGE_SIZE}
           onChange={setPage}
         />
       </div>

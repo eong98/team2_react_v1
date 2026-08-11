@@ -1,133 +1,241 @@
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AdminToolbar, ConfirmDeleteModal, DataTable, PageHeader, DbmsPagination, type DataTableColumn } from '../../../components/ui';
+import { useEffect, useState } from 'react';
+import { AdminToolbar, DataTable, PageHeader, DbmsPagination, type DataTableColumn } from '../../../components/ui';
+import { axiosInstance } from '../../../utils/Tool.ts';
+import {
+  PAGE_SIZE,
+  CODE_LABELS,
+  STATE_LABELS,
+  STATE_BADGE,
+  EMPTY_FILTERS,
+  type CctvIssueSearchResult,
+  type RowType,
+  type Filters,
+} from './CctvIssue.ts';
 
-// 파일이름 꼭 맞춰주세요 
+// 파일이름 꼭 맞춰주세요
 /* ---------------------------------------------------------------------
-   ⚠️ 이 파일은 "관리자 CRUD 리스트" 공용 디자인 틀 사용 예시입니다.
-   검색 / 생성 / 수정 / 삭제 / 페이지네이션이 모두 붙어있는 기본 패턴이라
-   CCTV, 이슈, 유형코드, 매장 등 다른 리스트 화면도 이 구조를 그대로 복사해서
-   columns / 상태값 / API 연동 부분만 바꾸면 됩니다.
-   (공용 컴포넌트: src/components/dbms/common/*, 스타일: src/components/style/dbms.css)
+   CCTV 이슈 내역 목록(/dbms/cctv/issue 등) - 읽기 전용.
 
-   ※ 생성/수정은 모달이 아니라 전용 라우트(페이지)로 분리했습니다.
-     - 작성: /dbms/board/notice/new
-     - 수정: /dbms/board/notice/:no/edit
-     - 삭제는 그대로 확인 모달(ConfirmDeleteModal) 사용.
-     → 폼 화면 구현은 NoticeFormView.tsx 참고.
+   CCTV_ISSUE 컬럼: no/cno/mno/code/state/comnet/reliability/pdate/noticeyn/cdate
+   - 등록/조회(상세)/수정 화면 없음. 목록만 보여주고 검색 + 페이징만 지원.
+   - 맨 앞 "번호" 컬럼은 실제 PK(no)가 아니라, 검색 결과 총 건수 기준으로
+     내림차순 매긴 가상의 순번(cnt)입니다. 전체 몇 건인지 한눈에 보기 위한 용도.
+
+   API (CctvIssueCont, /cctv_issue)
+   GET /cctv_issue/search?cno=&code=&state=&noticeyn=&keyword=&cdateFrom=&cdateTo=&page=&size=
+     → { content, totalElements, totalPages, page(0-base), size }
+
+   상수/타입(PAGE_SIZE, CODE_LABELS, STATE_LABELS, STATE_BADGE, RowType, Filters,
+   EMPTY_FILTERS)은 전부 ./CctvIssue.ts 로 옮겨뒀습니다. CODE/STATE 값 매핑을
+   바꿔야 하면 이 파일이 아니라 CctvIssue.ts를 고치면 됩니다.
 --------------------------------------------------------------------- */
 
-const PAGE_SIZE = 6;
+export default function CctvIssueListView() {
+  // draft: 입력 중인 값 (타이핑만으로는 검색 안 됨) / applied: "검색" 눌렀을 때 실제 조회에 쓰이는 값
+  const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS);
+  const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
+  const [page, setPage] = useState(1); // 화면 표시는 1부터, 서버는 0부터
 
-export default function NoticeView() {
-  const navigate = useNavigate();
+  const [rows, setRows] = useState<RowType[]>([]);
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
 
-  const [keyword, setKeyword] = useState('');
-  const [tagFilter, setTagFilter] = useState<Notice['tag'] | ''>('');
-  const [page, setPage] = useState(1);
+  const loadList = async () => {
+    setLoading(true);
+    try {
+      const res = await axiosInstance.get<CctvIssueSearchResult>('/cctv_issue/search', {
+        params: {
+          page: page - 1,
+          size: PAGE_SIZE,
+          cno: applied.cno.trim() !== '' ? Number(applied.cno.trim()) : undefined,
+          code: applied.code || undefined,
+          state: applied.state !== '' ? Number(applied.state) : undefined,
+          noticeyn: applied.noticeyn || undefined,
+          keyword: applied.keyword.trim() || undefined,
+          cdateFrom: applied.dateFrom || undefined,
+          cdateTo: applied.dateTo || undefined,
+        },
+      });
 
-  const [deleteTarget, setDeleteTarget] = useState<Notice | null>(null);
+      const { content, totalElements: total, totalPages: pages, page: serverPage, size } = res.data;
 
-  const filtered = useMemo(() => {
-    return MOCK_NOTICES.filter((n) => {
-      const matchKeyword = keyword.trim() === '' || n.title.toLowerCase().includes(keyword.trim().toLowerCase());
-      const matchTag = tagFilter === '' || n.tag === tagFilter;
-      return matchKeyword && matchTag;
-    });
-  }, [keyword, tagFilter]);
+      const withCnt: RowType[] = content.map((item, idx) => ({
+        ...item,
+        cnt: total - (serverPage * size + idx),
+      }));
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+      setRows(withCnt);
+      setTotalElements(total);
+      setTotalPages(Math.max(1, pages));
+    } catch (err) {
+      console.error(err);
+      setRows([]);
+      setTotalElements(0);
+      setTotalPages(1);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const goSearch = (value: string) => {
-    setKeyword(value);
+  useEffect(() => {
+    loadList();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [applied, page]);
+
+  const onSearch = () => {
     setPage(1);
+    setApplied(draft);
   };
 
-  const selectTag = (tag: Notice['tag'] | '') => {
-    setTagFilter(tag);
+  const onReset = () => {
+    const empty = { ...EMPTY_FILTERS };
+    setDraft(empty);
     setPage(1);
+    setApplied(empty);
   };
 
-  const handleDelete = () => {
-    // TODO: 실제 삭제 API 연동 (DELETE /api/notice/{no})
-    setDeleteTarget(null);
-  };
-
-  const columns: DataTableColumn<Notice>[] = [
+  const columns: DataTableColumn<RowType>[] = [
+    { header: '번호', width: '64px', mono: true, render: (r) => r.cnt },
+    { header: 'CCTV', width: '70px', mono: true, render: (r) => `#${r.cno}` },
+    { header: '담당자', width: '90px', mono: true, render: (r) => (r.mno ? `#${r.mno}` : '-') },
     {
-      header: '태그',
-      width: '90px',
-      render: (n) => <span className={`badge ${TAG_TONE[n.tag]}`}>{n.tag}</span>,
+      header: '문제유형',
+      width: '110px',
+      render: (r) => <span className="badge badge_info">{CODE_LABELS[r.code] ?? r.code}</span>,
     },
     {
-      header: '제목',
-      width:'55%',
-      render: (n) => (
-        <div>
-          <div className="cell_title">{n.title}</div>
-          <div className="cell_sub">
-            No.{n.no} · {n.writer}
-          </div>
-        </div>
+      header: '오탐여부',
+      width: '90px',
+      render: (r) => (
+        <span className={`badge ${STATE_BADGE[r.state] ?? 'badge_neutral'}`}>
+          {STATE_LABELS[r.state] ?? r.state}
+        </span>
       ),
     },
-    { header: '조회수', width:'100px', mono: true, accessor: 'hit' },
-    { header: '등록일', mono: true, accessor: 'cdate' },
+    {
+      header: '상황설명',
+      width: '30%',
+      render: (r) => (
+        <span title={r.comnet ?? ''}>
+          {r.comnet ? (r.comnet.length > 40 ? `${r.comnet.slice(0, 40)}…` : r.comnet) : '-'}
+        </span>
+      ),
+    },
+    { header: '신뢰도', width: '80px', mono: true, render: (r) => r.reliability ?? '-' },
+    {
+      header: '발송여부',
+      width: '90px',
+      render: (r) => (
+        <span className={`badge ${r.noticeyn === 'Y' ? 'badge_success' : 'badge_neutral'}`}>
+          {r.noticeyn === 'Y' ? '발송완료' : '미발송'}
+        </span>
+      ),
+    },
+    { header: '처리일시', mono: true, render: (r) => r.pdate ?? '-' },
+    { header: '등록일', mono: true, render: (r) => r.cdate },
   ];
 
   return (
     <section className="view active">
       <PageHeader
-        title="공지사항"
-        description="서비스 업데이트와 점검 안내를 등록/관리합니다. (NOTICE 테이블 기준: no·tag·title·content·writer·hit·cdate)"
-        createLabel="+ 공지 작성"
-        onCreate={() => navigate('new')}
+        title="CCTV 이슈 내역"
+        description="AI가 감지한 CCTV 이상행동 이슈 내역입니다. (CCTV_ISSUE 테이블 기준)"
       />
 
       <AdminToolbar
-        searchValue={keyword}
-        onSearchChange={goSearch}
-        searchPlaceholder="제목으로 검색"
+        searchValue={draft.keyword}
+        onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
+        searchPlaceholder="상황설명으로 검색"
         filters={
           <>
             <select
               className="form_select"
-              value={tagFilter}
-              onChange={(e) => selectTag(e.target.value as Notice['tag'] | '')}
-              aria-label="태그 필터"
+              value={draft.code}
+              onChange={(e) => setDraft((prev) => ({ ...prev, code: e.target.value }))}
+              aria-label="문제유형 필터"
             >
-              <option value="">태그 전체</option>
-              {TAG_LIST.map((tag) => (
-                <option key={tag} value={tag}>
-                  {tag}
+              <option value="">유형 전체</option>
+              {Object.entries(CODE_LABELS).map(([code, label]) => (
+                <option key={code} value={code}>
+                  {label}
                 </option>
               ))}
             </select>
+
+            <select
+              className="form_select"
+              value={draft.state}
+              onChange={(e) => setDraft((prev) => ({ ...prev, state: e.target.value }))}
+              aria-label="오탐여부 필터"
+            >
+              <option value="">상태 전체</option>
+              {Object.entries(STATE_LABELS).map(([state, label]) => (
+                <option key={state} value={state}>
+                  {label}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="form_select"
+              value={draft.noticeyn}
+              onChange={(e) => setDraft((prev) => ({ ...prev, noticeyn: e.target.value }))}
+              aria-label="발송여부 필터"
+            >
+              <option value="">발송여부 전체</option>
+              <option value="Y">발송완료</option>
+              <option value="N">미발송</option>
+            </select>
+
+            <input
+              type="number"
+              className="form_input"
+              placeholder="CCTV번호"
+              value={draft.cno}
+              onChange={(e) => setDraft((prev) => ({ ...prev, cno: e.target.value }))}
+              style={{ maxWidth: 110 }}
+              aria-label="CCTV번호 필터"
+            />
+
+            <input
+              type="date"
+              className="form_input"
+              value={draft.dateFrom}
+              onChange={(e) => setDraft((prev) => ({ ...prev, dateFrom: e.target.value }))}
+              aria-label="등록일 시작"
+            />
+            <span style={{ alignSelf: 'center' }}>~</span>
+            <input
+              type="date"
+              className="form_input"
+              value={draft.dateTo}
+              onChange={(e) => setDraft((prev) => ({ ...prev, dateTo: e.target.value }))}
+              aria-label="등록일 종료"
+            />
           </>
         }
         extra={
-          <button type='button' className='btn btn_outline_primary'>초기화</button>
+          <>
+            <button type="button" className="btn btn_primary" onClick={onSearch}>
+              검색
+            </button>
+            <button type="button" className="btn btn_outline_primary" onClick={onReset}>
+              초기화
+            </button>
+          </>
         }
       />
 
       <DataTable
         columns={columns}
-        data={paged}
-        rowKey={(n) => n.no}
-        onEdit={(n) => navigate(`${n.no}/edit`)}
-        onDelete={(n) => setDeleteTarget(n)}
+        data={rows}
+        rowKey={(r) => r.no}
+        loading={loading}
         emptyMessage="검색 결과가 없습니다."
       />
 
-      <DbmsPagination page={page} totalPages={totalPages} totalCount={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
-
-      <ConfirmDeleteModal
-        open={deleteTarget !== null}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDelete}
-        targetLabel={deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.title}` : undefined}
-      />
+      <DbmsPagination page={page} totalPages={totalPages} totalCount={totalElements} pageSize={PAGE_SIZE} onChange={setPage} />
     </section>
   );
 }

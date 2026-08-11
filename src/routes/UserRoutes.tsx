@@ -11,6 +11,8 @@ import Form from '../pages/user/form/Form';
 import List from '../pages/user/form/List';
 import SendForm from '../pages/user/send/Form';
 import SendList from '../pages/user/send/List';
+import QaList from '../pages/user/board/QaList';
+import QaForm from '../pages/user/board/QaForm';
 
 import SurveyAnswerForm from '../pages/user/survey/SurveyAnswerForm';
 
@@ -24,6 +26,8 @@ export default function UserRoutes() {
       <Route path="notice/new" element={<NoticeForm />} />
       <Route path="notice/:no/edit" element={<NoticeForm />} />
       */}
+      <Route path="qa" element={<QaList />} />
+      <Route path="qa/new" element={<QaForm />} />
 
       
       {/* 예시용 */}

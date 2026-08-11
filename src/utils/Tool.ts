@@ -3,8 +3,8 @@ import type { KeyboardEvent } from 'react';
 
 const getIP = () => {
   // return "localhost";
-  return "10.1.205.119"; // 학원
-  return "1.201.122.5"; // 학원
+  return "10.1.205.126"; // 학원
+  // return "1.201.122.5"; // 학원
 }
 
 const getCopyright = () => {
@@ -12,37 +12,41 @@ const getCopyright = () => {
 }
 
 const getNowDate = () => {
-      // 현재 날짜와 시간을 가져옵니다.
-    const now = new Date();
+  const now = new Date();
 
-    // 날짜와 시간을 "YYYY-MM-DD HH:mm:ss" 형식으로 변환합니다.
-    const rdate = now.toLocaleString('ko-KR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
-    }).replace(/\./g, '-').replace(/- /g, '-').replace(/ /, ' ').trim().slice(0, -1);
+  // 💡 1. 24시간제를 확실하게 보장하기 위해 hourCycle: 'h23'을 사용합니다.
+  const rdate = now.toLocaleString('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23' // 👈 24시간 형식 강제 (오전/오후 텍스트 제거)
+  }).replace(/\./g, '-').replace(/- /g, '-').replace(/ /, ' ').trim();
 
-    return rdate.replace(/-([0-9]{2}:)/, ' $1'); // 2024-11-06 16:29:5
-}
-
+  // rdate 결과물 예시: "2026. 07. 12. 14:12:00" (맨 끝에 마침표가 안 붙음)
+  
+  // 💡 2. 점(.)과 공백을 하이픈(-)과 한 칸 공백으로 깔끔하게 정리합니다.
+  // return rdate.
+  
+  return rdate.replace(/-([0-9]{2}:)/, ' $1'); // 2024-11-06 16:29:5
+  // 최종 결과: "2026-07-12 14:12:00" (초 단위 00까지 완벽하게 보존!)
+};
 // 포커스 이동
-function enter_chk(e: React.KeyboardEvent<HTMLInputElement> | KeyboardEvent, nextTag: string){
-  if(e.key === 'Enter'){ // 엔터키
+function enter_chk(e: React.KeyboardEvent<HTMLInputElement> | KeyboardEvent, nextTag: string) {
+  if (e.key === 'Enter') { // 엔터키
     e.preventDefault();
     const nextElement = document.getElementById(nextTag);
-    if(nextElement) {
+    if (nextElement) {
       nextElement.focus();
     }
   }
 }
 
-function set_focus(nextTag: string){
+function set_focus(nextTag: string) {
   const nextElement = document.getElementById(nextTag);
-  if(nextElement) {
+  if (nextElement) {
     nextElement.focus();
   }
 }
@@ -57,12 +61,12 @@ const axiosInstance = axios.create({
     // npm run dev: import.meta.env.PROD -> false로 자동 설정
     // npm run build: import.meta.env.PROD -> true로 자동 설정
     // '': 같은 ip에 Backend 서버가 있다는 가정하에 상대경로로 요청을 보냄.
-    baseURL: import.meta.env.PROD ? '' : 'http://10.1.205.119:9102'
+    baseURL: import.meta.env.PROD ? '' : 'http://10.1.205.126:9102'
 })
 
 
 // 파일 다운로드 함수
-const download = async (dir:string, filename:string, downname:string) => {
+const download = async (dir: string, filename: string, downname: string) => {
   try {
     // ① Spring Boot의 /download 엔드포인트 호출
     // dir: 폴더명, filename: 서버에 저장된 파일명, downname: 원래 파일명
@@ -101,16 +105,16 @@ const isImage = (file1 = "") => {
   // console.log('-> file1.toLowerCase():', "ABC.jpg".toLowerCase());
   // console.log('-> file1.toLowerCase().endsWith(\'jpg\'):', "ABC.jpg".toLowerCase().endsWith('jpg'));
 
-  if(file1 != null){
-    return ['jpg', 'jpeg', 'png', 'gif','jfif','webp','avif'].some(ext => file1.toLowerCase().endsWith(ext));
-  }else{
+  if (file1 != null) {
+    return ['jpg', 'jpeg', 'png', 'gif', 'jfif', 'webp', 'avif'].some(ext => file1.toLowerCase().endsWith(ext));
+  } else {
     return false;
   }
-  
+
 }
 
 
-export {getIP, getCopyright, getNowDate, enter_chk, set_focus, axiosInstance, download, isImage}; 
+export { getIP, getCopyright, getNowDate, enter_chk, set_focus, axiosInstance, download, isImage };
 // import {getIP, getCopyright, getNowDate, enter_chk, set_focus} from 'Tool';
 
 

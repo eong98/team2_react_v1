@@ -3,119 +3,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { PageHeader } from '../../../components/ui';
+import type { AnswerState, Survey } from '../../../utils/survey';
+import { TEST_MEMBER_NO, formatDate, getOptions } from '../../../utils/survey';
+import { getSurvey, submitSurveyResponse } from '../../../utils/surveyApi';
 import './SurveyAnswerForm.css';
-
-
-/* =========================================================
-   문항 유형
-========================================================= */
-
-type QuestionType =
-  | 'TEXT'
-  | 'SINGLE'
-  | 'MULTIPLE'
-  | 'SCORE';
-
-
-/* =========================================================
-   설문 문항
-========================================================= */
-
-interface SurveyQuestion {
-  no: number;
-  surveyNo: number;
-  qtext: string;
-  qtype: QuestionType;
-  qoptions: string | null;
-  requiredYn: 'Y' | 'N';
-  seqNo: number;
-}
-
-
-/* =========================================================
-   설문
-========================================================= */
-
-interface Survey {
-  no: number;
-  memberNo: number;
-  title: string;
-  detail: string | null;
-  startDate: string;
-  endDate: string;
-  questions: SurveyQuestion[];
-}
-
-
-/* =========================================================
-   사용자 답변
-========================================================= */
-
-type AnswerValue =
-  | string
-  | string[];
-
-type AnswerState =
-  Record<number, AnswerValue>;
-
-
-/* =========================================================
-   API
-========================================================= */
-
-const surveyApi = axios.create({
-  baseURL: 'http://localhost:9103',
-});
-
-
-/* =========================================================
-   테스트 회원번호
-
-   로그인 기능 완성 후
-   실제 로그인 회원번호로 교체
-========================================================= */
-
-const TEST_MEMBER_NO = 1;
-
-
-/* =========================================================
-   선택지 문자열 → 배열
-
-   예)
-   "청결|서비스|편의성"
-   →
-   ["청결", "서비스", "편의성"]
-========================================================= */
-
-const getOptions = (
-  qoptions: string | null
-): string[] => {
-
-  if (!qoptions) {
-    return [];
-  }
-
-  return qoptions
-    .split('|')
-    .map((option) => option.trim())
-    .filter((option) => option.length > 0);
-};
-
-
-/* =========================================================
-   날짜 표시
-========================================================= */
-
-const formatDate = (
-  value: string
-): string => {
-
-  if (!value) {
-    return '';
-  }
-
-  return value.substring(0, 10);
-};
 
 
 /* =========================================================
@@ -193,13 +84,11 @@ export default function SurveyAnswerForm() {
 
 
         const response =
-          await surveyApi.get<Survey>(
-            `/api/surveys/${no}`
-          );
+          await getSurvey(no);
 
 
         setSurvey(
-          response.data
+          response
         );
 
       } catch (err) {
@@ -262,9 +151,9 @@ export default function SurveyAnswerForm() {
         checked
           ? [...current, option]
           : current.filter(
-              (item) =>
-                item !== option
-            );
+            (item) =>
+              item !== option
+          );
 
 
       return {
@@ -306,9 +195,9 @@ export default function SurveyAnswerForm() {
   const answeredCount =
     survey
       ? survey.questions.filter(
-          (question) =>
-            hasAnswer(question.no)
-        ).length
+        (question) =>
+          hasAnswer(question.no)
+      ).length
       : 0;
 
 
@@ -318,12 +207,12 @@ export default function SurveyAnswerForm() {
 
   const progress =
     survey
-    && survey.questions.length > 0
+      && survey.questions.length > 0
 
       ? (
-          answeredCount
-          / survey.questions.length
-        ) * 100
+        answeredCount
+        / survey.questions.length
+      ) * 100
 
       : 0;
 
@@ -474,10 +363,7 @@ export default function SurveyAnswerForm() {
       setError('');
 
 
-      await surveyApi.post(
-        `/api/surveys/${no}/responses`,
-        serverData
-      );
+      await submitSurveyResponse(no, serverData);
 
 
       alert(
@@ -775,7 +661,7 @@ export default function SurveyAnswerForm() {
 
                           const selected =
                             answers[
-                              question.no
+                            question.no
                             ]
                             === String(score);
 
@@ -835,7 +721,7 @@ export default function SurveyAnswerForm() {
 
                           const selected =
                             answers[
-                              question.no
+                            question.no
                             ]
                             === option;
 
@@ -894,7 +780,7 @@ export default function SurveyAnswerForm() {
 
                           const answer =
                             answers[
-                              question.no
+                            question.no
                             ];
 
 
@@ -903,8 +789,8 @@ export default function SurveyAnswerForm() {
                               answer
                             )
                               ? answer.includes(
-                                  option
-                                )
+                                option
+                              )
                               : false;
 
 
@@ -962,8 +848,8 @@ export default function SurveyAnswerForm() {
                         ] === 'string'
 
                           ? answers[
-                              question.no
-                            ] as string
+                          question.no
+                          ] as string
 
                           : ''
                       }
