@@ -55,15 +55,14 @@ export const QA_TYPE_OPTIONS = [
 
 // 3. STATUS (답변 상태) 매핑 상수 & 배지 스타일
 export const QA_STATUS_MAP: Record<number, { label: string; className: string }> = {
-  0: { label: '답변대기', className: 'badge_warning' },
+  0: { label: '답변대기', className: 'neutral_30' },
   1: { label: '확인중',   className: 'badge_info' },
   2: { label: '답변완료', className: 'badge_success' },
 };
 
 
-export type TabKey = 'mine' | 'faq' | 'qa';
+export type TabKey = 'my' | 'faq' | 'qa';
 
-// 백엔드 QaDTO.FaqCRequest와 매핑되는 인터페이스
 export interface FaqCRequest {
   ano: number;
   type: number;
@@ -72,8 +71,9 @@ export interface FaqCRequest {
   answer?: string;
   cdate: string;
   pw: string;
-  vseq?: string;
+  vseq?: number;
 }
+
 export interface QCRequest {
   mno: number;
   type: number;

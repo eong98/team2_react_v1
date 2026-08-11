@@ -134,7 +134,7 @@ export default function List() {
 
       <section className="view active">
         <PageHeader
-          title="고객의 소리 · 문의 내역"
+          title="문의사항 · 문의 내역"
           description="등록한 문의와 답변 상태를 확인할 수 있습니다. (shop_qna·shop_qna_list·shop_qna_cate 테이블 기준)"
           createLabel="+ 문의 작성"
           onCreate={() => navigate('new')}

@@ -20,6 +20,7 @@ export default function QaList() {
   // 내 문의 / 자주 묻는 질문 탭 — 작성/수정 화면에서 돌아올 때 넘겨준 tab이 있으면 그걸로 시작
   const initialTab = (location.state as { tab?: TabKey })?.tab ?? 'qa';
   const [tab, setTab] = useState<TabKey>(initialTab);
+  const isQa = tab === 'qa';
 
   const [qaList, setQaList] = useState<QaTypes[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -52,7 +53,7 @@ export default function QaList() {
     setLoading(true);
 
     try {
-      const url = tab === 'qa' ? `/qa/admin/list` : '/qa/faq';
+      const url = tab === 'qa' ? `/qa/list` : '/qa/faq';
       const response = await axiosInstance.get(url, {
         params: {
           word: keyword.trim() || undefined,
@@ -90,6 +91,10 @@ export default function QaList() {
     setStatusFilter('');
     setWriterFilter('');
     setPage(1);
+    // location.state를 안 갱신하면, 이 화면이 나중에 다시 마운트될 때
+    // (예: 다른 라우트 갔다가 뒤로가기) useState(initialTab)이 예전 tab 값을
+    // 다시 읽어와서 방금 바꾼 탭이 무시돼버립니다.
+    navigate(location.pathname, { replace: true, state: { tab: next } });
   };
 
   const handleSearch = (value: string) => {
@@ -187,7 +192,14 @@ export default function QaList() {
       render: (n) => (
         <div className="lt">
           <div className="cell_title">
-            <Link to={`/qa/${n.no}`}>{n.title}</Link>
+            <Link to={`/dbms/qa/${n.no}`} >
+              {n.title}
+              {n.vmode === 'Y' ? 
+                (<span className='lock'>
+                  <span className='hidden'>비밀글</span>
+                </span> ) : null
+              }
+            </Link>
           </div>
           <div className="cell_sub">
             {n.cdate} · 접수유형: {QA_TYPE_OPTIONS[n.type].label}
@@ -203,18 +215,16 @@ export default function QaList() {
       render: (n) => (
         <div className="lt">
           <div className="cell_title">{n.answer}</div>
-          <div className="cell_sub">{n.cdate}</div>
         </div>
       ),
     },
   ];
 
-  const isQa = tab === 'qa';
 
   return (
     <section className="view active">
       <PageHeader
-        title="고객의 소리"
+        title="문의사항"
         description="문의사항 및 FAQ를 관리할 수 있습니다."
         createLabel={isQa ? undefined : '+ FAQ 작성'}
         onCreate={isQa ? undefined : () => navigate('new', { state: { tab } })}
