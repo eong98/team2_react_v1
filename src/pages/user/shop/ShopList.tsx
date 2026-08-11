@@ -28,8 +28,9 @@ import { GlobalStoreSession } from '../../../store/LoginStore.ts';
    전부 ./Shop.ts 로 옮겨뒀습니다.
 --------------------------------------------------------------------- */
 
-// 회원번호,그레이드 사용
-const { mno,grade } = GlobalStoreSession();
+// 회원번호 사용
+const mno = 1;
+// const { no:mno } = GlobalStoreSession();
 
 export default function ShopListView() {
   const navigate = useNavigate();
