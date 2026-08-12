@@ -1,8 +1,8 @@
 
 
 import { Navigate, Route, Routes } from 'react-router-dom';
-import NoticeList from '../pages/dbms/board/NoticeList';
-import NoticeForm from '../pages/dbms/board/NoticeForm';
+import NoticeList from '../pages/dbms/qa/NoticeList';
+import NoticeForm from '../pages/dbms/qa/NoticeForm';
 import ShopList from '../pages/dbms/shop/ShopList';
 import ShopForm from '../pages/dbms/shop/ShopForm';
 import InMenuList from '../pages/dbms/menu/InMenuList';
@@ -18,9 +18,9 @@ import DbmsLogin from '../pages/main/DbmsLogin'
 import MemberDetail from '../pages/dbms/member/MemberDetail';
 
 
-import QaForm from '../pages/dbms/board/QaForm';
-import QaList from '../pages/dbms/board/QaList';
-import QaDetail from '../pages/dbms/board/QaDetail';
+import QaForm from '../pages/dbms/qa/QaForm';
+import QaList from '../pages/dbms/qa/QaList';
+import QaDetail from '../pages/dbms/qa/QaDetail';
 
 
 export default function DbmsRoutes() {

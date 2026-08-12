@@ -12,8 +12,11 @@ import {
 } from '../../../components/ts/survey';
 
 import {
+    getMemberSurveyResponse,
     getSurveys,
 } from '../../../components/ts/surveyApi';
+
+import { GlobalStoreSession } from '../../../store/LoginStore';
 
 
 /* =========================================================
@@ -27,6 +30,16 @@ export default function SurveyUserList() {
 
 
     /* =======================================================
+       로그인 회원번호
+    ======================================================= */
+
+    const memberNo =
+        GlobalStoreSession(
+            (state) => state.no
+        );
+
+
+    /* =======================================================
        설문 목록
     ======================================================= */
 
@@ -34,6 +47,18 @@ export default function SurveyUserList() {
         surveys,
         setSurveys,
     ] = useState<Survey[]>([]);
+
+
+    /* =======================================================
+       참여 완료 설문번호
+    ======================================================= */
+
+    const [
+        participatedSurveyNos,
+        setParticipatedSurveyNos,
+    ] = useState<Set<number>>(
+        new Set()
+    );
 
 
     /* =======================================================
@@ -57,7 +82,7 @@ export default function SurveyUserList() {
 
 
     /* =======================================================
-       설문 목록 조회
+       설문 목록 + 참여 여부 조회
     ======================================================= */
 
     useEffect(() => {
@@ -70,13 +95,15 @@ export default function SurveyUserList() {
                     setLoading(true);
 
 
+                    /*
+                     * 전체 설문 조회
+                     */
                     const list =
                         await getSurveys();
 
 
                     /*
-                     * 최신 설문이 위로 오도록
-                     * 설문번호 기준 내림차순 정렬
+                     * 최신 설문이 위로 오도록 정렬
                      */
                     const sorted =
                         [...list].sort(
@@ -87,6 +114,79 @@ export default function SurveyUserList() {
 
                     setSurveys(
                         sorted
+                    );
+
+
+                    /*
+                     * 현재 진행 중인 설문만
+                     * 참여 여부 확인
+                     */
+                    const activeList =
+                        sorted.filter(
+                            (survey) =>
+                                getSurveyStatus(
+                                    survey
+                                ) === 'ACTIVE'
+                        );
+
+
+                    /*
+                     * 로그인 회원이
+                     * 각각의 설문에 이미 응답했는지 확인
+                     */
+                    const participated =
+                        await Promise.all(
+
+                            activeList.map(
+                                async (survey) => {
+
+                                    try {
+
+                                        await getMemberSurveyResponse(
+                                            survey.no,
+                                            memberNo
+                                        );
+
+
+                                        /*
+                                         * 응답이 존재하면
+                                         * 설문번호 반환
+                                         */
+                                        return survey.no;
+
+                                    } catch {
+
+                                        /*
+                                         * 응답이 없으면
+                                         * 참여하지 않은 설문
+                                         */
+                                        return null;
+
+                                    }
+
+                                }
+                            )
+
+                        );
+
+
+                    /*
+                     * null 제거 후
+                     * 참여 완료 설문번호 저장
+                     */
+                    const completedNos =
+                        participated.filter(
+                            (
+                                surveyNo
+                            ): surveyNo is number =>
+                                surveyNo !== null
+                        );
+
+
+                    setParticipatedSurveyNos(
+                        new Set(
+                            completedNos
+                        )
                     );
 
                 } catch (
@@ -116,7 +216,9 @@ export default function SurveyUserList() {
 
         loadSurveys();
 
-    }, []);
+    }, [
+        memberNo,
+    ]);
 
 
     /* =======================================================
@@ -154,11 +256,13 @@ export default function SurveyUserList() {
 
     const paged =
         activeSurveys.slice(
+
             (page - 1)
             * SURVEY_LIST_PAGE_SIZE,
 
             page
             * SURVEY_LIST_PAGE_SIZE
+
         );
 
 
@@ -236,94 +340,141 @@ export default function SurveyUserList() {
                 {!loading
                     &&
                     paged.map(
-                        (survey) => (
+                        (survey) => {
 
-                            <div
-                                key={survey.no}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    gap: '20px',
-                                    padding: '18px 0',
-                                    borderBottom:
-                                        '1px solid #e5e7eb',
-                                }}
-                            >
-
-                                <div>
-
-                                    <h3
-                                        style={{
-                                            margin:
-                                                '0 0 8px',
-                                        }}
-                                    >
-                                        {survey.title}
-                                    </h3>
+                            /*
+                             * 현재 로그인 회원이
+                             * 이미 참여한 설문인지 확인
+                             */
+                            const participated =
+                                participatedSurveyNos.has(
+                                    survey.no
+                                );
 
 
-                                    {survey.detail && (
+                            return (
+
+                                <div
+                                    key={survey.no}
+                                    style={{
+                                        display:
+                                            'flex',
+
+                                        alignItems:
+                                            'center',
+
+                                        justifyContent:
+                                            'space-between',
+
+                                        gap:
+                                            '20px',
+
+                                        padding:
+                                            '18px 0',
+
+                                        borderBottom:
+                                            '1px solid #e5e7eb',
+                                    }}
+                                >
+
+                                    <div>
+
+                                        <h3
+                                            style={{
+                                                margin:
+                                                    '0 0 8px',
+                                            }}
+                                        >
+                                            {survey.title}
+                                        </h3>
+
+
+                                        {survey.detail && (
+
+                                            <div
+                                                style={{
+                                                    marginBottom:
+                                                        '8px',
+
+                                                    color:
+                                                        '#666',
+                                                }}
+                                            >
+                                                {survey.detail}
+                                            </div>
+
+                                        )}
+
 
                                         <div
                                             style={{
-                                                marginBottom:
-                                                    '8px',
+                                                fontSize:
+                                                    '13px',
+
                                                 color:
-                                                    '#666',
+                                                    '#777',
                                             }}
                                         >
-                                            {survey.detail}
+
+                                            설문 기간&nbsp;
+
+                                            {formatDate(
+                                                survey.startDate
+                                            )}
+
+                                            &nbsp;~&nbsp;
+
+                                            {formatDate(
+                                                survey.endDate
+                                            )}
+
                                         </div>
-
-                                    )}
-
-
-                                    <div
-                                        style={{
-                                            fontSize:
-                                                '13px',
-                                            color:
-                                                '#777',
-                                        }}
-                                    >
-
-                                        설문 기간&nbsp;
-
-                                        {formatDate(
-                                            survey.startDate
-                                        )}
-
-                                        &nbsp;~&nbsp;
-
-                                        {formatDate(
-                                            survey.endDate
-                                        )}
 
                                     </div>
 
+
+                                    {/* =====================================
+                      참여 상태
+                  ====================================== */}
+
+                                    {participated ? (
+
+                                        <button
+                                            type="button"
+                                            className="
+                        btn
+                        btn_md
+                      "
+                                            disabled
+                                        >
+                                            참여완료
+                                        </button>
+
+                                    ) : (
+
+                                        <button
+                                            type="button"
+                                            className="
+                        btn
+                        btn_md
+                        btn_primary
+                      "
+                                            onClick={() =>
+                                                handleSurvey(
+                                                    survey.no
+                                                )
+                                            }
+                                        >
+                                            참여하기
+                                        </button>
+
+                                    )}
+
                                 </div>
 
+                            );
 
-                                <button
-                                    type="button"
-                                    className="
-                    btn
-                    btn_md
-                    btn_primary
-                  "
-                                    onClick={() =>
-                                        handleSurvey(
-                                            survey.no
-                                        )
-                                    }
-                                >
-                                    참여하기
-                                </button>
-
-                            </div>
-
-                        )
+                        }
                     )}
 
 
@@ -340,12 +491,16 @@ export default function SurveyUserList() {
                             style={{
                                 display:
                                     'flex',
+
                                 justifyContent:
                                     'center',
+
                                 alignItems:
                                     'center',
+
                                 gap:
                                     '12px',
+
                                 marginTop:
                                     '24px',
                             }}

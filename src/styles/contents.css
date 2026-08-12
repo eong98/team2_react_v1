@@ -422,3 +422,22 @@ body.alert_mode .sim_toggle .dot{background:var(--red-500);animation:blink 1s in
   flex: 1;
 }
  
+
+
+
+
+
+
+
+
+
+
+
+/* 문의상세 */
+.qa_area .card_header {display:flex; justify-content: space-between; align-items: center; margin-bottom:8px;}
+.qa_area .card_header .b_title {margin:0;}
+.qa_area .badge_area {margin-bottom:8px;}
+.qa_area .title_area {border-bottom:1px solid var(--border);}
+.qa_area .title_area .b_title {display:flex; justify-content: space-between; align-items: center; margin:8px 0 12px;}
+.qa_area .card {margin-top:20px;}
+.qa_area .card:first-child {margin-top:0;}
