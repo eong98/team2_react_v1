@@ -134,7 +134,7 @@ export default function Register() {
       return;
     }
 
-    const EXCLUDE_FIELDS = ['grade', 'status']
+    const EXCLUDE_FIELDS = ['grade', 'status', 'termsAgreeYn', 'privacyAgreeYn']
 
     // ⭐️ 모든 필드가 입력되었는지 2차 체크 (전체 필수입력)
     const emptyFields = Object.entries(formData).filter(([key]) => !EXCLUDE_FIELDS.includes(key)).filter(([_, val]) => !val.toString().trim());
@@ -162,7 +162,7 @@ export default function Register() {
         grade: 6,
         status: 1,
         termsAgreeYn: isAgreedTerms ? 'Y' : 'N',
-        isAgreedPrivacy: isAgreedPrivacy? 'Y' : 'N',
+        privacyAgreeYn: isAgreedPrivacy ? 'Y' : 'N',
         nation: formData.nation,
       };
 

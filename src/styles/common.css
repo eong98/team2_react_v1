@@ -249,6 +249,7 @@ select::-ms-expand {display:none;}
 .badge.ok{background:var(--primary-dim);color:var(--green-500);}
 .badge.neutral{background:var(--surface-2);color:var(--text-dim);}
 .badge.neutral_30{background:var(--n-300);color:var(--n-850);}
+.badge.check{background:var(--teal-600);color:var(--n-900);}
 
 
 /* table
