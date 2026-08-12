@@ -1,78 +1,72 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import axios from 'axios';
 import { AlertModal, ConfirmDeleteModal, PageHeader } from '../../../components/ui';
 import { axiosInstance } from '../../../utils/Tool';
 import { QA_STATUS_MAP, QA_TYPE_MAP, type QaTypes, type TabKey } from '../../../components/ts/QaType';
 import { GlobalStoreSession } from '../../../store/LoginStore';
-import axios from 'axios';
+import { useTab } from '../../../hooks/useTab';
 
 export default function QaDetail() {
-  const { no } = useParams<{ no: string }>();
-  const { no:mno } = GlobalStoreSession();
-  const accessno = GlobalStoreSession((state) => state.no);
-  const grade = GlobalStoreSession((state) => state.grade);
-  const navigate = useNavigate();
-  const location = useLocation();
+  const { no } = useParams<{ no: string }>(); // URL에서 no 추출
+  const { no: mno, grade } = GlobalStoreSession(); // 현재 로그인한 회원 번호
 
-  // 목록에서 어느 탭에서 들어왔는지 확인하여 돌아갈 때 상태 전달
-  const fromTab = (location.state as { tab?: TabKey })?.tab;
-
-  const goBack = () => navigate('/user/qa', { state: { tab: fromTab } });
-  console.log(fromTab)
+  // 범용 useTab 훅 사용
+  const { goToList, navigateWithTab } = useTab<TabKey>({
+    defaultTab: 'qa',
+    basePath: '/user/qa',
+  });
 
   const [qa, setQa] = useState<QaTypes | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  useEffect(() => {
-    
-    if (!no) return;
-    setLoading(true);
-    setError(null);
 
+  
+  /* 문의내용 상세 데이터 */
+  const loadQa = () => {
     axiosInstance
       .get(`/qa/${no}`, {
         headers: {
-          'accessNo': String(accessno),
-          'grade': String(grade),
-        }
+          accessNo: String(mno),
+          grade: String(grade),
+        },
       })
       .then((res) => setQa(res.data))
-      .then((res) => {
-        console.log(res)
-      })
       .catch((err) => {
         console.error('문의 상세 조회 실패:', err);
         setError('문의 내용을 불러오지 못했습니다.');
       })
       .finally(() => setLoading(false));
+  }
+
+
+  useEffect(() => {
+    if (!no) return;
+    setLoading(true);
+    setError(null);
+
+    loadQa();
+
   }, [no, mno, grade]);
-  
-  // 삭제 모달 대상 Q&A 및 삭제 중 상태
+
   const [deleteTarget, setDeleteTarget] = useState<QaTypes | null>(null);
   const [deleting, setDeleting] = useState<boolean>(false);
-
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
 
-  
-  /** 🔑 Q&A / FAQ 삭제 핸들러 */
+  // 비밀번호 입력 후 삭제 실행
   const handleDeleteWithPw = async (inputPw: string = '') => {
     if (!deleteTarget) return;
 
     setDeleting(true);
-
     try {
       await axiosInstance.delete('/qa', {
-        data: {
-          no: deleteTarget.no,
-          pw: inputPw,
-        },
+        data: { no: deleteTarget.no, pw: inputPw },
       });
 
-      setAlert({ message: '삭제되었습니다.', variant: 'success', onConfirm: goBack });
+      setAlert({ message: '삭제되었습니다.', variant: 'success', onConfirm: () => goToList() });
       setDeleteTarget(null);
     } catch (error) {
       console.error('삭제 실패:', error);
-
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;
         const data = error.response?.data;
@@ -98,7 +92,6 @@ export default function QaDetail() {
     }
   };
 
-
   if (loading) {
     return (
       <section className="view active">
@@ -110,125 +103,113 @@ export default function QaDetail() {
   if (error || !qa) {
     return (
       <section className="view active">
-        <PageHeader 
-            title="문의 상세" 
-            description={error ?? '등록한 문의와 답변 내용을 확인할 수 있습니다.'} 
-            actions={
-            <button type="button" className="btn btn_md btn_ghost" onClick={goBack}>
+        <PageHeader
+          title="문의 상세"
+          description={error ?? '등록한 문의와 답변 내용을 확인할 수 있습니다.'}
+          actions={
+            <button type="button" className="btn btn_md btn_ghost" onClick={() => goToList()}>
               ← 목록으로
             </button>
-            }
+          }
         />
-
-        
-        <div className='qa_area'>
+        <div className="qa_area">
           <div className="card card_pad_lg">
-            <div className='empty_row'>
-              해당 문의를 찾을 수 없거나 권한이 없습니다.
-            </div>
+            <div className="empty_row">해당 문의를 찾을 수 없거나 권한이 없습니다.</div>
           </div>
         </div>
       </section>
     );
   }
-  const answered = qa.status === 2 && !!qa.answer;
+
+  // 답변 완료 여부
+  const answered = qa.status !== 0;
 
   return (
     <section className="view active">
       <PageHeader
-        title="문의 상세" 
-        description='등록한 문의와 답변 내용을 확인할 수 있습니다.'
+        title="문의 상세"
+        description="등록한 문의와 답변 내용을 확인할 수 있습니다."
         actions={
-          <button type="button" className="btn btn_md btn_ghost" onClick={goBack}>
+          <button type="button" className="btn btn_md btn_ghost" onClick={() => goToList()}>
             ← 목록으로
           </button>
         }
       />
-      
-      <div className='qa_area'>
+
+      <div className="qa_area">
+        {/* 질문 영역 */}
         <div className="card card_pad_lg">
-          <div className='card_header'>
+          <div className="card_header">
             <p className="b_title">No.{qa.no}</p>
-      
             {qa.vmode === 'Y' && (
-              <span className='badge neutral'>
-                <span className='lock' aria-hidden="true"></span>
-                비밀글
+              <span className="badge neutral">
+                <span className="lock" aria-hidden="true"></span> 비밀글
               </span>
             )}
           </div>
 
-          <div className='badge_area'>
+          <div className="badge_area">
             <span className={`badge ${QA_STATUS_MAP[qa.status].className}`}>{QA_STATUS_MAP[qa.status].label}</span>
             <span className={`badge ${QA_TYPE_MAP[qa.type].className}`}>{QA_TYPE_MAP[qa.type].label}</span>
           </div>
 
-          <div className='title_area'>
-            <h2 className='title md'>{qa.title}</h2>
+          <div className="title_area">
+            <h3 className="title md">{qa.title}</h3>
             <p className="b_title">
               <span>작성자 No.{qa.mno}</span>
-              <span className='right'>{qa.cdate}</span>
+              <span className="right">{qa.cdate}</span>
             </p>
-
           </div>
 
-          <p className='card_contents'>
-            {qa.content}
-          </p>
+          <p className="card_contents">{qa.content}</p>
 
-          
-          {mno === qa.mno && 
-          (
-            <div className='form_page_footer'>
+          {/* 본인 글인 경우에만 수정/삭제 노출 */}
+          {mno === qa.mno && (
+            <div className="form_page_footer">
               <button type="button" className="btn btn_sm btn_danger" onClick={() => setDeleteTarget(qa)}>
                 삭제
               </button>
-              
+              {/* 답변대기인 경우에만 수정 버튼 노출 */}
               {!answered && (
-                <button type="button" className="btn btn_sm btn_outline_primary" onClick={() => navigate(`edit`, { state: { tab: fromTab } })}>
+                <button
+                  type="button"
+                  className="btn btn_sm btn_outline_primary"
+                  onClick={() => navigateWithTab('edit')}
+                >
                   수정
                 </button>
               )}
             </div>
           )}
-
         </div>
 
+        {/* 답변 영역 */}
         <div className="card card_pad_lg">
-          <h3 className='title sm'>답변</h3>
-          <div className='answer_area'>
+          <h3 className="title sm">답변</h3>
+          <div className="answer_area">
             {answered ? (
               <>
-                <p className='cell_title'>
-                  {qa.answer}
-                </p>
-                {qa.adate && (
-                  <div className="cell_sub">
-                    답변일 · {qa.adate}
-                  </div>
-                )}
+                <p className="cell_title">{qa.answer}</p>
+                {qa.adate && <div className="cell_sub">답변일 · {qa.adate}</div>}
               </>
             ) : (
-              <p className='cell_title'>아직 답변이 등록되지 않았습니다.</p>
+              <p className="cell_title">아직 답변이 등록되지 않았습니다.</p>
             )}
           </div>
         </div>
       </div>
 
-      
-      {/* 삭제 확인 모달 */}
+      {/* 비밀번호 입력 삭제 모달 */}
       <ConfirmDeleteModal
         open={deleteTarget !== null}
         onClose={() => setDeleteTarget(null)}
         onConfirm={(pw) => handleDeleteWithPw(pw || '')}
         loading={deleting}
-        targetLabel={
-          deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.title}` : undefined
-        }
+        targetLabel={deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.title}` : undefined}
         requirePassword={true}
       />
 
-      {/* 알림 모달 */}
+      {/* 안내 알림 모달 */}
       <AlertModal
         open={alert !== null}
         onClose={() => setAlert(null)}

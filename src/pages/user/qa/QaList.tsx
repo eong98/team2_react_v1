@@ -1,130 +1,133 @@
 import { useEffect, useState } from 'react';
 import { GlobalStoreSession } from '../../../store/LoginStore';
-import { useLocation, useNavigate } from 'react-router-dom';
 import { axiosInstance } from '../../../utils/Tool';
-import { AdminToolbar, DataAcc, DataCard, PageHeader, UserPagination } from '../../../components/ui';
-import type { DataCardColumn } from '../../../components/ui';
-import type { AccordionCardColumn } from '../../../components/ui';
-import { QA_STATUS_MAP, QA_TYPE_MAP, QA_TYPE_OPTIONS, type QaTypes, type TabKey } from '../../../components/ts/QaType';
-
-const PAGE_SIZE = 6;
+import { useTab } from '../../../hooks/useTab';
+import { Filterbar, UserPagination, PageHeader, DataAcc, DataCard } from '../../../components/ui';
+import type { DataCardColumn, AccordionCardColumn } from '../../../components/ui';
+import { EMPTY_FILTERS, PAGE_SIZE, QA_STATUS_MAP, QA_TYPE_MAP } from '../../../components/ts/QaType';
+import type { Filters, QaSearchResult, QaTypes, TabKey } from '../../../components/ts/QaType';
 
 export default function QaList() {
   const { no:mno, id } = GlobalStoreSession();
-  const navigate = useNavigate();
-  const location = useLocation();
 
-  // 내 문의 / 자주 묻는 질문 / 전체 문의 탭 — 작성/수정 화면에서 돌아올 때 넘겨준 tab이 있으면 그걸로 시작
-  const initialTab = (location.state as { tab?: TabKey })?.tab ?? 'qa';
-  const [tab, setTab] = useState<TabKey>(initialTab);
+  /* 탭 이동시 저장 설정 */
+  // 범용 useTab 훅 사용 (URL Query Parameter 기반 탭 제어)
+  const { tab, changeTab, navigateWithTab } = useTab<TabKey>({
+    defaultTab: 'qa',
+    basePath: '/user/qa',
+  });
 
-  // 💡 탭 상태 조건 분기
+  // 탭 상태 조건 분기
   const isFaq = tab === 'faq';
   const isQaType = tab === 'qa' || tab === 'my'; // Q&A 카드로 표출할 탭 (전체 문의 or 내 문의)
 
+  /* API 데이터 저장 */
   const [qaList, setQaList] = useState<QaTypes[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
-  // 검색 키워드 상태
-  const [keyword, setKeyword] = useState<string>('');
-  // 유형(접수유형) 필터
-  const [tagFilter, setTagFilter] = useState<QaTypes['type'] | ''>('');
-  // 상태(답변상태) 필터 — 전체 문의/내 문의 탭에서 사용
-  const [statusFilter, setStatusFilter] = useState<QaTypes['status'] | ''>('');
-  // 등록자(회원번호) 필터 — 전체 문의 탭에서만 사용
-  const [writerFilter, setWriterFilter] = useState<string>('');
-
-  // 현재 페이지 번호 상태
-  const [page, setPage] = useState<number>(1);
+  /* 필터바 설정 */
+  // draft: 입력 중인 값 (타이핑만으로는 검색 안 됨) / applied: "검색" 눌렀을 때 실제 조회에 쓰이는 값
+  const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS);
+  const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
+  const [page, setPage] = useState(1); // 화면 표시는 1부터, 서버는 0부터
+    
+  /* 페이징 설정 */
   const [totalPages, setTotalPages] = useState<number>(1);
-  const [totalCount, setTotalCount] = useState<number>(0);
+  const [totalElements, setTotalElements] = useState(0);
 
-  // ==========================================
-  // 2. API 데이터 조회 (Axios GET)
-  // ==========================================
+  /* 탭별 API 데이터 URL */
   const urlMap: Record<TabKey, string> = {
-    my: `/qa/my/${mno}`,     // 내 문의 엔드포인트
-    faq: '/qa/faq',   // 자주 묻는 질문
+    my: `/qa/my/${mno}`,  // 내 문의
     qa: '/qa/list',   // 전체 문의
+    faq: '/qa/faq',   // 자주 묻는 질문
   };
 
-  const fetchQaList = async () => {
-    if (tab === 'qa' && !mno) return;
-
+  const loadQaList = async () => {
     setLoading(true);
-
     try {
       const url = urlMap[tab];
-      const response = await axiosInstance.get(url, {
+      const res = await axiosInstance.get<QaSearchResult>(url, {
         params: {
-          word: keyword.trim() || undefined,
-          type: tagFilter === '' ? undefined : tagFilter,
-          status: isQaType && statusFilter !== '' ? statusFilter : undefined,
-          mno: tab === 'qa' && writerFilter.trim() !== '' ? writerFilter.trim() : undefined,
           page: page - 1,
           size: PAGE_SIZE,
+          word: applied.keyword.trim() || undefined,
+          type: applied.type === '' ? undefined : Number(applied.type),
+          status: isQaType && applied.state !== '' ? Number(applied.state) : undefined,
+          mno: tab === 'qa' && applied.mno?.trim() !== '' ? Number(applied.mno?.trim()) : undefined,
         },
       });
 
-      const data = response.data;
-      setQaList(data.content || []);
-      setTotalPages(data.totalPages || 1);
-      setTotalCount(data.totalElements || 0);
+      const { content, totalElements: total, totalPages: pages, page: serverPage, size } = res.data;
+
+      // [가상 번호 생성] 전체 데이터 개수 기준 내림차순 순번(cnt) 계산하여 각 로우에 추가
+      // 공식: 전체개수 - (현재페이지 * 페이지크기 + 인덱스)
+      const withCnt: QaTypes[] = content.map((item, idx) => ({
+        ...item,
+        cnt: total - (serverPage * size + idx),
+      }));
+
+      setQaList(withCnt);
+      setTotalElements(total);
+      setTotalPages(Math.max(1, pages)); // 최소 1페이지 보장
+      
     } catch (error) {
       console.error('목록 조회 실패:', error);
+      
+      setQaList([]);
+      setTotalElements(0);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
   };
 
+
+  /* Effect 및 이벤트 핸들러 */
   useEffect(() => {
-    fetchQaList();
-  }, [page, keyword, tab, tagFilter, statusFilter, writerFilter]);
+    loadQaList();
+  }, [tab, applied, page]);
 
-  // ==========================================
-  // 3. 이벤트 핸들러 (Event Handlers)
-  // ==========================================
+  
+  // [검색 버튼 클릭] 현재 작성 중인 draft 값을 applied로 확정짓고 1페이지로 이동
+  const onSearch = () => {
+    setPage(1);
+    setApplied(draft);
+  };
+
+  
+  // [초기화 버튼 클릭] 모든 필터 조건을 초기화하고 1페이지로 이동
+  const onReset = () => {
+    const empty = { ...EMPTY_FILTERS };
+    setDraft(empty);
+    setPage(1);
+    setApplied(empty);
+  };
+
+  // [탭 버튼 클릭]  모든 필터 조건을 초기화하고
   const handleTabChange = (next: TabKey) => {
-    if (next === tab) return;
-    setTab(next);
-    setKeyword('');
-    setTagFilter('');
-    setStatusFilter('');
-    setWriterFilter('');
+    // 탭 필터 초기화
+    changeTab(next, onReset);
+
+    // 검색 필터 초기화, 1페이지로 이동
+    const empty = { ...EMPTY_FILTERS };
+    setDraft(empty);
     setPage(1);
-    navigate(location.pathname, { replace: true, state: { tab: next } });
+    setApplied(empty);
   };
 
-  const handleSearch = (value: string) => {
-    setKeyword(value);
-    setPage(1);
-  };
-
-  const handleTypeFilter = (value: QaTypes['type'] | '') => {
-    setTagFilter(value);
-    setPage(1);
-  };
-
-  const handleStatusFilter = (value: QaTypes['status'] | '') => {
-    setStatusFilter(value);
-    setPage(1);
-  };
-
-  const handleWriterFilter = (value: string) => {
-    setWriterFilter(value);
-    setPage(1);
-  };
 
   // ==========================================
-  // 4. DataCard / DataAcc 컬럼 정의
+  // DataCard / DataAcc 컬럼 정의
   // ==========================================
   const qaColumns: DataCardColumn<QaTypes>[] = [
     {
       header: '상태',
       render: (n) => (
-        <span className={`badge ${QA_STATUS_MAP[n.status].className}`}>
-          {QA_STATUS_MAP[n.status].label}
-        </span>
+        <div className='badge_area'>
+          <span className={`badge ${QA_STATUS_MAP[n.status].className}`}>
+            {QA_STATUS_MAP[n.status].label}
+          </span>
+        </div>
       ),
     },
     {
@@ -132,7 +135,7 @@ export default function QaList() {
       render: (n) => (
         <div className="lt">
           <div className="cell_title">
-            <button className='link' onClick={() => navigate(`${n.no}`, { state: { tab } })} >
+            <button className='link' onClick={() => navigateWithTab(`${n.no}`)}>
               {n.title}
               {n.vmode === 'Y' ? 
                 (<span className='lock'>
@@ -142,7 +145,7 @@ export default function QaList() {
             </button>
           </div>
           <div className="cell_sub">
-            접수유형: {QA_TYPE_OPTIONS.find((t) => t.value === n.type)?.label ?? n.type}
+            접수유형: {Object.entries(QA_TYPE_MAP).find(([type]) => Number(type) === n.type)?.[1].label ?? n.type}
           </div>
         </div>
       ),
@@ -176,60 +179,49 @@ export default function QaList() {
         title="문의사항"
         description="자주 묻는 질문과 등록한 문의, 답변 상태를 확인할 수 있습니다."
         createLabel={isFaq ? undefined : '+ 문의 작성'}
-        onCreate={() => navigate('new', { state: { tab } })}
+        onCreate={() => navigateWithTab('new')}
       />
 
       {/* 💡 탭 선택 버튼 3개 분기 */}
       <div className="tabs" role="tablist" aria-label="문의 보기 전환">
-        <button
-          type="button"
-          role="tab"
-          className={`tab${tab === 'qa' ? ' on' : ''}`}
-          aria-selected={tab === 'qa'}
-          onClick={() => handleTabChange('qa')}
-        >
-          전체 문의
-        </button>
-
-        <button
-          type="button"
-          role="tab"
-          className={`tab${tab === 'my' ? ' on' : ''}`}
-          aria-selected={tab === 'my'}
-          onClick={() => handleTabChange('my')}
-        >
-          내 문의
-        </button>
-
-        <button
-          type="button"
-          role="tab"
-          className={`tab${tab === 'faq' ? ' on' : ''}`}
-          aria-selected={tab === 'faq'}
-          onClick={() => handleTabChange('faq')}
-        >
-          자주 묻는 질문
-        </button>
+        {(['qa', 'my', 'faq'] as TabKey[]).map((tKey) => {
+          const labels: Record<TabKey, string> = { qa: '전체 문의', my: '내 문의', faq: '자주 묻는 질문' };
+          return (
+            <button
+              key={tKey}
+              type="button"
+              role="tab"
+              className={`tab${tab === tKey ? ' on' : ''}`}
+              aria-selected={tab === tKey}
+              onClick={() => handleTabChange(tKey)}
+            >
+              {labels[tKey]}
+            </button>
+          );
+        })}
       </div>
 
-      <AdminToolbar
-        searchValue={keyword}
-        onSearchChange={handleSearch}
+      <Filterbar
+        page={page}
+        pageSize={PAGE_SIZE}
+        totalCount={totalElements}
+        searchValue={draft.keyword}
+        onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
         searchPlaceholder={isFaq ? 'FAQ 제목·답변으로 검색' : '제목으로 검색'}
         filters={
           <>
             {/* 접수 유형 필터 */}
             <select
               className="form_select"
-              value={tagFilter}
-              onChange={(e) => handleTypeFilter(e.target.value === '' ? '' : Number(e.target.value))}
+              value={draft.type}
+              onChange={(e) => setDraft((prev) => ({ ...prev, type: e.target.value }))}
               aria-label="접수 유형 필터"
-              style={{ width: 'auto' }}
+              title='접수 유형 선택'
             >
-              <option value="">전체 유형</option>
-              {QA_TYPE_OPTIONS.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
+              <option value="">전체</option>
+              {Object.entries(QA_TYPE_MAP).map(([type, {label}]) => (
+                <option key={type} value={type}>
+                  {label}
                 </option>
               ))}
             </select>
@@ -238,15 +230,15 @@ export default function QaList() {
             {isQaType && (
               <select
                 className="form_select"
-                value={statusFilter}
-                onChange={(e) => handleStatusFilter(e.target.value === '' ? '' : Number(e.target.value))}
+                value={draft.state}
+                onChange={(e) => setDraft((prev) => ({ ...prev, state: e.target.value }))}
                 aria-label="답변 상태 필터"
-                style={{ width: 'auto' }}
+                title='답변 상태 선택'
               >
-                <option value="">전체 상태</option>
-                {Object.entries(QA_STATUS_MAP).map(([value, s]) => (
-                  <option key={value} value={value}>
-                    {s.label}
+                <option value="">전체</option>
+                {Object.entries(QA_STATUS_MAP).map(([status, {label}]) => (
+                  <option key={status} value={status}>
+                    {label}
                   </option>
                 ))}
               </select>
@@ -255,15 +247,26 @@ export default function QaList() {
             {/* 회원번호 필터 (전체 문의 탭에서만 표시) */}
             {tab === 'qa' && (
               <input
-                type="text"
+                type="number"
                 className="form_input"
                 placeholder="회원번호로 검색"
-                value={writerFilter}
-                onChange={(e) => handleWriterFilter(e.target.value)}
-                aria-label="회원번호로 필터"
-                style={{ maxWidth: 160 }}
+                value={draft.mno}
+                onChange={(e) => setDraft((prev) => ({ ...prev, mno: e.target.value }))}
+                aria-label="회원번호 필터"
+                title='회원번호 검색'
+                style={{ maxWidth: 150 }}
               />
             )}
+          </>
+        }
+        extra={
+          <>
+            <button type="button" className="btn btn_ghost" onClick={onReset}>
+              초기화
+            </button>
+            <button type="button" className="btn btn_primary" onClick={onSearch}>
+              검색
+            </button>
           </>
         }
       />
@@ -281,9 +284,11 @@ export default function QaList() {
         <DataAcc
           title={(r) => (
             <>
+            <span className='badge_area'>
               <span className={`badge ${QA_TYPE_MAP[r.type]?.className ?? ''}`}>
                 {QA_TYPE_MAP[r.type]?.label ?? r.type}
               </span>{' '}
+            </span>
               Q. {r.title}
             </>
           )}
@@ -300,7 +305,7 @@ export default function QaList() {
       <UserPagination
         page={page}
         totalPages={totalPages}
-        totalCount={totalCount}
+        totalCount={totalElements}
         pageSize={PAGE_SIZE}
         onChange={setPage}
       />

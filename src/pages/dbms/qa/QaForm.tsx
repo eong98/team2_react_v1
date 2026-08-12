@@ -2,7 +2,7 @@ import { useEffect, useState, type ChangeEvent } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AlertModal, PageHeader } from '../../../components/ui';
 import { axiosInstance, getNowDate, set_focus } from '../../../utils/Tool';
-import { QA_TYPE_OPTIONS, type FaqCRequest, type TabKey } from '../../../components/ts/QaType';
+import { QA_TYPE_MAP, type FaqCRequest, type TabKey } from '../../../components/ts/QaType';
 import axios from 'axios';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 
@@ -208,9 +208,9 @@ export default function QaForm() {
               onChange={onChange}
               style={{ maxWidth: 200 }}
             >
-              {QA_TYPE_OPTIONS.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
+              {Object.entries(QA_TYPE_MAP).map(([status, {label}]) => (
+                <option key={status} value={status}>
+                  {label}
                 </option>
               ))}
             </select>
