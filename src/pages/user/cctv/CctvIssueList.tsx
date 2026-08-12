@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PageHeader, DataTable, UserPagination, AlertModal, type DataTableColumn } from '../../../components/ui';
-import Filterbar from '../../../components/ui/user/Filterbar';
+import { PageHeader, DataTable, UserPagination, AlertModal, type DataTableColumn } from '../../../components/ui/index.ts';
+import Filterbar from '../../../components/ui/user/Filterbar.tsx';
 import { axiosInstance, getNowDate } from '../../../utils/Tool.ts';
 import {
   PAGE_SIZE,
