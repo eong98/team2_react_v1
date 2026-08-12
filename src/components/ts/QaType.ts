@@ -56,7 +56,7 @@ export const QA_TYPE_OPTIONS = [
 // 3. STATUS (답변 상태) 매핑 상수 & 배지 스타일
 export const QA_STATUS_MAP: Record<number, { label: string; className: string }> = {
   0: { label: '답변대기', className: 'neutral_30' },
-  1: { label: '확인중',   className: 'badge_info' },
+  1: { label: '확인중',   className: 'check' },
   2: { label: '답변완료', className: 'badge_success' },
 };
 
@@ -84,8 +84,8 @@ export interface QCRequest {
   vmode: string;
 }
 
-// export interface DeleteRequest {
-//   no: number;
-//   pw: string;
-//   ddate?: string;
-// }
+export interface QARequest {
+  ano: number;
+  answer?: string;
+  // adate: string;
+}

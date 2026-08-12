@@ -11,13 +11,19 @@ import Form from '../pages/user/form/Form';
 import List from '../pages/user/form/List';
 import SendForm from '../pages/user/send/Form';
 import SendList from '../pages/user/send/List';
-import QaList from '../pages/user/board/QaList';
-import QaForm from '../pages/user/board/QaForm';
+
+
+import QaList from '../pages/user/qa/QaList';
+import QaForm from '../pages/user/qa/QaForm';
+import QaDetail from '../pages/user/qa/QaDetail';
+
+
 import ShopList from '../pages/user/shop/ShopList';
 import ShopForm from '../pages/user/shop/ShopForm';
+import ShopCalendar from '../pages/user/shop/ShopCalendar';
 
+import SurveyUserList from '../pages/user/survey/SurveyUserList';
 import SurveyAnswerForm from '../pages/user/survey/SurveyAnswerForm';
-import QaDetail from '../pages/dbms/board/QaDetail';
 
 
 export default function UserRoutes() {
@@ -38,7 +44,9 @@ export default function UserRoutes() {
       <Route path="shop/new" element={<ShopForm />} />
       <Route path="shop/:no/edit" element={<ShopForm />} />
 
-      
+      <Route path="calendar" element={<ShopCalendar />} />
+
+
       {/* 예시용 */}
       <Route element={<DashboardLayout />}>{/* 대시보드용 레이아웃 적용 */}
         <Route path="dashboard/test1" element={<Test1 />} />
@@ -52,10 +60,10 @@ export default function UserRoutes() {
       <Route path="list" element={<List />} />
       <Route path="send/form" element={<SendForm />} />
       <Route path="send/list" element={<SendList />} />
-
+      <Route path="survey" element={<SurveyUserList />} />
       <Route path="survey/:no" element={<SurveyAnswerForm />} />
 
-      
+
     </Routes>
   );
 }
