@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AdminToolbar, DataTable, PageHeader, DbmsPagination, ConfirmDeleteModal, type DataTableColumn } from '../../../components/ui';
 import { axiosInstance } from '../../../utils/Tool.ts';
-import { PAGE_SIZE, EMPTY_FILTERS, type ShopSearchResult, type RowType, type Filters } from '../../../components/ts/Shop.ts';
+import { PAGE_SIZE, EMPTY_FILTERS, type ShopSearchResult, type RowType, type Filters } from '../../../components/ts/ShopAdmin.ts';
 
 /* ---------------------------------------------------------------------
    매장관리(/dbms/shop) - 관리자 목록. mno 상관없이 전체 매장을 대상으로 합니다.

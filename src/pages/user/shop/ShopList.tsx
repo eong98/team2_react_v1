@@ -9,7 +9,7 @@ import {
   type ShopType,
   type ShopSearchResult,
   type Filters,
-} from './Shop.ts';
+} from '../../../components/ts/ShopUser.ts';
 import { GlobalStoreSession } from '../../../store/LoginStore.ts'; 
 import { GlobalCurrentShop } from '../../../store/UserStore.ts';
 
