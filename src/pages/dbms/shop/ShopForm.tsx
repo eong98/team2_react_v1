@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { PageHeader, ConfirmDeleteModal } from '../../../components/ui';
+import { PageHeader, ConfirmDeleteModal, AlertModal } from '../../../components/ui';
 import { axiosInstance, enter_chk, set_focus } from '../../../utils/Tool.ts';
 import type { ShopType } from '../../../components/ts/Shop.ts';
 
@@ -59,6 +59,7 @@ export default function ShopFormView() {
   const [notFound, setNotFound] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
+  const [formAlert, setFormAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -111,13 +112,26 @@ export default function ShopFormView() {
 
   const goBack = () => navigate('/dbms/shop');
 
+  // ==========================================
+  // 입력값 유효성 검사 (QaForm.tsx와 동일 패턴)
+  // 필수 항목이 늘어나면 이 배열에 한 줄만 추가하면 됩니다.
+  // ==========================================
+  const REQUIRED_FIELDS: { field: keyof FieldErrors; label: string; message: string; id: string }[] = [
+    { field: 'title', label: '매장명', message: '매장명을 입력해주세요.', id: 'title' },
+    { field: 'zip', label: '우편번호', message: '우편번호 검색으로 주소를 입력해주세요.', id: 'btnPostcode' },
+    { field: 'address', label: '주소', message: '우편번호 검색으로 주소를 입력해주세요.', id: 'btnPostcode' },
+  ];
+
   const validate = () => {
-    const next: FieldErrors = {};
-    if (!input.title?.trim()) next.title = '매장명을 입력해주세요.';
-    if (!input.zip?.trim()) next.zip = '우편번호 검색으로 주소를 입력해주세요.';
-    if (!input.address?.trim()) next.address = '우편번호 검색으로 주소를 입력해주세요.';
-    setErrors(next);
-    return Object.keys(next).length === 0;
+    for (const { field, message, id } of REQUIRED_FIELDS) {
+      if (!input[field]?.trim()) {
+        setErrors({ [field]: message });
+        set_focus(id);
+        return false;
+      }
+    }
+    setErrors({});
+    return true;
   };
 
   const send = async (e: React.SyntheticEvent) => {
@@ -147,17 +161,17 @@ export default function ShopFormView() {
       const response = await axiosInstance.put('/shop/update', payload);
 
       if (response.status === 401) {
-        alert('저장 권한이 없습니다.\n다시 로그인 해주세요.');
+        setFormAlert({ message: '저장 권한이 없습니다.\n다시 로그인 해주세요.', variant: 'error' });
         return;
       } else if (response.status !== 200) {
-        alert('저장에 실패했습니다.\n다시 시도해주세요.');
+        setFormAlert({ message: '저장에 실패했습니다.\n다시 시도해주세요.', variant: 'error' });
         return;
       }
 
-      goBack();
+      setFormAlert({ message: '매장 정보가 수정되었습니다.', variant: 'success', onConfirm: goBack });
     } catch (err) {
       console.error('네트워크 오류:', err);
-      alert('네트워크 오류가 발생했습니다.\n다시 시도해주세요.');
+      setFormAlert({ message: '네트워크 오류가 발생했습니다.\n다시 시도해주세요.', variant: 'error' });
     } finally {
       setSaving(false);
     }
@@ -397,6 +411,14 @@ export default function ShopFormView() {
         onConfirm={handleDelete}
         targetLabel={input.title}
         loading={deleting}
+      />
+
+      <AlertModal
+        open={formAlert !== null}
+        onClose={() => setFormAlert(null)}
+        onConfirm={formAlert?.onConfirm}
+        message={formAlert?.message ?? ''}
+        variant={formAlert?.variant}
       />
     </section>
   );
