@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader, ConfirmDeleteModal, AlertModal } from '../../../components/ui';
 import { axiosInstance, enter_chk, set_focus } from '../../../utils/Tool.ts';
-import type { ShopType } from '../../../components/ts/Shop.ts';
+import type { ShopType } from '../../../components/ts/ShopAdmin.ts';
 
 /* ---------------------------------------------------------------------
    매장 수정(/dbms/shop/:no/edit) - 관리자 화면. 생성 화면은 없음(매장 소유자가

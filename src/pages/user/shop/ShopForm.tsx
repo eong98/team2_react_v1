@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import PageHeader from '../../../components/ui/common/PageHeader';
 import { ConfirmDeleteModal, AlertModal } from '../../../components/ui';
 import { axiosInstance, enter_chk, set_focus } from '../../../utils/Tool.ts';
-import { EMPTY_SHOP, type ShopType } from './Shop.ts';
+import { EMPTY_SHOP, type ShopType } from '../../../components/ts/ShopUser.ts';
 import { GlobalStoreSession } from '../../../store/LoginStore.ts'; 
 // 파일이름 꼭 맞춰주세요
 /* ---------------------------------------------------------------------
