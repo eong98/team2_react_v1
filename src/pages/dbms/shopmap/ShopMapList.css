@@ -1,0 +1,40 @@
+/* 관리자 회원 도면 관리 화면에서만 사용하는 최소 스타일 */
+
+/* 보기 / 다운로드 / 삭제 버튼 영역 */
+.shopmap_actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+
+/* 도면 미리보기 영역 */
+.shopmap_preview {
+    display: flex;
+    min-height: 280px;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-2);
+}
+
+
+/* 도면 이미지 */
+.shopmap_preview img {
+    display: block;
+    width: 100%;
+    max-height: 60vh;
+    object-fit: contain;
+}
+
+
+/* 도면 로딩 / 빈 화면 문구 */
+.shopmap_preview p {
+    margin: 0;
+    color: var(--text-dim);
+    font-size: 13px;
+}

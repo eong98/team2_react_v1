@@ -1,0 +1,105 @@
+/* 사용자 매장 도면 관리 목록 */
+.shopmap_list {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.shopmap_row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) 100px minmax(220px, 1fr) 220px;
+  gap: 20px;
+  align-items: center;
+  min-height: 82px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.shopmap_row:last-child {
+  border-bottom: 0;
+}
+
+/* 매장명과 주소 */
+.shopmap_store {
+  min-width: 0;
+}
+
+/* 도면 등록 상태 */
+.shopmap_status {
+  display: flex;
+  align-items: center;
+}
+
+/* 등록된 도면 파일명 */
+.shopmap_file {
+  min-width: 0;
+}
+
+.shopmap_file .cell_title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 보기 / 변경 / 삭제 */
+.shopmap_actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* 등록/변경 모달 */
+.shopmap_upload_info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 18px;
+}
+
+.shopmap_upload .form_label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+/* 선택한 도면 또는 기존 도면 미리보기 */
+.shopmap_preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+  margin-top: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.shopmap_preview img {
+  display: block;
+  width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+}
+
+.shopmap_preview p,
+.shopmap_empty {
+  margin: 0;
+  padding: 28px 20px;
+  color: var(--text-faint);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* 작은 화면에서는 한 줄 구조를 세로로 변경 */
+@media (max-width: 900px) {
+  .shopmap_row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .shopmap_actions {
+    justify-content: flex-start;
+  }
+}

@@ -28,6 +28,8 @@ import CctvVisitorList from '../pages/user/cctv/CctvVisitorList';
 import SurveyUserList from '../pages/user/survey/SurveyUserList';
 import SurveyAnswerForm from '../pages/user/survey/SurveyAnswerForm';
 
+import ShopMapUserList from '../pages/user/shopmap/ShopMapUserList';
+
 
 export default function UserRoutes() {
   return (
@@ -69,6 +71,8 @@ export default function UserRoutes() {
       <Route path="send/list" element={<SendList />} />
       <Route path="survey" element={<SurveyUserList />} />
       <Route path="survey/:no" element={<SurveyAnswerForm />} />
+
+      <Route path="shopmap" element={<ShopMapUserList />} />
 
 
     </Routes>
