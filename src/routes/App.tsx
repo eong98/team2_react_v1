@@ -18,7 +18,7 @@ import DbmsRoutes from './DbmsRoutes';
 
 import Sidebar from '../components/layout/Sidebar';
 import Topbar from '../components/ui/common/Topbar';
-import ChatWidget from '../components/ui/ChatWidget';
+import ChatWidget from '../components/ui/user/ChatWidget';
 
 
 function App() {

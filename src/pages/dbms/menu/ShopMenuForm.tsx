@@ -1,7 +1,7 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import PageHeader from '../../../components/ui/common/PageHeader';
-import { enter_chk, axiosInstance } from '../../../utils/Tool.ts';
+import { AlertModal, PageHeader } from '../../../components/ui';
+import { enter_chk, axiosInstance, set_focus } from '../../../utils/Tool.ts';
 import type { MenuType, ParentMenuType } from './Menu.ts';
 
 // 파일이름 꼭 맞춰주세요
@@ -84,14 +84,6 @@ export default function ShopMenuFormView() {
       .catch(err => console.error(err));
   }, [isEdit, no]);
 
-  // e.target: event가 발생한 태그 (숫자 필드는 문자열로 받아뒀다가 전송 시 Number 변환)
-  const onChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const { id, value } = e.target;
-    setInput({ ...input, [id]: value });
-  };
-
   const onDeptChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const dept = Number(e.target.value);
     // 대표 메뉴로 바꾸면 상위 메뉴 선택값은 의미가 없으므로 초기화
@@ -104,8 +96,45 @@ export default function ShopMenuFormView() {
 
   const goBack = () => navigate('/dbms/shopmenu');
 
+  // ==========================================
+  // 입력값 유효성 검사 (QaForm.tsx와 동일 패턴)
+  // 필수 항목이 늘어나면 이 배열에 한 줄만 추가하면 됩니다.
+  // ==========================================
+  type FormErrors = { fkno?: string; title?: string; purl?: string };
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [formAlert, setFormAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
+
+  const validate = () => {
+    const isTopMenu = Number(input.dept) === DEPT_TOP;
+
+    const REQUIRED_FIELDS: { field: keyof FormErrors; message: string; id: string; check: () => boolean }[] = [
+      ...(!isTopMenu
+        ? [{
+            field: 'fkno' as const,
+            message: '상위 메뉴를 선택해주세요.',
+            id: 'label_02',
+            check: () => input.fkno === undefined || input.fkno === null || String(input.fkno) === '',
+          }]
+        : []),
+      { field: 'title', message: '메뉴 제목을 입력해주세요.', id: 'label_04', check: () => !input.title?.trim() },
+      { field: 'purl', message: '경로(URL)를 입력해주세요.', id: 'label_05', check: () => !input.purl?.trim() },
+    ];
+
+    for (const { field, message, id, check } of REQUIRED_FIELDS) {
+      if (check()) {
+        setErrors({ [field]: message });
+        set_focus(id);
+        return false;
+      }
+    }
+    setErrors({});
+    return true;
+  };
+
   const send = async (e: React.SyntheticEvent) => {
     e.preventDefault();
+
+    if (!validate()) return;
 
     const isTopMenu = Number(input.dept) === DEPT_TOP;
 
@@ -134,20 +163,24 @@ export default function ShopMenuFormView() {
         : await axiosInstance.post('/shopmenu/save', payload);
 
       if (response.status === 401) { // axios는 상태값 처리, fetch는 안됨.
-        alert('저장 권한이 없습니다.\n관리자로 다시 로그인 해주세요.');
+        setFormAlert({ message: '저장 권한이 없습니다.\n관리자로 다시 로그인 해주세요.', variant: 'error' });
         return;
       } else if (response.status !== 200) {
-        alert('저장에 실패했습니다.\n다시 시도해주세요.');
+        setFormAlert({ message: '저장에 실패했습니다.\n다시 시도해주세요.', variant: 'error' });
         return;
       }
 
       const result = response.data; // axios
       console.log('서버 응답:', result);
-      navigate('/dbms/shopmenu/');
+      setFormAlert({
+        message: isEdit ? '매장 메뉴가 수정되었습니다.' : '매장 메뉴가 등록되었습니다.',
+        variant: 'success',
+        onConfirm: () => navigate('/dbms/shopmenu/'),
+      });
 
     } catch (err) {
       console.error('네트워크 오류:', err);
-      alert('네트워크 오류가 발생했습니다.\n다시 시도해주세요.');
+      setFormAlert({ message: '네트워크 오류가 발생했습니다.\n다시 시도해주세요.', variant: 'error' });
     }
   };
 
@@ -197,9 +230,12 @@ export default function ShopMenuFormView() {
               <div className="form_control">
                 <select
                   id="label_02"
-                  className="form_select"
+                  className={`form_select ${errors.fkno ? 'is_error' : ''}`}
                   value={input.fkno ?? ''}
-                  onChange={(e) => setInput({ ...input, fkno: e.target.value === '' ? null : Number(e.target.value) })}
+                  onChange={(e) => {
+                    setInput({ ...input, fkno: e.target.value === '' ? null : Number(e.target.value) });
+                    setErrors((prev) => ({ ...prev, fkno: undefined }));
+                  }}
                   style={{ maxWidth: 200 }}
                 >
                   <option value="">선택하세요</option>
@@ -210,7 +246,9 @@ export default function ShopMenuFormView() {
                   ))}
                 </select>
 
-                {parentList.length === 0 && (
+                {errors.fkno ? (
+                  <div className="form_hint error">{errors.fkno}</div>
+                ) : parentList.length === 0 && (
                   <div className="form_hint">등록된 대표 메뉴가 없습니다.</div>
                 )}
               </div>
@@ -241,12 +279,16 @@ export default function ShopMenuFormView() {
             <div className="form_control">
               <input
                 id="label_04"
-                className="form_input"
+                className={`form_input ${errors.title ? 'is_error' : ''}`}
                 placeholder="메뉴 제목을 입력하세요"
                 value={input.title ?? ''}
-                onChange={(e) => setInput({ ...input, title: e.target.value })}
+                onChange={(e) => {
+                  setInput({ ...input, title: e.target.value });
+                  setErrors((prev) => ({ ...prev, title: undefined }));
+                }}
                 onKeyDown={e => enter_chk(e, 'label_05')}
               />
+              {errors.title && <div className="form_hint error">{errors.title}</div>}
             </div>
           </div>
 
@@ -258,12 +300,16 @@ export default function ShopMenuFormView() {
             <div className="form_control">
               <input
                 id="label_05"
-                className="form_input"
+                className={`form_input ${errors.purl ? 'is_error' : ''}`}
                 placeholder="예: /board/list/1"
                 value={input.purl ?? ''}
-                onChange={(e) => setInput({ ...input, purl: e.target.value })}
+                onChange={(e) => {
+                  setInput({ ...input, purl: e.target.value });
+                  setErrors((prev) => ({ ...prev, purl: undefined }));
+                }}
                 onKeyDown={e => enter_chk(e, 'label_06')}
               />
+              {errors.purl && <div className="form_hint error">{errors.purl}</div>}
             </div>
           </div>
 
@@ -340,6 +386,14 @@ export default function ShopMenuFormView() {
           </div>
         </div>
       </form>
+
+      <AlertModal
+        open={formAlert !== null}
+        onClose={() => setFormAlert(null)}
+        onConfirm={formAlert?.onConfirm}
+        message={formAlert?.message ?? ''}
+        variant={formAlert?.variant}
+      />
     </section>
   );
 }
