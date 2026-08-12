@@ -1,6 +1,6 @@
 /* ---------------------------------------------------------------------
    매장(SHOP_CALENDAR) 캘린더 타입/상수/날짜 변환 유틸.
-   ShopCalendar.tsx 에서만 참조합니다.
+   src/pages/user/shop/ShopCalendar.tsx 에서만 참조합니다.
    (파일명은 ShopCalendar.tsx와의 default export 충돌을 피하려고
     ShopCalendarType.ts로 지었습니다.)
 
@@ -18,15 +18,12 @@
    cdate     String  - 등록일, 서버(ShopCalendarService.save)에서 Tool.getDate()로 채움
    udate     String  - 수정일, 서버(ShopCalendarService.update)에서 Tool.getDate()로 채움
 
-   API (ShopCalendarCont, /shopcalendar)
+   API (ShopCalendarCont, /shopcalendar) - 백엔드는 이미 구현되어 있음
    POST   /shopcalendar/save              - ShopCalendarDTO(JSON) → 등록
    PUT    /shopcalendar/update            - ShopCalendarDTO(JSON, no 포함) → 수정
    GET    /shopcalendar/{pk}              - 단건 조회
    GET    /shopcalendar/find_by_sno/{sno} - 매장별 전체 일정 목록
    DELETE /shopcalendar/{pk}              - 삭제
-
-   ※ save/update가 @RequestBody(JSON)이므로 FormData가 아닌 JSON으로 전송합니다.
-   ※ 백엔드는 이미 구현되어 있어 프론트만 새로 작업합니다.
 --------------------------------------------------------------------- */
 
 export interface ShopCalendarType {
@@ -44,7 +41,6 @@ export interface ShopCalendarType {
   udate?: string;
 }
 
-/** 일정 종류. label/color는 프론트 전용(백엔드는 ctype 숫자만 저장) */
 export interface CtypeOption {
   value: number;
   label: string;
@@ -52,27 +48,29 @@ export interface CtypeOption {
 }
 
 export const CTYPE_OPTIONS: CtypeOption[] = [
-  { value: 0, label: '일반', color: '#33D6C0' }, // teal
-  { value: 1, label: '휴무', color: '#FFB020' }, // amber
-  { value: 2, label: '이벤트', color: '#7C5CFF' }, // violet
-  { value: 3, label: '정산', color: '#33D68A' }, // green
-  { value: 4, label: '점검', color: '#FF4D5E' }, // red
+  { value: 0, label: '일반', color: '#33D6C0' },
+  { value: 1, label: '휴무', color: '#FFB020' },
+  { value: 2, label: '이벤트', color: '#7C5CFF' },
+  { value: 3, label: '정산', color: '#33D68A' },
+  { value: 4, label: '점검', color: '#FF4D5E' },
 ];
 
-export const getCtypeOption = (ctype: number): CtypeOption =>
-  CTYPE_OPTIONS.find((c) => c.value === ctype) ?? CTYPE_OPTIONS[0];
+export function getCtypeOption(ctype: number): CtypeOption {
+  for (const c of CTYPE_OPTIONS) {
+    if (c.value === ctype) return c;
+  }
+  return CTYPE_OPTIONS[0];
+}
 
-/** 색상 팔레트(수동 선택). 비워두면 ctype 기본색을 씁니다. */
-export const COLOR_SWATCHES = [
-  '#33D6C0', // teal
-  '#33D68A', // green
-  '#7C5CFF', // violet
-  '#FFB020', // amber
-  '#FF6A3D', // orange
-  '#FF4D5E', // red
+export const COLOR_SWATCHES: string[] = [
+  '#33D6C0',
+  '#33D68A',
+  '#7C5CFF',
+  '#FFB020',
+  '#FF6A3D',
+  '#FF4D5E',
 ];
 
-/** 신규 등록 시 초기값 (sno/sdate/edate는 열 때 채워 넣음) */
 export const EMPTY_CALENDAR: ShopCalendarType = {
   ctype: 0,
   title: '',
@@ -87,63 +85,89 @@ export const EMPTY_CALENDAR: ShopCalendarType = {
 /* -----------------------------------------------------------------
    날짜 변환 유틸
    - DB: "YYYY-MM-DD HH:MM:SS" 문자열 (Tool.getNowDate()와 동일 포맷)
-   - FullCalendar: JS Date 객체 (로컬 타임존 그대로 사용, UTC 변환 없음)
+   - FullCalendar: JS Date 객체(로컬 타임존 그대로 사용, UTC 변환 안 함)
 ------------------------------------------------------------------ */
 
-const pad = (n: number) => String(n).padStart(2, '0');
+function pad(n: number): string {
+  return n < 10 ? `0${n}` : String(n);
+}
 
-export const formatDbDateTime = (d: Date): string =>
-  `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+export function formatDbDateTime(d: Date): string {
+  const y = d.getFullYear();
+  const mo = pad(d.getMonth() + 1);
+  const da = pad(d.getDate());
+  const h = pad(d.getHours());
+  const mi = pad(d.getMinutes());
+  const s = pad(d.getSeconds());
+  return `${y}-${mo}-${da} ${h}:${mi}:${s}`;
+}
 
-/** "YYYY-MM-DD HH:MM:SS" / "YYYY-MM-DD" → Date (로컬시간 해석) */
-export const parseDbDate = (s?: string): Date | null => {
-  if (!s) return null;
-  const norm = s.trim();
-  const iso = norm.length === 10 ? `${norm}T00:00:00` : norm.replace(' ', 'T');
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? null : d;
-};
-
-/** input[type=datetime-local] / input[type=date] 표시용 문자열 */
-export const toInputValue = (d: Date, allDay: boolean): string => {
-  const base = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  return allDay ? base : `${base}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-};
-
-/** input value("YYYY-MM-DD" 또는 "YYYY-MM-DDTHH:mm") → Date (로컬시간) */
-export const fromInputValue = (value: string, allDay: boolean): Date | null => {
+/** "YYYY-MM-DD HH:MM:SS" 또는 "YYYY-MM-DD" → Date (로컬시간 해석) */
+export function parseDbDate(value?: string): Date | null {
   if (!value) return null;
-  const iso = allDay ? `${value}T00:00:00` : `${value}:00`;
-  const d = new Date(iso);
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const isoLike = trimmed.length <= 10 ? `${trimmed}T00:00:00` : trimmed.replace(' ', 'T');
+  const d = new Date(isoLike);
   return Number.isNaN(d.getTime()) ? null : d;
-};
+}
+
+/** input[type=date] / input[type=datetime-local] 표시용 문자열 */
+export function toInputValue(d: Date, allDay: boolean): string {
+  const base = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  if (allDay) return base;
+  return `${base}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** input value → Date (로컬시간). 파싱 실패 시 null */
+export function fromInputValue(value: string, allDay: boolean): Date | null {
+  if (!value) return null;
+  const isoLike = allDay ? `${value}T00:00:00` : `${value}:00`;
+  const d = new Date(isoLike);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
 
 /**
  * FullCalendar select/drop/resize 결과(start, end, allDay)를 DB 저장용
  * sdate/edate 문자열로 변환.
- * - 종일 일정: FullCalendar의 end는 "다음날 00:00"(배타적)이라 하루 전으로
- *   당겨 23:59:59로 저장(포함 종료일 기준으로 통일).
+ * - 종일 일정: FullCalendar가 주는 end는 "다음날 00:00"(배타적)이라
+ *   하루 전으로 당겨서 23:59:59로 저장(포함 종료일 기준으로 통일).
  */
-export const toStoreDates = (start: Date, end: Date | null, allDay: boolean) => {
+export function toStoreDates(
+  start: Date,
+  end: Date | null,
+  allDay: boolean,
+): { sdate: string; edate: string } {
   const s = new Date(start);
   let e = end ? new Date(end) : new Date(start);
 
   if (allDay) {
     s.setHours(0, 0, 0, 0);
-    if (end) {
+    // end가 시작일보다 진짜로 뒤(=FullCalendar가 준 배타적 다음날 00:00)일
+    // 때만 하루를 당겨서 "포함 종료일"로 바꿉니다. 새 일정 등록처럼 end가
+    // start와 같은 날(진짜 범위가 아니라 그냥 시작일을 그대로 넘긴 경우)이면
+    // 하루를 빼면 안 되는데 예전 코드는 무조건 뺐던 게 버그였습니다.
+    if (end && end.getTime() > start.getTime()) {
       e = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+    } else {
+      e = new Date(s);
     }
     e.setHours(23, 59, 59, 0);
   }
 
   return { sdate: formatDbDateTime(s), edate: formatDbDateTime(e) };
-};
+}
 
 /**
  * DB의 sdate/edate/allday를 FullCalendar 이벤트 start/end로 변환.
- * 종일 일정은 edate(포함 종료일) 다음날 00:00을 배타적 end로 넘겨줍니다.
+ * 종일 일정은 edate(포함 종료일) 다음날 00:00을 배타적 end로 돌려줍니다.
  */
-export const toFcRange = (sdate: string, edate: string, allDay: boolean) => {
+export function toFcRange(
+  sdate: string,
+  edate: string,
+  allDay: boolean,
+): { start: Date; end: Date; allDay: boolean } {
   const s = parseDbDate(sdate) ?? new Date();
   const e = parseDbDate(edate) ?? s;
 
@@ -151,14 +175,14 @@ export const toFcRange = (sdate: string, edate: string, allDay: boolean) => {
     const start = new Date(s.getFullYear(), s.getMonth(), s.getDate());
     const end = new Date(e.getFullYear(), e.getMonth(), e.getDate());
     end.setDate(end.getDate() + 1);
-    return { start, end, allDay: true as const };
+    return { start, end, allDay: true };
   }
 
-  return { start: s, end: e, allDay: false as const };
-};
+  return { start: s, end: e, allDay: false };
+}
 
 /** 화면에 보여줄 기간 문자열 (예: "2026-08-12" / "2026-08-12 14:00 ~ 15:30") */
-export const formatRangeLabel = (row: ShopCalendarType): string => {
+export function formatRangeLabel(row: ShopCalendarType): string {
   const { start, end } = toFcRange(row.sdate, row.edate, row.allday === 'Y');
   const dateStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   const timeStr = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -171,4 +195,4 @@ export const formatRangeLabel = (row: ShopCalendarType): string => {
   return dateStr(start) === dateStr(end)
     ? `${dateStr(start)} ${timeStr(start)} ~ ${timeStr(end)}`
     : `${dateStr(start)} ${timeStr(start)} ~ ${dateStr(end)} ${timeStr(end)}`;
-};
+}

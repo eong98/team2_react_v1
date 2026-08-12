@@ -1,4 +1,3 @@
-
 /* =========================================================
    서비스 페이지 css
 ========================================================= */
@@ -85,6 +84,33 @@
 }
 .topbar_left{display:flex;align-items:center;gap:10px;}
 .store_switch .st_dot{width:7px;height:7px;border-radius:50%;background:var(--green-500);}
+
+/* 매장 스위처 드롭다운 (Topbar.tsx) - 버튼을 기준점으로 바로 아래에 슬라이드로 펼쳐짐 */
+.store_switch_wrap{position:relative;}
+.store_switch_chev{font-size:11px;color:var(--text-faint);transition:transform .15s ease;}
+.store_switch_chev.open{transform:rotate(180deg);}
+.store_dropdown{
+  position:absolute;top:calc(100% + 8px);left:0;z-index:30;
+  width:300px;max-width:calc(100vw - 32px);
+  background:var(--bg-elevated,var(--surface));border:1px solid var(--border-strong);border-radius:10px;
+  box-shadow:0 16px 40px rgba(0,0,0,.4);
+  max-height:0;opacity:0;overflow:hidden;pointer-events:none;
+  transition:max-height .22s ease,opacity .18s ease;
+}
+.store_dropdown.open{max-height:420px;opacity:1;pointer-events:auto;}
+.store_dropdown_list{max-height:320px;overflow-y:auto;padding:6px;}
+.store_dropdown_item{
+  display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;
+  padding:9px 10px;border-radius:8px;border:1px solid transparent;background:none;text-align:left;position:relative;
+}
+.store_dropdown_item:hover{background:var(--surface);}
+.store_dropdown_item.active{background:var(--primary-dim);border-color:rgba(51,214,138,.3);}
+.store_dropdown_item .sd_name{font-size:13px;font-weight:600;color:var(--text);padding-right:20px;}
+.store_dropdown_item .sd_addr{font-size:11.5px;color:var(--text-faint);}
+.store_dropdown_item .sd_check{position:absolute;top:9px;right:10px;color:var(--primary,var(--green-500));font-size:12px;}
+.store_dropdown_empty{padding:20px 14px;text-align:center;font-size:12.5px;color:var(--text-faint);}
+.store_dropdown_foot{border-top:1px solid var(--border);padding:8px;display:flex;justify-content:flex-end;}
+
 .topbar_right{display:flex;align-items:center;gap:10px;}
 .live_pill{
   display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:11.5px;
