@@ -195,21 +195,23 @@ export default function QaDetail() {
         </div>
 
         <div className="card card_pad_lg">
-          <h3 style={{ fontSize: 14, marginBottom: 10 }}>답변</h3>
-          {answered ? (
-            <>
-              <p style={{ fontSize: 13.5, lineHeight: 1.7, color: 'var(--text-dim)', whiteSpace: 'pre-wrap' }}>
-                {qa.answer}
-              </p>
-              {qa.adate && (
-                <div className="cell_sub" style={{ marginTop: 12 }}>
-                  답변일 · {qa.adate}
-                </div>
-              )}
-            </>
-          ) : (
-            <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>아직 답변이 등록되지 않았습니다.</p>
-          )}
+          <h3 className='title sm'>답변</h3>
+          <div className='answer_area'>
+            {answered ? (
+              <>
+                <p className='cell_title'>
+                  {qa.answer}
+                </p>
+                {qa.adate && (
+                  <div className="cell_sub">
+                    답변일 · {qa.adate}
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className='cell_title'>아직 답변이 등록되지 않았습니다.</p>
+            )}
+          </div>
         </div>
       </div>
 

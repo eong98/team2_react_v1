@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AlertModal, ConfirmDeleteModal, PageHeader } from '../../../components/ui';
-import { axiosInstance } from '../../../utils/Tool';
+import { axiosInstance, set_focus } from '../../../utils/Tool';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import axios from 'axios';
-import { QA_STATUS_MAP, QA_TYPE_MAP, type QaTypes, type TabKey } from '../../../components/ts/QaType';
+import { QA_STATUS_MAP, QA_TYPE_MAP, type QARequest, type QaTypes, type TabKey } from '../../../components/ts/QaType';
 
 export default function QaDetail() {
   const { no } = useParams<{ no: string }>();
@@ -24,12 +24,11 @@ export default function QaDetail() {
   const [qa, setQa] = useState<QaTypes | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  useEffect(() => {
-    
-    if (!no) return;
-    setLoading(true);
-    setError(null);
+  const [isEdit, setIsEdit] = useState<boolean>(false);
 
+
+  const loadQa = () => {
+    
     axiosInstance
       .get(`/qa/${no}`, {
         headers: {
@@ -46,44 +45,118 @@ export default function QaDetail() {
         setError('문의 내용을 불러오지 못했습니다.');
       })
       .finally(() => setLoading(false));
+  }
 
-  }, [no, ano, grade]);
+  /* 문의내용 상세 데이터 */
+  useEffect(() => {
+    
+    if (!no) return;
+    setLoading(true);
+    setError(null);
+
+    loadQa();
+
+
+  }, [no, ano, grade, isEdit]);
+
   
-      console.log(ano)
-  // 삭제 모달 대상 Q&A 및 삭제 중 상태
-  const [deleteTarget, setDeleteTarget] = useState<QaTypes | null>(null);
-  const [deleting, setDeleting] = useState<boolean>(false);
+    // ==========================================
+    // 1. 폼 상태 관리 ('Y' / 'N' 반영)
+    // ==========================================
+    const [input, setInput] = useState<QARequest>({
+      ano: ano,
+      answer: ''
+    });
 
+  useEffect(() => {
+    if (!isEdit) return;
+    
+    setInput((prev) => ({
+      ...prev,
+      answer: qa?.answer
+    }));
+
+  }, [isEdit]);
+
+  // 유효성 검사 에러 메시지
+  type FormErrors = Partial<Record<keyof QARequest, string>>;
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [submitting, setSubmitting] = useState<boolean>(false);
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
 
   
-  /** 🔑 Q&A / FAQ 삭제 핸들러 */
-  const handleDeleteWithPw = async (inputPw: string = '') => {
-    if (!deleteTarget) return;
+  // 💡 공통 onChange (체크박스를 'Y' / 'N'으로 변환)
+  const onChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setInput((prev) => ({ ...prev, [name]: value }));
 
-    setDeleting(true);
+    if (name in errors) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
+  };
+  
+  // ==========================================
+  // 2. 입력값 유효성 검사
+  // ==========================================
+  const REQUIRED_FIELDS: { field: keyof FormErrors; label: string; id: string }[] = [
+    { field: 'answer', label: '답변', id: 'answer' },
+  ];
 
+  const validate = () => {
+    for (const { field, label, id } of REQUIRED_FIELDS) {
+      if (!String(input[field] ?? '').trim()) {
+        setErrors({ [field]: `${label}을(를) 입력해주세요.` });
+        set_focus(id);
+        return false;
+      }
+    }
+    setErrors({});
+    return true;
+  };
+
+    
+  // ==========================================
+  // 3. API 저장 처리 (POST / PUT)
+  // ==========================================
+  const handleEdit = () => {
+    console.log(!isEdit && qa?.status === 2 && !!qa?.answer)
+    if (!isEdit && qa?.status === 2 && !!qa?.answer) {
+      console.log('1')
+      setIsEdit(true);
+    } else {
+      console.log('2')
+      handleSave();
+    }
+  }
+
+  const handleSave = async () => {
+    if (!validate() || submitting) return;
+
+    setIsEdit(true);
+    setSubmitting(true);
     try {
-      await axiosInstance.delete('/qa', {
-        data: {
-          no: deleteTarget.no,
-          pw: inputPw,
-        },
+      const payload: QARequest = {
+        ano,
+        answer: input.answer
+      };
+
+      await axiosInstance.put(`/qa/reply/${no}`, payload);
+
+      setAlert({
+        message: isEdit ? '답변 내용이 수정되었습니다.' : '답변 내용이 등록되었습니다.',
+        variant: 'success',
+        onConfirm: () => setIsEdit(false)
       });
-
-      setAlert({ message: '삭제되었습니다.', variant: 'success', onConfirm: goBack });
-      setDeleteTarget(null);
     } catch (error) {
-      console.error('삭제 실패:', error);
-
+      console.error('문의사항 저장 중 오류 발생:', error);
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;
         const data = error.response?.data;
 
         if (status === 400 || status === 401) {
-          setAlert({ message: '비밀번호가 올바르지 않거나 입력값이 잘못되었습니다.', variant: 'error' });
+          setAlert({ message: '입력값을 확인하거나 비밀번호를 다시 확인해주세요.', variant: 'error' });
         } else if (status === 404) {
-          setAlert({ message: '존재하지 않거나 이미 삭제된 항목입니다.', variant: 'error' });
+          setAlert({ message: '존재하지 않거나 이미 삭제된 게시글입니다.', variant: 'error' });
         } else if (status === 500) {
           if (data?.message?.includes('비밀번호') || data?.message?.includes('password')) {
             setAlert({ message: '비밀번호가 일치하지 않습니다.', variant: 'error' });
@@ -97,7 +170,7 @@ export default function QaDetail() {
         setAlert({ message: '알 수 없는 오류가 발생했습니다.', variant: 'error' });
       }
     } finally {
-      setDeleting(false);
+      setSubmitting(false);
     }
   };
 
@@ -134,7 +207,7 @@ export default function QaDetail() {
       </section>
     );
   }
-  const answered = qa.status === 2 && !!qa.answer;
+
 
   return (
     <section className="view active">
@@ -181,60 +254,53 @@ export default function QaDetail() {
         </div>
 
         <div className="card card_pad_lg">
-          <h3 style={{ fontSize: 14, marginBottom: 10 }}>답변</h3>
-          {answered ? (
-            <div className="form_group">
-              <label className="form_label" htmlFor="label_05">
-                답변 내용<span className="req" title="필수 입력 요소">*</span>
-              </label>
-              {/* <div className="form_control">
-                <textarea
-                  id="label_05"
-                  className={`form_textarea ${errors.answer ? 'is_error' : ''}`}
-                  placeholder="FAQ 답변 내용을 입력하세요"
-                  name='answer'
-                  value={input.answer}
-                  onChange={onChange}
-                  style={{ minHeight: 220 }}
-                />
-                {errors.answer && <div className="form_hint error">{errors.answer}</div>}
-              </div> */}
+          <h3 className='title sm'>답변</h3>
+
+          <div className='answer_area'>
+            {loading ? (
+              <div className="empty_row">로딩중...</div>
+            ) : !isEdit && qa?.status === 2 && !!qa?.answer ? (
+              /* 1. 답변이 있고 / 수정 중이 아니면: 답변 조회 화면 노출 */
+              <>
+                <p className="cell_title">{qa.answer}</p>
+                {qa.adate && (
+                  <div className="cell_sub">
+                    답변일 · {qa.adate}
+                  </div>
+                )}
+              </>
+            ) : (
+              /* 2. 답변이 없거나 / 수정 중이면: 입력 Form 노출 */
+              <div className="form_group">
+                <label className="form_label" htmlFor="answer">
+                  답변 내용<span className="req" title="필수 입력 요소">*</span>
+                </label>
+
+                <div className="form_control">
+                  <textarea
+                    id="answer"
+                    className={`form_textarea ${errors.answer ? 'is_error' : ''}`}
+                    placeholder="답변 내용을 입력하세요"
+                    name="answer"
+                    value={input.answer}
+                    onChange={onChange}
+                  />
+                  {errors.answer && <div className="form_hint error">{errors.answer}</div>}
+                </div>
+              </div>
+            )}
+
+            
+            <div className='form_page_footer'>
+              <button type='button' className='btn btn_primary' onClick={handleEdit} disabled={submitting}>
+                {!isEdit && qa?.status === 2 && !!qa?.answer ? '수정' : '저장'}
+              </button>
             </div>
-          ) : (
-            <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>아직 답변이 등록되지 않았습니다.</p>
-          )}
+          </div>
         </div>
       </div>
 
-{/* 
-      {ano === qa.mno && 
-      (
-        <div className='actions both'>
-          <button type="button" className="btn btn_md btn_danger" onClick={() => setDeleteTarget(qa)}>
-            삭제
-          </button>
-          
-          {!answered && (
-            <button type="button" className="btn btn_md btn_primary" onClick={() => navigate(`edit`, { state: { tab: fromTab } })}>
-              문의 수정
-            </button>
-          )}
-        </div>
-      )} */}
-
       
-      {/* 삭제 확인 모달 */}
-      <ConfirmDeleteModal
-        open={deleteTarget !== null}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={(pw) => handleDeleteWithPw(pw || '')}
-        loading={deleting}
-        targetLabel={
-          deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.title}` : undefined
-        }
-        requirePassword={true}
-      />
-
       {/* 알림 모달 */}
       <AlertModal
         open={alert !== null}
