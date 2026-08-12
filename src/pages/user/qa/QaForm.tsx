@@ -21,7 +21,7 @@ export default function QaForm() {
   // 목록에서 어느 탭에서 들어왔는지 확인하여 돌아갈 때 상태 전달
   const fromTab = (location.state as { tab?: TabKey })?.tab;
 
-  const goBack = () => navigate('/user/qa', { state: { tab: fromTab } });
+  const goBack = () => navigate(`${isEdit ? `../qa/${no}` : '../qa'}`, { state: { tab: fromTab } });
 
   // ==========================================
   // 1. 폼 상태 관리 ('Y' / 'N' 반영)

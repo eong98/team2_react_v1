@@ -64,8 +64,10 @@ a.btn,
 
 /* 버튼 묶음 */
 .actions{display:flex;gap:6px;}
-/* 선없는 우측정렬 */
+/* 선없는 좌우 정렬 */
 .actions.both{justify-content: space-between; margin-top:20px;}
+
+.actions.right{justify-content: flex-end; margin-top:20px;}
 
 
 /* component

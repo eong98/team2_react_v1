@@ -1,14 +1,11 @@
 import { useEffect, useState } from 'react';
 import { GlobalStoreSession } from '../../../store/LoginStore';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { AdminToolbar, AlertModal, ConfirmDeleteModal, DbmsPagination, PageHeader, UserPagination } from '../../../components/ui';
-import type { DataCardColumn } from '../../../components/ui/common/DataCard';
-import DataCard from '../../../components/ui/common/DataCard';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { axiosInstance } from '../../../utils/Tool';
+import { AdminToolbar, DataAcc, DataCard, PageHeader, UserPagination } from '../../../components/ui';
+import type { DataCardColumn } from '../../../components/ui';
+import type { AccordionCardColumn } from '../../../components/ui';
 import { QA_STATUS_MAP, QA_TYPE_MAP, QA_TYPE_OPTIONS, type QaTypes, type TabKey } from '../../../components/ts/QaType';
-import type { AccordionCardColumn } from '../../../components/ui/common/DataAcc';
-import DataAcc from '../../../components/ui/common/DataAcc';
 
 const PAGE_SIZE = 6;
 
@@ -274,12 +271,12 @@ export default function QaList() {
       {/* 💡 isQaType (전체 문의/내 문의)인 경우 DataCard, FAQ인 경우 DataAcc 렌더링 */}
       {isQaType ? (
         <DataCard
-          columns={qaColumns}
-          data={qaList}
-          rowKey={(n) => n.no}
-          loading={loading}
-          emptyMessage="등록된 문의가 없습니다."
-        />
+           columns={qaColumns}
+           data={qaList}
+           rowKey={(n) => n.no}
+           loading={loading}
+           emptyMessage="등록된 문의가 없습니다."
+         />
       ) : (
         <DataAcc
           title={(r) => (
@@ -293,6 +290,7 @@ export default function QaList() {
           columns={faqColumns}
           data={qaList}
           rowKey={(r) => r.no}
+          loading={loading}
           emptyMessage="등록된 FAQ가 없습니다."
           allowMultiple={false}
         />

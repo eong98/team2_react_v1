@@ -112,13 +112,22 @@ export default function QaDetail() {
       <section className="view active">
         <PageHeader 
             title="문의 상세" 
-            description={error ?? '해당 문의를 찾을 수 없습니다.'} 
+            description={error ?? '등록한 문의와 답변 내용을 확인할 수 있습니다.'} 
             actions={
             <button type="button" className="btn btn_md btn_ghost" onClick={goBack}>
               ← 목록으로
             </button>
             }
         />
+
+        
+        <div className='qa_area'>
+          <div className="card card_pad_lg">
+            <div className='empty_row'>
+              해당 문의를 찾을 수 없거나 권한이 없습니다.
+            </div>
+          </div>
+        </div>
       </section>
     );
   }
@@ -166,6 +175,23 @@ export default function QaDetail() {
           <p className='card_contents'>
             {qa.content}
           </p>
+
+          
+          {mno === qa.mno && 
+          (
+            <div className='form_page_footer'>
+              <button type="button" className="btn btn_sm btn_danger" onClick={() => setDeleteTarget(qa)}>
+                삭제
+              </button>
+              
+              {!answered && (
+                <button type="button" className="btn btn_sm btn_outline_primary" onClick={() => navigate(`edit`, { state: { tab: fromTab } })}>
+                  수정
+                </button>
+              )}
+            </div>
+          )}
+
         </div>
 
         <div className="card card_pad_lg">
@@ -186,21 +212,6 @@ export default function QaDetail() {
           )}
         </div>
       </div>
-
-      {mno === qa.mno && 
-      (
-        <div className='actions both'>
-          <button type="button" className="btn btn_md btn_danger" onClick={() => setDeleteTarget(qa)}>
-            삭제
-          </button>
-          
-          {!answered && (
-            <button type="button" className="btn btn_md btn_primary" onClick={() => navigate(`edit`, { state: { tab: fromTab } })}>
-              문의 수정
-            </button>
-          )}
-        </div>
-      )}
 
       
       {/* 삭제 확인 모달 */}
