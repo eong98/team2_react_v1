@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { GlobalStoreSession } from '../../../store/LoginStore';
 
-import { PageHeader } from '../../../components/ui';
+import { AlertModal, PageHeader } from '../../../components/ui';
 import type { SurveyQuestionForm } from '../../../components/ts/survey';
 import {
   createEmptyQuestion,
@@ -30,6 +30,8 @@ export default function SurveyForm() {
   const [questions, setQuestions] = useState<SurveyQuestionForm[]>([createEmptyQuestion(1)]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  // 공통 알림 모달 상태
+  const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
 
   /* 수정 화면 데이터 조회 */
   useEffect(() => {
@@ -59,8 +61,11 @@ export default function SurveyForm() {
         setQuestions(loadedQuestions.length > 0 ? loadedQuestions : [createEmptyQuestion(1)]);
       } catch (error: any) {
         console.error(error);
-        alert(error.response?.data?.message ?? '설문 정보를 불러오지 못했습니다.');
-        navigate('/dbms/survey');
+        setAlert({
+          message: error.response?.data?.message ?? '설문 정보를 불러오지 못했습니다.',
+          variant: 'error',
+          onConfirm: () => navigate('/dbms/survey'),
+        });
       } finally {
         setLoading(false);
       }
@@ -77,7 +82,7 @@ export default function SurveyForm() {
   /* 질문 삭제 */
   const removeQuestion = (index: number) => {
     if (questions.length === 1) {
-      alert('설문 문항은 한 개 이상 필요합니다.');
+      setAlert({ message: '설문 문항은 한 개 이상 필요합니다.', variant: 'error' });
       return;
     }
 
@@ -164,22 +169,22 @@ export default function SurveyForm() {
   /* 입력값 검증 */
   const validateForm = () => {
     if (!title.trim()) {
-      alert('설문 제목을 입력해주세요.');
+      setAlert({ message: '설문 제목을 입력해주세요.', variant: 'error' });
       return false;
     }
 
     if (!startDate) {
-      alert('설문 시작일을 선택해주세요.');
+      setAlert({ message: '설문 시작일을 선택해주세요.', variant: 'error' });
       return false;
     }
 
     if (!endDate) {
-      alert('설문 종료일을 선택해주세요.');
+      setAlert({ message: '설문 종료일을 선택해주세요.', variant: 'error' });
       return false;
     }
 
     if (endDate < startDate) {
-      alert('설문 종료일은 시작일보다 빠를 수 없습니다.');
+      setAlert({ message: '설문 종료일은 시작일보다 빠를 수 없습니다.', variant: 'error' });
       return false;
     }
 
@@ -187,7 +192,7 @@ export default function SurveyForm() {
       const question = questions[index];
 
       if (!question.qtext.trim()) {
-        alert(`${index + 1}번 질문 내용을 입력해주세요.`);
+        setAlert({ message: `${index + 1}번 질문 내용을 입력해주세요.`, variant: 'error' });
         return false;
       }
 
@@ -195,7 +200,7 @@ export default function SurveyForm() {
         const options = question.qoptions.map((option) => option.trim()).filter(Boolean);
 
         if (options.length === 0) {
-          alert(`${index + 1}번 객관식 문항에는 선택지가 필요합니다.`);
+          setAlert({ message: `${index + 1}번 객관식 문항에는 선택지가 필요합니다.`, variant: 'error' });
           return false;
         }
       }
@@ -236,16 +241,15 @@ export default function SurveyForm() {
 
       if (isEdit && no) {
         await updateSurvey(no, serverData);
-        alert('설문이 수정되었습니다.');
+        setAlert({ message: '설문이 수정되었습니다.', variant: 'success', onConfirm: () => navigate('/dbms/survey') });
       } else {
         await createSurvey(serverData);
-        alert('설문이 등록되었습니다.');
+        setAlert({ message: '설문이 등록되었습니다.', variant: 'success', onConfirm: () => navigate('/dbms/survey') });
       }
 
-      navigate('/dbms/survey');
     } catch (error: any) {
       console.error(error);
-      alert(error.response?.data?.message ?? '설문 저장 중 오류가 발생했습니다.');
+      setAlert({ message: error.response?.data?.message ?? '설문 저장 중 오류가 발생했습니다.', variant: 'error' });
     } finally {
       setSaving(false);
     }
@@ -494,6 +498,15 @@ export default function SurveyForm() {
           </button>
         </div>
       </div>
+
+      {/* 저장/오류 공통 알림 */}
+      <AlertModal
+        open={alert !== null}
+        onClose={() => setAlert(null)}
+        onConfirm={alert?.onConfirm}
+        message={alert?.message ?? ''}
+        variant={alert?.variant}
+      />
     </section>
   );
 }
