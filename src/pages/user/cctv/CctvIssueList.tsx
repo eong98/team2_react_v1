@@ -264,11 +264,9 @@ export default function CctvIssueListView() {
       )}
 
       <Filterbar
-        left={
-          <span className="pagination_info">
-            전체 <em className="b_num">{totalElements}</em>건 중 {from}–{to}건 표시
-          </span>
-        }
+        page={page}
+        pageSize={PAGE_SIZE}
+        totalCount={totalElements}
         searchValue={draft.keyword}
         onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
         searchPlaceholder="상황설명으로 검색"

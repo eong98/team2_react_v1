@@ -15,6 +15,7 @@ import Singup from '../pages/main/Signup'
 import BaseLayout from '../components/layout/BaseLayout';
 import UserRoutes from './UserRoutes';
 import DbmsRoutes from './DbmsRoutes';
+import RequireUserAuth from './RequireUserAuth';
 
 import Sidebar from '../components/layout/Sidebar';
 import Topbar from '../components/ui/common/Topbar';
@@ -39,9 +40,11 @@ function App() {
         
           </Route>
 
-          {/* 서비스 영역 - 사용자 */}
-          <Route element={<BaseLayout Sidebar={Sidebar} Topbar={Topbar} ChatWidget={ChatWidget} />}>
-            <Route path="/user/*" element={<UserRoutes />} />
+          {/* 서비스 영역 - 사용자 (로그인 + mno + grade 1~10 필요, 아니면 /login) */}
+          <Route element={<RequireUserAuth />}>
+            <Route element={<BaseLayout Sidebar={Sidebar} Topbar={Topbar} ChatWidget={ChatWidget} />}>
+              <Route path="/user/*" element={<UserRoutes />} />
+            </Route>
           </Route>
 
           {/* 서비스 영역 - 관리자 */}
