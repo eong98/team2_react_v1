@@ -67,7 +67,7 @@ export default function AdminToolbar({
 
       {filters}
 
-      {extra && <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{extra}</div>}
+      {extra && <div className='actions'>{extra}</div>}
     </div>
   );
 }

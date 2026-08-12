@@ -1,31 +1,44 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { AlertModal, PageHeader } from '../../../components/ui';
 import { axiosInstance, getNowDate, set_focus } from '../../../utils/Tool';
-import { QA_TYPE_OPTIONS, type QCRequest, type TabKey } from '../../../components/ts/QaType';
+import { QA_TYPE_MAP, type QCRequest, type TabKey } from '../../../components/ts/QaType';
 import { GlobalStoreSession } from '../../../store/LoginStore';
+import { useTab } from '../../../hooks/useTab';
 
 /**
- * USER 쪽 QaForm.tsx는 내 문의만 작성/수정이 가능합니다.
+ * 
+ * USER QaForm.tsx 에서는 본인의 문의사항만 CRUD 가능합니다.
+ * 
  */
+
 export default function QaForm() {
-  const navigate = useNavigate();
-  const { no } = useParams<{ no: string }>();
-  const { no:mno, id } = GlobalStoreSession();
-  const accessno = GlobalStoreSession((state) => state.no);
-  const grade = GlobalStoreSession((state) => state.grade);
+  const { no } = useParams<{ no: string }>(); // URL에 no가 있으면 수정 모드
+  const { no: mno, id, grade } = GlobalStoreSession();
   const isEdit = Boolean(no);
-  const location = useLocation();
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
 
-  // 목록에서 어느 탭에서 들어왔는지 확인하여 돌아갈 때 상태 전달
-  const fromTab = (location.state as { tab?: TabKey })?.tab;
+  /* 에러타입 정의 */
+  type FormErrors = Partial<Record<keyof QCRequest, string>>;
+  const [errors, setErrors] = useState<FormErrors>({});
 
-  const goBack = () => navigate(`${isEdit ? `../qa/${no}` : '../qa'}`, { state: { tab: fromTab } });
+  // 범용 useTab 훅 사용
+  const { goToList, navigateWithTab } = useTab<TabKey>({
+    defaultTab: 'qa',
+    basePath: '/user/qa',
+  });
 
-  // ==========================================
-  // 1. 폼 상태 관리 ('Y' / 'N' 반영)
-  // ==========================================
+  // 뒤로 가기 (수정이면 상세로, 신규 작성이면 목록으로)
+  const goBack = () => {
+    if (isEdit) {
+      navigateWithTab(`../qa/${no}`);
+    } else {
+      goToList();
+    }
+  };
+
   const [input, setInput] = useState<QCRequest>({
     mno: mno,
     type: 0,
@@ -33,35 +46,28 @@ export default function QaForm() {
     content: '',
     cdate: '',
     pw: '',
-    vmode: 'N', // 👈 'Y' | 'N' 문자열 초기값
+    vmode: 'N',
   });
 
-  // 유효성 검사 에러 메시지
-  type FormErrors = Partial<Record<keyof QCRequest, string>>;
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [submitting, setSubmitting] = useState<boolean>(false);
-  const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
-
-  /** 수정 진입 시 기존 데이터를 불러와 폼에 채워 넣음 */
+  
+  // 수정 모드일 때 기존 게시글 정보 조회
   const loadQa = () => {
-    console.log(no)
     axiosInstance
       .get(`/qa/${no}`, {
         headers: {
-          'accessNo': String(accessno),
-          'grade': String(grade),
-        }
+          accessNo: String(mno),
+          grade: String(grade),
+        },
       })
       .then((result) => result.data)
       .then((data) => {
-        console.log(data)
         setInput((prev) => ({
           ...prev,
           mno: mno,
           type: data.type,
           title: data.title,
           content: data.content,
-          vmode: data.vmode === 'Y' || data.vmode === true ? 'Y' : 'N', // 👈 백엔드 값 'Y'/'N' 변환
+          vmode: data.vmode === 'Y' || data.vmode === true ? 'Y' : 'N',
         }));
       })
       .catch((err) => console.error('게시물 상세 조회 실패:', err));
@@ -72,29 +78,27 @@ export default function QaForm() {
     loadQa();
   }, [isEdit, no]);
 
-  // 💡 공통 onChange (체크박스를 'Y' / 'N'으로 변환)
+  // 입력 필드 변경
   const onChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    
-    // 체크박스일 경우 checked 여부에 따라 'Y' / 'N' 설정
     const newValue = type === 'checkbox' ? ((e.target as HTMLInputElement).checked ? 'Y' : 'N') : value;
 
     setInput((prev) => ({ ...prev, [name]: newValue }));
 
+    // 에러 해제
     if (name in errors) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
   };
 
-  // ==========================================
-  // 2. 입력값 유효성 검사
-  // ==========================================
+  // 필수 필드 정의
   const REQUIRED_FIELDS: { field: keyof FormErrors; label: string; id: string }[] = [
-    { field: 'title', label: '문의 제목', id: 'label_03' },
-    { field: 'content', label: '문의 내용', id: 'label_04' },
+    { field: 'title', label: '문의 제목', id: 'qa_title' },
+    { field: 'content', label: '문의 내용', id: 'qa_content' },
     { field: 'pw', label: '게시글 비밀번호', id: 'password' },
   ];
 
+  // 유효성 검사
   const validate = () => {
     for (const { field, label, id } of REQUIRED_FIELDS) {
       if (!String(input[field] ?? '').trim()) {
@@ -107,22 +111,20 @@ export default function QaForm() {
     return true;
   };
 
-  // ==========================================
-  // 3. API 저장 처리 (POST / PUT)
-  // ==========================================
+  // 저장 (등록 / 수정)
   const handleSave = async () => {
     if (!validate() || submitting) return;
 
     setSubmitting(true);
     try {
       const payload: QCRequest = {
-        mno,
+        mno: mno,
         type: Number(input.type),
         title: input.title,
         content: input.content,
         cdate: getNowDate(),
         pw: input.pw,
-        vmode: input.vmode, // 👈 'Y' 또는 'N' 전송
+        vmode: input.vmode,
       };
 
       if (isEdit) {
@@ -138,6 +140,7 @@ export default function QaForm() {
       });
     } catch (error) {
       console.error('문의사항 저장 중 오류 발생:', error);
+
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;
         const data = error.response?.data;
@@ -170,7 +173,7 @@ export default function QaForm() {
         description={
           isEdit
             ? `No.${no} 문의사항 항목을 수정합니다.`
-            : '서비스 이용에 어려움을 겪고있는 문의사항을 등록합니다.'
+            : '서비스 이용에 문의할 내용을 등록합니다.'
         }
         actions={
           <button type="button" className="btn btn_md btn_ghost" onClick={goBack}>
@@ -180,24 +183,23 @@ export default function QaForm() {
       />
 
       <div className="card card_pad_lg form_page">
-        {/* 태그 (접수 유형) */}
+        {/* 문의 유형 */}
         <div className="form_group">
-          <label className="form_label" htmlFor="label_01">
+          <label className="form_label" htmlFor="qa_type">
             문의 유형<span className="req" title="필수 입력 요소">*</span>
           </label>
-
           <div className="form_control">
             <select
-              id="label_01"
+              id="qa_type"
               name="type"
               className="form_select"
               value={input.type}
               onChange={onChange}
-              style={{ maxWidth: 200 }}
+              style={{maxWidth:200}}
             >
-              {QA_TYPE_OPTIONS.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
+              {Object.entries(QA_TYPE_MAP).map(([type, {label}]) => (
+                <option key={type} value={type}>
+                  {label}
                 </option>
               ))}
             </select>
@@ -205,15 +207,15 @@ export default function QaForm() {
           </div>
         </div>
 
-        {/* 작성자 (readOnly) */}
+        {/* 작성자 ID (읽기 전용) */}
         <div className="form_group">
-          <label className="form_label" htmlFor="label_02">
+          <label className="form_label" htmlFor="user_id">
             작성자 ID
           </label>
           <div className="form_control">
             <input
               type="text"
-              id="label_02"
+              id="user_id"
               name="ano"
               className="form_input"
               value={`${id} (No.${mno})`}
@@ -223,15 +225,15 @@ export default function QaForm() {
           </div>
         </div>
 
-        {/* 제목 */}
+        {/* 문의 제목 */}
         <div className="form_group">
-          <label className="form_label" htmlFor="label_03">
+          <label className="form_label" htmlFor="qa_title">
             문의 제목<span className="req" title="필수 입력 요소">*</span>
           </label>
           <div className="form_control">
             <input
               type="text"
-              id="label_03"
+              id="qa_title"
               className={`form_input ${errors.title ? 'is_error' : ''}`}
               placeholder="문의사항 제목을 입력하세요"
               name="title"
@@ -242,14 +244,14 @@ export default function QaForm() {
           </div>
         </div>
 
-        {/* 내용 */}
+        {/* 문의 내용 */}
         <div className="form_group">
-          <label className="form_label" htmlFor="label_04">
+          <label className="form_label" htmlFor="qa_content">
             문의 내용<span className="req" title="필수 입력 요소">*</span>
           </label>
           <div className="form_control">
             <textarea
-              id="label_04"
+              id="qa_content"
               className={`form_textarea ${errors.content ? 'is_error' : ''}`}
               placeholder="문의사항 내용을 입력하세요"
               value={input.content}
@@ -265,7 +267,7 @@ export default function QaForm() {
           </div>
         </div>
 
-        {/* 비밀글 여부 ('Y' / 'N' 체크박스) */}
+        {/* 비밀글 설정 */}
         <div className="form_group">
           <div className="form_label">비밀글 여부</div>
           <div className="form_control">
@@ -274,7 +276,7 @@ export default function QaForm() {
                 type="checkbox"
                 id="label_08"
                 name="vmode"
-                checked={input.vmode === 'Y'} // 👈 'Y' 인지 비교
+                checked={input.vmode === 'Y'}
                 onChange={onChange}
               />
               <label htmlFor="label_08" className="b_title">
@@ -304,7 +306,7 @@ export default function QaForm() {
           </div>
         </div>
 
-        {/* 하단 버튼 영역 */}
+        {/* 푸터 버튼 */}
         <div className="form_page_footer">
           <button type="button" className="btn btn_md btn_ghost" onClick={goBack}>
             취소
@@ -320,6 +322,7 @@ export default function QaForm() {
         </div>
       </div>
 
+      {/* 안내 알림 모달 */}
       <AlertModal
         open={alert !== null}
         onClose={() => setAlert(null)}

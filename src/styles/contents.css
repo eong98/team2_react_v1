@@ -441,6 +441,7 @@ body.alert_mode .sim_toggle .dot{background:var(--red-500);animation:blink 1s in
 .qa_area .title_area .b_title {display:flex; justify-content: space-between; align-items: center; margin:8px 0 12px;}
 .qa_area .card {margin-top:20px;}
 .qa_area .card:first-child {margin-top:0;}
+.qa_area .card .card_contents {margin:32px 0;}
 
 /* 문의 답변 */
 .answer_area .cell_title {color:var(--text-faint); font-size:14px; font-weight:400; line-height:1.7; white-space:pre-wrap;}
