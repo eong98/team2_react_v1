@@ -33,6 +33,7 @@ export default function UserRoutes() {
   return (
     <Routes>
       {/* 참고해서 추가하시면 됩니다 / 페이지 추가 */}
+      <Route index element={<Navigate to="shop" replace />} />
       {/* 
       <Route path="notice" element={<NoticeList />} />
       <Route path="notice/new" element={<NoticeForm />} />
