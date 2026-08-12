@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { PageHeader, DataTable, type DataTableColumn, UserPagination } from '../../../components/ui';
 import Filterbar from '../../../components/ui/user/Filterbar';
-import { axiosInstance } from '../../../utils/Tool';
+import { axiosInstance, getIP } from '../../../utils/Tool';
 
 // ✅ UpdateHistory.ts 파일에서 UpdateLog 타입을 가져옵니다.
-import type { UpdateHistory } from './UpdateHistory'; 
+import type { UpdateHistory } from './UpdateHistory';
 
 const PAGE_SIZE = 10;
-const UPDATE_LOG_API = '/v1/update-log';
+const UPDATE_LOG_API = `http://${getIP()}:9102/history/update/list`;
 
 type LogTargetType = 'USER' | 'DBMS';
 type TargetFilter = 'ALL' | LogTargetType;
@@ -18,7 +18,7 @@ type TargetFilter = 'ALL' | LogTargetType;
  */
 interface ProcessedLog extends UpdateHistory {
   targetType: LogTargetType;
-  targetId: number; 
+  targetId: number;
 }
 
 const COLUMN_LABELS: Record<string, string> = {
@@ -28,7 +28,7 @@ const COLUMN_LABELS: Record<string, string> = {
 };
 
 // ✅ FIELD_OPTIONS의 value는 반드시 COLUMN_LABELS(= 실제 changedColumn 값)의 키와 일치해야
-//    필터 선택 시 행 데이터와 매칭됩니다. (기존 'name' → 'mname' 오타 수정 + 누락 항목 추가)
+//    필터 선택 시 행 데이터와 매칭됩니다.
 const FIELD_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'ALL', label: '전체 항목' },
   ...Object.entries(COLUMN_LABELS).map(([value, label]) => ({ value, label })),
@@ -46,18 +46,37 @@ const formatDate = (val: string) => {
   if (!val) return '-';
   const time = parseDate(val);
   return Number.isNaN(time) ? val : new Date(time).toLocaleString('ko-KR', {
-    year: 'numeric', month: '2-digit', day: '2-digit', 
+    year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
   });
+};
+
+/* ---------------------------------------------------------------------
+   검색 필터 - dbms/cctv/CctvIssueList.tsx 패턴 참고
+   draft: 입력 중인 값 (타이핑만으로는 검색 안 됨) / applied: "검색" 눌렀을 때 실제 필터링에 쓰이는 값
+--------------------------------------------------------------------- */
+interface Filters {
+  keyword: string; // 대상번호·변경내용·관리자번호 통합 검색
+  targetType: TargetFilter; // USER / DBMS 구분
+  field: string; // 변경 항목(changedColumn)
+  dateFrom: string; // 변경일시 시작 (yyyy-MM-dd)
+  dateTo: string; // 변경일시 종료 (yyyy-MM-dd)
+}
+
+const EMPTY_FILTERS: Filters = {
+  keyword: '',
+  targetType: 'ALL',
+  field: 'ALL',
+  dateFrom: '',
+  dateTo: '',
 };
 
 export default function UpdateLogList() {
   const [logs, setLogs] = useState<ProcessedLog[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  
-  const [targetFilter, setTargetFilter] = useState<TargetFilter>('ALL');
-  const [fieldFilter, setFieldFilter] = useState('ALL');
-  const [keyword, setKeyword] = useState('');
+
+  const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS);
+  const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
 
   // 데이터 조회 및 가공
@@ -71,7 +90,7 @@ export default function UpdateLogList() {
         // ✅ mno가 null이면 관리자(DBMS), null이 아니면 일반회원(USER)으로 분류
         const mappedData: ProcessedLog[] = rawData.map((log) => {
           const isDbms = log.mno === null;
-          
+
           return {
             ...log,
             targetType: isDbms ? 'DBMS' : 'USER',
@@ -91,14 +110,24 @@ export default function UpdateLogList() {
     fetchUpdateLogs();
   }, []);
 
-  // 필터링 및 정렬 
+  // 필터링 및 정렬 - applied 기준으로만 계산 (draft는 타이핑 중인 값)
   const processedLogs = useMemo(() => {
-    const searchKeyword = keyword.trim().toLowerCase();
+    const searchKeyword = applied.keyword.trim().toLowerCase();
+    const fromTime = applied.dateFrom ? new Date(`${applied.dateFrom}T00:00:00`).getTime() : null;
+    const toTime = applied.dateTo ? new Date(`${applied.dateTo}T23:59:59`).getTime() : null;
 
     return logs
       .filter((log) => {
-        if (targetFilter !== 'ALL' && log.targetType !== targetFilter) return false;
-        if (fieldFilter !== 'ALL' && log.changedColumn !== fieldFilter) return false;
+        if (applied.targetType !== 'ALL' && log.targetType !== applied.targetType) return false;
+        if (applied.field !== 'ALL' && log.changedColumn !== applied.field) return false;
+
+        if (fromTime !== null || toTime !== null) {
+          const changeTime = parseDate(log.changeDate);
+          if (Number.isNaN(changeTime)) return false;
+          if (fromTime !== null && changeTime < fromTime) return false;
+          if (toTime !== null && changeTime > toTime) return false;
+        }
+
         if (!searchKeyword) return true;
 
         const searchString = `${log.targetId} ${log.changedColumn} ${log.oldValue} ${log.newValue} ${log.updtMnno} ${log.targetType}`.toLowerCase();
@@ -109,7 +138,7 @@ export default function UpdateLogList() {
         const dateB = parseDate(b.changeDate);
         return (!Number.isNaN(dateA) && !Number.isNaN(dateB)) ? dateB - dateA : b.no - a.no;
       });
-  }, [logs, targetFilter, fieldFilter, keyword]);
+  }, [logs, applied]);
 
   // 페이지네이션 처리
   const totalPages = Math.max(1, Math.ceil(processedLogs.length / PAGE_SIZE));
@@ -118,18 +147,30 @@ export default function UpdateLogList() {
   }, [page, totalPages]);
 
   const pagedLogs = processedLogs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const from = processedLogs.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const to = Math.min(page * PAGE_SIZE, processedLogs.length);
+
+  // [검색 버튼 클릭] draft를 applied로 확정하고 1페이지로 이동
+  const onSearch = () => {
+    setPage(1);
+    setApplied(draft);
+  };
+
+  // [초기화 버튼 클릭] 모든 필터 조건 초기화
+  const onReset = () => {
+    const empty = { ...EMPTY_FILTERS };
+    setDraft(empty);
+    setPage(1);
+    setApplied(empty);
+  };
 
   // 테이블 컬럼 정의
   const columns = useMemo<DataTableColumn<ProcessedLog>[]>(() => [
     { header: '로그번호', accessor: 'no', width: '8%', mono: true },
-    { 
-      header: '구분', width: '9%', 
-      render: (log) => <span className={`badge ${log.targetType === 'USER' ? 'badge_neutral' : 'badge_primary'}`}>{log.targetType}</span> 
+    {
+      header: '구분', width: '9%',
+      render: (log) => <span className={`badge ${log.targetType === 'USER' ? 'badge_neutral' : 'badge_primary'}`}>{log.targetType}</span>
     },
-    { 
-      header: '대상번호', width: '10%', mono: true, 
+    {
+      header: '대상번호', width: '10%', mono: true,
       render: (log) => <span>{log.targetId}</span>
     },
     { header: '변경 항목', width: '14%', render: (log) => <span className="cell_title">{getColumnLabel(log.changedColumn)}</span> },
@@ -139,65 +180,79 @@ export default function UpdateLogList() {
     { header: '변경 관리자', width: '8%', mono: true, render: (log) => <span>{log.updtMnno || '-'}</span> },
   ], []);
 
-  const handleReset = () => {
-    setTargetFilter('ALL');
-    setFieldFilter('ALL');
-    setKeyword('');
-    setPage(1);
-  };
-
   return (
     <section className="view active">
-      <PageHeader 
-        title="업데이트 로그" 
-        description="USER 및 DBMS 계정의 정보 변경 이력을 통합 조회합니다." 
+      <PageHeader
+        title="업데이트 로그"
+        description="USER 및 DBMS 계정의 정보 변경 이력을 통합 조회합니다."
       />
 
+      {/* ✅ 하드코딩 left 문구 제거 - page/pageSize/totalCount만 넘기면 Filterbar가 안내문구를 자동 계산 (QaList.tsx 패턴) */}
       <Filterbar
-        left={
-          <span className="pagination_info">
-            전체 로그 <em className="b_num">{processedLogs.length}</em>건 중 {from}–{to}건 표시
-          </span>
-        }
-        searchValue={keyword}
-        onSearchChange={(val) => { setKeyword(val); setPage(1); }}
+        page={page}
+        pageSize={PAGE_SIZE}
+        totalCount={processedLogs.length}
+        searchValue={draft.keyword}
+        onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
         searchPlaceholder="대상번호·변경내용·관리자번호 검색"
-        // ✅ select들을 개별 flex 아이템으로 그대로 넘깁니다.
-        //    (기존처럼 별도 div로 감싸면 그 안의 요소들이 줄어들지 못해
-        //     화면이 좁아질 때 한 덩어리로 영역 밖으로 튀어나갑니다.)
+        onSearchEnter={onSearch}
         filters={
           <>
             <select
               className="form_select"
-              value={targetFilter}
-              onChange={(e) => { setTargetFilter(e.target.value as TargetFilter); setPage(1); }}
+              value={draft.targetType}
+              onChange={(e) => setDraft((prev) => ({ ...prev, targetType: e.target.value as TargetFilter }))}
               aria-label="구분 필터"
             >
               <option value="ALL">USER + DBMS</option>
               <option value="USER">USER</option>
               <option value="DBMS">DBMS</option>
             </select>
+
             <select
               className="form_select"
-              value={fieldFilter}
-              onChange={(e) => { setFieldFilter(e.target.value); setPage(1); }}
+              value={draft.field}
+              onChange={(e) => setDraft((prev) => ({ ...prev, field: e.target.value }))}
               aria-label="변경 항목 필터"
             >
               {FIELD_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
+
+            <input
+              type="date"
+              className="form_input"
+              value={draft.dateFrom}
+              onChange={(e) => setDraft((prev) => ({ ...prev, dateFrom: e.target.value }))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onSearch();
+              }}
+              aria-label="변경일 시작"
+            />
+            <span style={{ alignSelf: 'center' }}>~</span>
+            <input
+              type="date"
+              className="form_input"
+              value={draft.dateTo}
+              onChange={(e) => setDraft((prev) => ({ ...prev, dateTo: e.target.value }))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onSearch();
+              }}
+              aria-label="변경일 종료"
+            />
           </>
         }
-        // ✅ 버튼은 extra 슬롯으로 분리 (Filterbar가 flexShrink:0을 자동으로 적용해줌)
+        // ✅ 버튼 순서/스타일 QaList.tsx 통일 (초기화 ghost → 검색 primary)
         extra={
-          <button
-            type="button"
-            className="btn btn_outline_primary"
-            onClick={handleReset}
-          >
-            초기화
-          </button>
+          <>
+            <button type="button" className="btn btn_ghost" onClick={onReset}>
+              초기화
+            </button>
+            <button type="button" className="btn btn_primary" onClick={onSearch}>
+              검색
+            </button>
+          </>
         }
       />
 
