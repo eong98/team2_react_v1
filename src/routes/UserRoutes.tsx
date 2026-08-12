@@ -21,6 +21,8 @@ import QaDetail from '../pages/user/qa/QaDetail';
 import ShopList from '../pages/user/shop/ShopList';
 import ShopForm from '../pages/user/shop/ShopForm';
 import ShopCalendar from '../pages/user/shop/ShopCalendar';
+import CctvIssueList from '../pages/user/shop/CctvIssueList';
+
 
 import SurveyUserList from '../pages/user/survey/SurveyUserList';
 import SurveyAnswerForm from '../pages/user/survey/SurveyAnswerForm';
@@ -43,8 +45,9 @@ export default function UserRoutes() {
       <Route path="shop" element={<ShopList />} />
       <Route path="shop/new" element={<ShopForm />} />
       <Route path="shop/:no/edit" element={<ShopForm />} />
-
+      <Route path="cctvissue" element={<CctvIssueList />} />
       <Route path="calendar" element={<ShopCalendar />} />
+
 
 
       {/* 예시용 */}
