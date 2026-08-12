@@ -16,6 +16,7 @@ import SurveyResponseList from '../pages/dbms/survey/SurveyResponseList';
 import MemberList from '../pages/dbms/member/MemberList';
 import DbmsLogin from '../pages/main/DbmsLogin'
 import MemberDetail from '../pages/dbms/member/MemberDetail';
+import UpdateHistory from '../pages/dbms/member/UpdateHistoryList';
 
 
 import QaForm from '../pages/dbms/qa/QaForm';
@@ -59,6 +60,7 @@ export default function DbmsRoutes() {
       <Route path="login" element={<DbmsLogin />} />{/* 관리자 로그인 */}
       <Route path="memberlist" element={<MemberList />} />
       <Route path="memberlist/:role/:no" element = {<MemberDetail />} />
+      <Route path="updatehistory" element = {<UpdateHistory />} />
     </Routes>
   );
 }
