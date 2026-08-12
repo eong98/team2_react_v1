@@ -147,6 +147,7 @@ export default function CctvIssueListView() {
         searchValue={draft.keyword}
         onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
         searchPlaceholder="상황설명으로 검색"
+        onSearchEnter={onSearch}
         filters={
           <>
             <select
@@ -194,6 +195,9 @@ export default function CctvIssueListView() {
               placeholder="CCTV번호"
               value={draft.cno}
               onChange={(e) => setDraft((prev) => ({ ...prev, cno: e.target.value }))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onSearch();
+              }}
               style={{ maxWidth: 110 }}
               aria-label="CCTV번호 필터"
             />
@@ -203,6 +207,9 @@ export default function CctvIssueListView() {
               className="form_input"
               value={draft.dateFrom}
               onChange={(e) => setDraft((prev) => ({ ...prev, dateFrom: e.target.value }))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onSearch();
+              }}
               aria-label="등록일 시작"
             />
             <span style={{ alignSelf: 'center' }}>~</span>
@@ -211,6 +218,9 @@ export default function CctvIssueListView() {
               className="form_input"
               value={draft.dateTo}
               onChange={(e) => setDraft((prev) => ({ ...prev, dateTo: e.target.value }))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onSearch();
+              }}
               aria-label="등록일 종료"
             />
           </>

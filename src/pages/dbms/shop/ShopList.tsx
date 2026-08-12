@@ -142,6 +142,7 @@ export default function ShopListView() {
         searchValue={draft.keyword}
         onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
         searchPlaceholder="매장명·주소로 검색"
+        onSearchEnter={onSearch}
         extra={
           <>
             <button type="button" className="btn btn_primary" onClick={onSearch}>

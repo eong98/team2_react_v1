@@ -319,6 +319,9 @@ export default function CctvIssueListView() {
               className="form_input"
               value={draft.dateFrom}
               onChange={(e) => setDraft((prev) => ({ ...prev, dateFrom: e.target.value }))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onSearch();
+              }}
               aria-label="발생일 시작"
             />
             <span style={{ alignSelf: 'center' }}>~</span>
@@ -327,6 +330,9 @@ export default function CctvIssueListView() {
               className="form_input"
               value={draft.dateTo}
               onChange={(e) => setDraft((prev) => ({ ...prev, dateTo: e.target.value }))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onSearch();
+              }}
               aria-label="발생일 종료"
             />
           </>
