@@ -9,6 +9,8 @@ interface AdminToolbarProps {
   filters?: ReactNode;
   /** 우측 끝에 붙는 보조 버튼 (예: 엑셀 다운로드, 새로고침) — 생성 버튼은 PageHeader에서 처리 */
   extra?: ReactNode;
+  /** 검색어 입력창에서 Enter 입력 시 실행할 검색 함수 (예: onSearch) */
+  onSearchEnter?: () => void;
 }
 
 /**
@@ -34,6 +36,7 @@ export default function AdminToolbar({
   searchPlaceholder = '검색어를 입력하세요',
   filters,
   extra,
+  onSearchEnter,
 }: AdminToolbarProps) {
   return (
     <div className="filter_bar">
@@ -50,6 +53,11 @@ export default function AdminToolbar({
           placeholder={searchPlaceholder}
           value={searchValue}
           onChange={(e) => onSearchChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              onSearchEnter?.();
+            }
+          }}
         />
         {searchValue && (
           <button
@@ -67,7 +75,7 @@ export default function AdminToolbar({
 
       {filters}
 
-      {extra && <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{extra}</div>}
+      {extra && <div className='actions'>{extra}</div>}
     </div>
   );
 }

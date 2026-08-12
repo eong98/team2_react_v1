@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { DataTable, DbmsPagination, PageHeader } from '../../../components/ui';
+import { AlertModal, DataTable, DbmsPagination, PageHeader } from '../../../components/ui';
 import type { DataTableColumn } from '../../../components/ui';
 import type { SurveyInfo, SurveyResponse } from '../../../components/ts/survey';
 import {
@@ -30,6 +30,8 @@ export default function SurveyResponseList() {
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [checking, setChecking] = useState(false);
+  // 공통 알림 모달 상태
+  const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error' } | null>(null);
 
   /* 설문 정보 + 응답 목록 조회 */
   const loadData = async () => {
@@ -49,7 +51,7 @@ export default function SurveyResponseList() {
       setPage(1);
     } catch (error: any) {
       console.error(error);
-      alert(error.response?.data?.message ?? '설문 응답 목록을 불러오지 못했습니다.');
+      setAlert({ message: error.response?.data?.message ?? '설문 응답 목록을 불러오지 못했습니다.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -67,7 +69,7 @@ export default function SurveyResponseList() {
       setSelectedResponse(response);
     } catch (error: any) {
       console.error(error);
-      alert(error.response?.data?.message ?? '응답 상세정보를 불러오지 못했습니다.');
+      setAlert({ message: error.response?.data?.message ?? '응답 상세정보를 불러오지 못했습니다.', variant: 'error' });
     } finally {
       setDetailLoading(false);
     }
@@ -78,7 +80,7 @@ export default function SurveyResponseList() {
     if (!selectedResponse) return;
 
     if (selectedResponse.checkYn === 'Y') {
-      alert('이미 확인 처리된 응답입니다.');
+      setAlert({ message: '이미 확인 처리된 응답입니다.', variant: 'error' });
       return;
     }
 
@@ -96,10 +98,10 @@ export default function SurveyResponseList() {
         )
       );
 
-      alert('응답을 확인 처리했습니다.');
+      setAlert({ message: '응답을 확인 처리했습니다.', variant: 'success' });
     } catch (error: any) {
       console.error(error);
-      alert(error.response?.data?.message ?? '응답 확인 처리 중 오류가 발생했습니다.');
+      setAlert({ message: error.response?.data?.message ?? '응답 확인 처리 중 오류가 발생했습니다.', variant: 'error' });
     } finally {
       setChecking(false);
     }
@@ -265,6 +267,14 @@ export default function SurveyResponseList() {
           </div>
         )}
       </div>
+
+      {/* 응답 조회/확인 처리 공통 알림 */}
+      <AlertModal
+        open={alert !== null}
+        onClose={() => setAlert(null)}
+        message={alert?.message ?? ''}
+        variant={alert?.variant}
+      />
     </section>
   );
 }

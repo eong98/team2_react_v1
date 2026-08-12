@@ -37,7 +37,7 @@
 .btn:link {text-decoration:none;}
 
 a.btn,
-.btn {display:inline-flex;align-items:center;gap:7px;padding:9px 16px;font-size:13px;border-radius:7px;font-weight:600;border:1px solid transparent;cursor:pointer;transition:.15s ease;font-family:var(--font-disp);flex-shrink:0;white-space:nowrap;}
+.btn {display:inline-flex;align-items:center;gap:7px; min-height:36px; padding:9px 16px;font-size:13px;border-radius:7px;font-weight:600;border:1px solid transparent;cursor:pointer;transition:.15s ease;font-family:var(--font-disp);flex-shrink:0;white-space:nowrap;}
 
 .btn_lg{padding:13px 22px;font-size:15px;}
 .btn_md{padding:10px 18px;font-size:13px;}
@@ -242,15 +242,25 @@ select::-ms-expand {display:none;}
 .badge_warning{background:var(--warning-dim);color:var(--amber-400);}
 .badge_danger{background:var(--danger-dim);color:var(--red-200);}
 .badge_info{background:var(--secondary-dim);color:var(--teal-300);}
-.badge_neutral{background:var(--surface-2);color:var(--text-dim);}
+.badge_neutral{background:var(--surface-2);color:var(--text);}
 
 .badge.danger{background:var(--danger-dim);color:var(--red-200);}
 .badge.warn{background:var(--amber-dim);color:var(--amber-500);}
 .badge.ok{background:var(--primary-dim);color:var(--green-500);}
-.badge.neutral{background:var(--surface-2);color:var(--text-dim);}
+.badge.neutral{background:var(--surface-2);color:var(--text);}
 .badge.neutral_30{background:var(--n-300);color:var(--n-850);}
 .badge.check{background:var(--teal-600);color:var(--n-900);}
 
+/* 접수유형 · 배경색 채움 — 유형 간 색 절대 겹치지 않음 */
+.badge.orange{background:var(--cta-dim);color:var(--orange-200);}
+ 
+/* 답변상태 · 테두리 라인 — 배경 없음, 채움 배지와 스타일로 구분 */
+.badge.wait{background:none;border:1.5px solid rgba(255,176,32,.5);color:var(--amber-400);}
+.badge.progress{background:none;border:1.5px solid rgba(34,196,175,.5);color:var(--teal-300);}
+.badge.done{background:none;border:1.5px solid rgba(51,214,138,.5);color:var(--green-400);}
+ 
+.card .badge_area,
+.card_acc .badge_area {min-width:60px}
 
 /* table
 ========================================================================== */
@@ -284,6 +294,7 @@ table td {padding:0; word-break:break-all;}
 .card_pad_md{padding:20px;}
 .card_pad_lg{padding:28px;}
 .card.danger {border-color:var(--danger)}
+
 
 
 /* 통계 요약(전체문의 -건, 답변대기 -건 등. */
@@ -333,7 +344,7 @@ table td {padding:0; word-break:break-all;}
 
 /* modal
 ========================================================================== */
-.modal_bg{position:fixed;inset:0;background:rgba(3,5,8,.6);display:none;align-items:center;justify-content:center;z-index:80;}
+.modal_bg{position:fixed;inset:0;background:rgba(3,5,8,.6);display:none;align-items:center;justify-content:center;z-index:100;}
 .modal_bg.open{display:flex;}
 .modal{width:420px;max-width:90vw;background:var(--n-850,var(--surface));border:1px solid var(--border-strong);border-radius:12px;padding:24px;}
 .modal .title{margin-bottom:16px;}
@@ -345,7 +356,7 @@ table td {padding:0; word-break:break-all;}
   display:flex;flex-wrap:wrap;align-items:center;justify-content:center;
   gap:12px;margin-top:16px;
 }
-.pagination_info{flex-shrink:0; font-family:var(--font-mono);font-size:11.5px;color:var(--text-faint);}
+.pagination_info{flex-shrink:0; font-size:12px; color:var(--text-faint);}
 .pagination_btns{display:flex;align-items:center;gap:4px;}
 
 .page_btn{width:34px;height:34px;border-radius:8px;background:none;border:1px solid transparent;color:var(--text-dim);font-family:var(--font-mono);font-size:13px;cursor:pointer;transition:.15s ease;}
@@ -380,11 +391,12 @@ table td {padding:0; word-break:break-all;}
 .list_row .link {padding:0; transition:.3s;}
 .list_row:hover .link {color:var(--primary); text-decoration: underline; text-underline-offset: 4px;}
 
-.list_row:last-child{border-bottom:none;}
 .list_row .lt{flex:1;min-width:0;}
 /* .list_row .lt .ti{font-size:13.5px;font-weight:600;margin-bottom:3px;} */
 .list_row .lt .me{font-size:11.5px;color:var(--text-faint);font-family:var(--font-mono);}
 .list_row .empty_row {text-align:center;color:var(--text-faint);padding:34px;font-size:13px;}
+
+.card .list_row:last-child {border-bottom:none;}
 
 .link_row a:hover{color:var(--primary);}
 
@@ -400,7 +412,8 @@ table td {padding:0; word-break:break-all;}
 .filter_bar input[type="date"],
 .filter_bar input {
   min-width:100px;
-  max-width:220px;
+  /* max-width:220px; */
+  width:auto;
   flex-shrink:0;
   background-color:var(--surface);border:1px solid var(--border-strong);color:var(--text);
   padding:4px 12px;border-radius:7px;font-size:12.5px;

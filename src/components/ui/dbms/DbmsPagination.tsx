@@ -40,7 +40,7 @@ export default function Pagination({ page, totalPages, totalCount, pageSize, onC
     <div className={dbms.pagination}>
       {showInfo && (
         <span className="pagination_info">
-          전체 {totalCount}건 중 {from}–{to}건 표시
+          전체 <em className='b_num'>{totalCount}</em>건 중 {from}–{to}건 표시
         </span>
       )}
       <div className="pagination_btns">

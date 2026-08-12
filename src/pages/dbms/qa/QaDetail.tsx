@@ -5,35 +5,48 @@ import { axiosInstance, set_focus } from '../../../utils/Tool';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import axios from 'axios';
 import { QA_STATUS_MAP, QA_TYPE_MAP, type QARequest, type QaTypes, type TabKey } from '../../../components/ts/QaType';
+import { useTab } from '../../../hooks/useTab';
 
+/**
+ * 
+ * DBMS QaDetail.tsx 에서는 문의사항의 답변만 추가/수정 가능합니다.
+ * 
+ */
 export default function QaDetail() {
   const { no } = useParams<{ no: string }>();
-  // const { no:ano, id } = GlobalStoreSession();
-  // const accessno = GlobalStoreSession((state) => state.no);
-  // const grade = GlobalStoreSession((state) => state.grade);
-  const navigate = useNavigate();
-  const location = useLocation();
+  // const { no:ano, id, grade } = GlobalStoreSession();
   const ano = 1;
   const grade = 1;
-
-  // 목록에서 어느 탭에서 들어왔는지 확인하여 돌아갈 때 상태 전달
-  const fromTab = (location.state as { tab?: TabKey })?.tab;
-
-  const goBack = () => navigate('/dbms/qa', { state: { tab: fromTab } });
 
   const [qa, setQa] = useState<QaTypes | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEdit, setIsEdit] = useState<boolean>(false);
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
+  
+  /* 에러타입 정의 */
+  type FormErrors = Partial<Record<keyof QARequest, string>>;
+  const [errors, setErrors] = useState<FormErrors>({});
 
+  // 범용 useTab 훅 사용
+  const { goToList, navigateWithTab } = useTab<TabKey>({
+    defaultTab: 'qa',
+    basePath: '/dbms/qa',
+  });
 
+  const [input, setInput] = useState<QARequest>({
+    ano: ano,
+    answer: ''
+  });
+
+  /* 문의내용 상세 데이터 */
   const loadQa = () => {
-    
     axiosInstance
       .get(`/qa/${no}`, {
         headers: {
-          'accessNo': String(ano),
-          'grade': String(grade),
+          accessNo: String(ano),
+          grade: String(grade),
         }
       })
       .then((res) => setQa(res.data))
@@ -47,7 +60,6 @@ export default function QaDetail() {
       .finally(() => setLoading(false));
   }
 
-  /* 문의내용 상세 데이터 */
   useEffect(() => {
     
     if (!no) return;
@@ -59,15 +71,7 @@ export default function QaDetail() {
 
   }, [no, ano, grade, isEdit]);
 
-  
-    // ==========================================
-    // 1. 폼 상태 관리 ('Y' / 'N' 반영)
-    // ==========================================
-    const [input, setInput] = useState<QARequest>({
-      ano: ano,
-      answer: ''
-    });
-
+  /* 답변 영역 수정모드 일때 정보 저장 */
   useEffect(() => {
     if (!isEdit) return;
     
@@ -78,15 +82,8 @@ export default function QaDetail() {
 
   }, [isEdit]);
 
-  // 유효성 검사 에러 메시지
-  type FormErrors = Partial<Record<keyof QARequest, string>>;
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [submitting, setSubmitting] = useState<boolean>(false);
-  const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
-
   
-  // 💡 공통 onChange (체크박스를 'Y' / 'N'으로 변환)
-  const onChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const onChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setInput((prev) => ({ ...prev, [name]: value }));
 
@@ -94,10 +91,12 @@ export default function QaDetail() {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
   };
+
+  /* 답변 유무(수정중이 아니고 답변완료) */
+  const answered = !isEdit && qa?.status === 2 && !!qa?.answer
   
-  // ==========================================
-  // 2. 입력값 유효성 검사
-  // ==========================================
+  
+  // 필수 필드 정의
   const REQUIRED_FIELDS: { field: keyof FormErrors; label: string; id: string }[] = [
     { field: 'answer', label: '답변', id: 'answer' },
   ];
@@ -115,16 +114,13 @@ export default function QaDetail() {
   };
 
     
-  // ==========================================
-  // 3. API 저장 처리 (POST / PUT)
-  // ==========================================
+  /**
+   * 이벤트 핸들러
+   */
   const handleEdit = () => {
-    console.log(!isEdit && qa?.status === 2 && !!qa?.answer)
-    if (!isEdit && qa?.status === 2 && !!qa?.answer) {
-      console.log('1')
+    if (answered) {
       setIsEdit(true);
     } else {
-      console.log('2')
       handleSave();
     }
   }
@@ -147,28 +143,16 @@ export default function QaDetail() {
         variant: 'success',
         onConfirm: () => setIsEdit(false)
       });
-    } catch (error) {
-      console.error('문의사항 저장 중 오류 발생:', error);
-      if (axios.isAxiosError(error)) {
-        const status = error.response?.status;
-        const data = error.response?.data;
 
-        if (status === 400 || status === 401) {
-          setAlert({ message: '입력값을 확인하거나 비밀번호를 다시 확인해주세요.', variant: 'error' });
-        } else if (status === 404) {
-          setAlert({ message: '존재하지 않거나 이미 삭제된 게시글입니다.', variant: 'error' });
-        } else if (status === 500) {
-          if (data?.message?.includes('비밀번호') || data?.message?.includes('password')) {
-            setAlert({ message: '비밀번호가 일치하지 않습니다.', variant: 'error' });
-          } else {
-            setAlert({ message: '서버 내부 오류가 발생했습니다. 관리자에게 문의하세요.', variant: 'error' });
-          }
-        } else {
-          setAlert({ message: `오류가 발생했습니다. (에러 코드: ${status || 'Unknown'})`, variant: 'error' });
-        }
-      } else {
-        setAlert({ message: '알 수 없는 오류가 발생했습니다.', variant: 'error' });
-      }
+    } catch (error) {
+
+      console.error('답변 저장 중 오류 발생:', error);
+
+      setAlert({
+        message: '존재하지 않거나 삭제된 게시글입니다.',
+        variant: 'error'
+      });
+
     } finally {
       setSubmitting(false);
     }
@@ -188,9 +172,9 @@ export default function QaDetail() {
       <section className="view active">
         <PageHeader 
             title="문의 상세" 
-            description={error ?? '등록한 문의와 답변 내용을 확인할 수 있습니다.'} 
+            description={error ?? '등록된 문의내용을 확인하고 답변을 등록할 수 있습니다.'} 
             actions={
-            <button type="button" className="btn btn_md btn_ghost" onClick={goBack}>
+            <button type="button" className="btn btn_md btn_ghost" onClick={() => goToList()}>
               ← 목록으로
             </button>
             }
@@ -213,9 +197,9 @@ export default function QaDetail() {
     <section className="view active">
       <PageHeader
         title="문의 상세" 
-        description='등록한 문의와 답변 내용을 확인할 수 있습니다.'
+        description='등록된 문의내용을 확인하고 답변을 등록할 수 있습니다.'
         actions={
-          <button type="button" className="btn btn_md btn_ghost" onClick={goBack}>
+          <button type="button" className="btn btn_md btn_ghost" onClick={() => goToList()}>
             ← 목록으로
           </button>
         }
@@ -259,7 +243,7 @@ export default function QaDetail() {
           <div className='answer_area'>
             {loading ? (
               <div className="empty_row">로딩중...</div>
-            ) : !isEdit && qa?.status === 2 && !!qa?.answer ? (
+            ) : answered ? (
               /* 1. 답변이 있고 / 수정 중이 아니면: 답변 조회 화면 노출 */
               <>
                 <p className="cell_title">{qa.answer}</p>

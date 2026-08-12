@@ -2,13 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {
+  AlertModal,
   PageHeader,
   AdminToolbar,
   ConfirmDeleteModal,
   DataTable,
   DbmsPagination,
 } from '../../../components/ui';
-
 
 import type {
   DataTableColumn,
@@ -23,12 +23,10 @@ import {
 } from '../../../components/ts/survey';
 import { deleteSurvey, getSurveys } from '../../../components/ts/surveyApi';
 
-
 export default function SurveyList() {
 
   const navigate =
     useNavigate();
-
 
   /* =======================================================
      서버 데이터
@@ -39,7 +37,6 @@ export default function SurveyList() {
     setSurveys,
   ] = useState<Survey[]>([]);
 
-
   /* =======================================================
      검색 / 필터
   ======================================================= */
@@ -49,14 +46,12 @@ export default function SurveyList() {
     setKeyword,
   ] = useState('');
 
-
   const [
     statusFilter,
     setStatusFilter,
   ] = useState<
     SurveyStatus | ''
   >('');
-
 
   /* =======================================================
      페이지
@@ -67,7 +62,6 @@ export default function SurveyList() {
     setPage,
   ] = useState(1);
 
-
   /* =======================================================
      로딩
   ======================================================= */
@@ -76,7 +70,6 @@ export default function SurveyList() {
     loading,
     setLoading,
   ] = useState(false);
-
 
   /* =======================================================
      삭제 대상
@@ -89,12 +82,13 @@ export default function SurveyList() {
     null
   );
 
-
   const [
     deleting,
     setDeleting,
   ] = useState(false);
 
+  // 공통 알림 모달 상태
+  const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error' } | null>(null);
 
   /* =======================================================
      설문 목록 조회
@@ -107,7 +101,6 @@ export default function SurveyList() {
 
         setLoading(true);
 
-
         /**
          * 관리자 전체 설문 목록
          *
@@ -115,19 +108,16 @@ export default function SurveyList() {
          */
         const list = await getSurveys();
 
-
         /**
          * 최신 설문이 위로 오도록
          * no 기준 내림차순 정렬합니다.
          */
-
 
         const sorted =
           [...list].sort(
             (a, b) =>
               b.no - a.no
           );
-
 
         setSurveys(
           sorted
@@ -141,13 +131,10 @@ export default function SurveyList() {
           error
         );
 
-
-        alert(
-          error.response
-            ?.data
-            ?.message
-          ?? '설문 목록을 불러오지 못했습니다.'
-        );
+        setAlert({
+          message: error.response?.data?.message ?? '설문 목록을 불러오지 못했습니다.',
+          variant: 'error',
+        });
 
       } finally {
 
@@ -156,7 +143,6 @@ export default function SurveyList() {
       }
 
     };
-
 
   /**
    * 페이지 최초 진입 시
@@ -167,7 +153,6 @@ export default function SurveyList() {
     loadSurveys();
 
   }, []);
-
 
   /* =======================================================
      검색 + 상태 필터
@@ -183,7 +168,6 @@ export default function SurveyList() {
         keyword
           .trim()
           .toLowerCase();
-
 
       return surveys.filter(
         (survey) => {
@@ -203,7 +187,6 @@ export default function SurveyList() {
                 searchKeyword
               );
 
-
           /**
            * 설문 상태
            */
@@ -212,13 +195,11 @@ export default function SurveyList() {
               survey
             );
 
-
           const matchStatus =
             statusFilter === ''
             ||
             status
             === statusFilter;
-
 
           return (
             matchKeyword
@@ -235,7 +216,6 @@ export default function SurveyList() {
       statusFilter,
     ]);
 
-
   /* =======================================================
      페이지 계산
   ======================================================= */
@@ -248,7 +228,6 @@ export default function SurveyList() {
         / SURVEY_LIST_PAGE_SIZE
       )
     );
-
 
   /**
    * 검색 결과에서
@@ -263,7 +242,6 @@ export default function SurveyList() {
       * SURVEY_LIST_PAGE_SIZE
     );
 
-
   /* =======================================================
      검색
   ======================================================= */
@@ -276,7 +254,6 @@ export default function SurveyList() {
       value
     );
 
-
     /**
      * 검색 조건 변경 시
      * 첫 페이지로 이동합니다.
@@ -284,7 +261,6 @@ export default function SurveyList() {
     setPage(1);
 
   };
-
 
   /* =======================================================
      상태 필터
@@ -324,11 +300,9 @@ export default function SurveyList() {
 
     }
 
-
     setPage(1);
 
   };
-
 
   /* =======================================================
      설문 삭제
@@ -345,11 +319,9 @@ export default function SurveyList() {
 
       }
 
-
       try {
 
         setDeleting(true);
-
 
         /**
          * 설문 삭제
@@ -360,7 +332,6 @@ export default function SurveyList() {
          * 204 No Content 정상 동작을 확인했습니다.
          */
         await deleteSurvey(deleteTarget.no);
-
 
         /**
          * 삭제 성공 후
@@ -375,15 +346,11 @@ export default function SurveyList() {
             )
         );
 
-
         setDeleteTarget(
           null
         );
 
-
-        alert(
-          '설문이 삭제되었습니다.'
-        );
+        setAlert({ message: '설문이 삭제되었습니다.', variant: 'success' });
 
       } catch (
       error: any
@@ -393,13 +360,10 @@ export default function SurveyList() {
           error
         );
 
-
-        alert(
-          error.response
-            ?.data
-            ?.message
-          ?? '설문 삭제 중 오류가 발생했습니다.'
-        );
+        setAlert({
+          message: error.response?.data?.message ?? '설문 삭제 중 오류가 발생했습니다.',
+          variant: 'error',
+        });
 
       } finally {
 
@@ -408,7 +372,6 @@ export default function SurveyList() {
       }
 
     };
-
 
   /* =======================================================
      테이블 컬럼
@@ -442,11 +405,9 @@ export default function SurveyList() {
                   === survey.no
               );
 
-
             const virtualNo =
               filtered.length
               - index;
-
 
             return (
               <span className="mono">
@@ -457,7 +418,6 @@ export default function SurveyList() {
             );
           },
       },
-
 
       /* 설문 제목 */
 
@@ -475,7 +435,6 @@ export default function SurveyList() {
 
               </div>
 
-
               <div className="cell_sub">
 
                 설문 No.
@@ -487,7 +446,6 @@ export default function SurveyList() {
 
           ),
       },
-
 
       /* 진행 상태 */
 
@@ -501,7 +459,6 @@ export default function SurveyList() {
               getSurveyStatus(
                 survey
               );
-
 
             return (
 
@@ -524,7 +481,6 @@ export default function SurveyList() {
             );
           },
       },
-
 
       /* 설문 기간 */
 
@@ -555,7 +511,6 @@ export default function SurveyList() {
           ),
       },
 
-
       /* 작성자 회원번호 */
 
       {
@@ -574,7 +529,6 @@ export default function SurveyList() {
 
           ),
       },
-
 
       /* 등록일 */
 
@@ -596,7 +550,6 @@ export default function SurveyList() {
 
           ),
       },
-
 
       /**
        * 응답관리
@@ -635,7 +588,6 @@ export default function SurveyList() {
 
     ];
 
-
   /* =======================================================
      화면
   ======================================================= */
@@ -643,7 +595,6 @@ export default function SurveyList() {
   return (
 
     <section className="view active">
-
 
       {/* ===================================================
           페이지 헤더
@@ -671,7 +622,6 @@ export default function SurveyList() {
         }
 
       />
-
 
       {/* ===================================================
           검색 / 필터
@@ -757,7 +707,6 @@ export default function SurveyList() {
 
       />
 
-
       {/* ===================================================
           설문 목록
       =================================================== */}
@@ -815,7 +764,6 @@ export default function SurveyList() {
 
       />
 
-
       {/* ===================================================
           페이지네이션
       =================================================== */}
@@ -843,7 +791,6 @@ export default function SurveyList() {
         }
 
       />
-
 
       {/* ===================================================
           삭제 확인 모달
@@ -888,6 +835,13 @@ export default function SurveyList() {
 
       />
 
+      {/* 조회/삭제 결과 공통 알림 */}
+      <AlertModal
+        open={alert !== null}
+        onClose={() => setAlert(null)}
+        message={alert?.message ?? ''}
+        variant={alert?.variant}
+      />
 
     </section>
 

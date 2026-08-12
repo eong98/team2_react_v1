@@ -14,6 +14,8 @@
 // ISDEL       CHAR(1)     DEFAULT 'N'         NULL, -- 삭제여부(Y/N)
 // DDATE       VARCHAR2(30)                    NULL, -- 삭제일시
 
+import { useLocation } from "react-router-dom";
+
 export interface QaTypes {
   no: number;
   mno: number;
@@ -37,7 +39,8 @@ export interface QaTypes {
   isfaq: string;
 }
 
-// 2. TYPE (접수 유형) 매핑 상수 & 드롭다운 옵션
+
+// TYPE (접수 유형)
 export const QA_TYPE_MAP: Record<number, { label: string; className: string }> = {
   0: { label: '기타', className: 'neutral_30' },
   1: { label: '관제신청',   className: 'badge_success' },
@@ -46,23 +49,50 @@ export const QA_TYPE_MAP: Record<number, { label: string; className: string }> =
   
 };
 
-export const QA_TYPE_OPTIONS = [
-  { value: 0, label: '기타' },
-  { value: 1, label: '관제신청' },
-  { value: 2, label: '영상요청' },
-  { value: 3, label: '장비장애' },
-];
-
-// 3. STATUS (답변 상태) 매핑 상수 & 배지 스타일
+// STATUS (답변 상태)
 export const QA_STATUS_MAP: Record<number, { label: string; className: string }> = {
-  0: { label: '답변대기', className: 'neutral_30' },
-  1: { label: '확인중',   className: 'check' },
-  2: { label: '답변완료', className: 'badge_success' },
+  0: { label: '답변대기', className: 'wait' },
+  1: { label: '확인중',   className: 'progress' },
+  2: { label: '답변완료', className: 'done' },
+};
+
+// 탭 구분
+export type TabKey = 'my' | 'faq' | 'qa';
+
+// 페이지네이션
+export const PAGE_SIZE = 6;
+
+// 검색필터 
+export interface Filters {
+  keyword: string; /* 검색어로 검색 (유형,제목,내용,답변내용) */
+  type: string; /* 문의유형으로 검색 0,1,2... */
+  state?: string; /* 답변상태로 검색 0,1,2... */
+  mno?: string; /* 회원번호로 검색 */
+}
+
+export const EMPTY_FILTERS: Filters = {
+  keyword: '',
+  type: '',
+  state: '',
+  mno: '',
 };
 
 
-export type TabKey = 'my' | 'faq' | 'qa';
+/**
+ * API 응답형태 타입 정의
+ * 
+ */
 
+/* 검색필터 */
+export interface QaSearchResult {
+  content: QaTypes[];
+  totalElements: number;
+  totalPages: number;
+  page: number; // 0부터 시작
+  size: number;
+}
+
+/* FAQ 등록 */
 export interface FaqCRequest {
   ano: number;
   type: number;
@@ -74,6 +104,7 @@ export interface FaqCRequest {
   vseq?: number;
 }
 
+/* 문의사항 등록 */
 export interface QCRequest {
   mno: number;
   type: number;
@@ -84,8 +115,8 @@ export interface QCRequest {
   vmode: string;
 }
 
+/* 문의사항 댓글 등록 */
 export interface QARequest {
   ano: number;
   answer?: string;
-  // adate: string;
 }

@@ -102,6 +102,27 @@ export default function ShopListView() {
     navigate('/user/dashboard/test1');
   };
 
+  // 매장번호(sno)를 GlobalCurrentShop에 물린 뒤 CCTV 목록(/user/cctv)으로 바로 이동합니다.
+  // "입장하기"와 동일하게 setShop()으로 매장번호를 먼저 심어야, CCTV 화면이 그 번호로
+  // /cctv/search?sno=를 호출해서 이 매장 소유 CCTV만 보여줍니다.
+  const viewCctv = (shop: ShopType) => {
+    if (!shop.no) return;
+    setShop({ no: shop.no, title: shop.title ?? '' });
+    navigate('/user/cctv');
+  };
+
+  // 매장 주소(zip/address/address2) 기준으로 카카오맵 길찾기(장소 검색)를 새 탭으로 엽니다.
+  // 좌표(위도/경도)를 따로 저장해두지 않아서, 정확한 도착지 좌표 대신 주소 텍스트로
+  // 검색하는 방식(map.kakao.com/link/search)을 사용합니다.
+  const moveToAddress = (shop: ShopType) => {
+    const query = `${shop.address ?? ''} ${shop.address2 ?? ''}`.trim();
+    if (!query) {
+      alert('등록된 주소가 없어 길찾기를 열 수 없습니다.');
+      return;
+    }
+    window.open(`https://map.kakao.com/link/search/${encodeURIComponent(query)}`, '_blank', 'noopener,noreferrer');
+  };
+
   const handleDelete = async () => {
     if (!deleteTarget?.no) return;
     setDeleting(true);
@@ -184,6 +205,12 @@ export default function ShopListView() {
                 <div className="store_card_actions">
                   <button type="button" className="btn btn_sm btn_ghost" onClick={() => navigate(`${s.no}/edit`)}>
                     관리
+                  </button>
+                  <button type="button" className="btn btn_sm btn_ghost" onClick={() => viewCctv(s)}>
+                    CCTV 보기
+                  </button>
+                  <button type="button" className="btn btn_sm btn_ghost" onClick={() => moveToAddress(s)}>
+                    이동하기
                   </button>
                   {/* <button type="button" className="btn btn_sm btn_danger" onClick={() => setDeleteTarget(s)}>
                     삭제

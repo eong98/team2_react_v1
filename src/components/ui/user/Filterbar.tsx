@@ -9,8 +9,18 @@ interface FilterbarProps {
   filters?: ReactNode;
   /** 우측 끝에 붙는 보조 버튼 (예: 엑셀 다운로드, 새로고침) — 생성 버튼은 PageHeader에서 처리 */
   extra?: ReactNode;
-  /** 필터 바 왼쪽에 붙는 요소 (예: 페이지네이션의 '전체 N건 중 ...건 표시' 안내문구) */
+  /**
+   * 필터 바 왼쪽에 붙는 커스텀 요소. page/pageSize/totalCount를 같이 넘기면 이 prop은
+   * 무시되고, 아래 안내문구("전체 N건 중 ...건 표시")가 DbmsPagination.tsx와 동일한
+   * 계산식으로 자동 렌더링됩니다. 페이지네이션 정보가 아닌 다른 걸 왼쪽에 두고 싶을 때만 쓰세요.
+   */
   left?: ReactNode;
+  /** 아래 셋을 같이 넘기면 "전체 N건 중 ...건 표시" 안내문구를 Filterbar가 직접 계산해서 보여줍니다. */
+  page?: number;
+  pageSize?: number;
+  totalCount?: number;
+  /** false면 page/pageSize/totalCount를 넘겨도 안내문구를 숨김 (기본 true) */
+  showInfo?: boolean;
   /** 검색어 입력창에서 Enter 입력 시 실행할 검색 함수 (예: onSearch) */
   onSearchEnter?: () => void;
 }
@@ -18,14 +28,16 @@ interface FilterbarProps {
 /**
  * 리스트 상단 검색/필터 바. 기존 .filter_bar 클래스를 그대로 사용
  * (HistoryView.tsx의 필터 바와 동일한 톤), 검색 입력만 .search_box로 새로 추가.
- * left를 넘기면 .filter_bar_row 안에서 필터 바 왼쪽에 나란히 배치됩니다.
+ * left(또는 page/pageSize/totalCount)를 넘기면 .filter_bar_row 안에서 필터 바 왼쪽에 나란히 배치됩니다.
  *
- * 사용 예:
+ * 사용 예 (페이지네이션 정보 자동 계산 — DbmsPagination.tsx와 동일한 방식):
  *   <Filterbar
  *     searchValue={keyword}
  *     onSearchChange={setKeyword}
  *     searchPlaceholder="제목으로 검색"
- *     left={<span className="pagination_info">전체 {total}건 중 {from}–{to}건 표시</span>}
+ *     page={page}
+ *     pageSize={PAGE_SIZE}
+ *     totalCount={totalElements}
  *     filters={
  *       <select value={tag} onChange={(e) => setTag(e.target.value)}>
  *         <option value="">전체</option>
@@ -33,6 +45,9 @@ interface FilterbarProps {
  *       </select>
  *     }
  *   />
+ *
+ * 사용 예 (페이지네이션이 아닌 다른 걸 왼쪽에 두고 싶을 때):
+ *   <Filterbar left={<span>커스텀 안내</span>} ... />
  */
 export default function Filterbar({
   searchValue,
@@ -41,11 +56,28 @@ export default function Filterbar({
   filters,
   extra,
   left,
+  page,
+  pageSize,
+  totalCount,
+  showInfo = true,
   onSearchEnter,
 }: FilterbarProps) {
+  // DbmsPagination.tsx와 동일한 계산식: from은 1부터, to는 totalCount를 넘지 않게
+  const hasPaginationInfo = page !== undefined && pageSize !== undefined && totalCount !== undefined;
+  const from = hasPaginationInfo && totalCount > 0 ? (page - 1) * pageSize + 1 : 0;
+  const to = hasPaginationInfo ? Math.min(page * pageSize, totalCount) : 0;
+
+  const leftContent =
+    left ??
+    (hasPaginationInfo && showInfo && totalCount > 0 ? (
+      <span className="pagination_info">
+        전체 <em className="b_num">{totalCount}</em>건 중 {from}–{to}건 표시
+      </span>
+    ) : null);
+
   return (
     <div className="filter_bar_row">
-      {left}
+      {leftContent}
 
       <div className="filter_bar">
         <div className="search_box">
@@ -83,7 +115,7 @@ export default function Filterbar({
 
         {filters}
 
-        {extra && <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>{extra}</div>}
+        {extra && <div className='actions'>{extra}</div>}
       </div>
     </div>
   );

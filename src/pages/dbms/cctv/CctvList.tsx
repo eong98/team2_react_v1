@@ -2,27 +2,36 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AdminToolbar, DataTable, PageHeader, DbmsPagination, ConfirmDeleteModal, type DataTableColumn } from '../../../components/ui';
 import { axiosInstance } from '../../../utils/Tool.ts';
-import { PAGE_SIZE, EMPTY_FILTERS, type ShopSearchResult, type RowType, type Filters } from '../../../components/ts/ShopAdmin.ts';
+import {
+  PAGE_SIZE,
+  STATE_LABELS,
+  STATE_BADGE,
+  EMPTY_FILTERS,
+  type CctvSearchResult,
+  type RowType,
+  type Filters,
+} from '../../../components/ts/CctvAdmin.ts';
 
+// 파일이름 꼭 맞춰주세요
 /* ---------------------------------------------------------------------
-   매장관리(/dbms/shop) - 관리자 목록. mno 상관없이 전체 매장을 대상으로 합니다.
+   CCTV관리(/dbms/cctv) - 관리자 목록. sno(매장) 상관없이 전체 CCTV를 대상으로 합니다.
 
-   SHOP 컬럼: no/mno/title/zip/address/address2/tel/coment/phone/snum/udate/cdate
-   - 매장 생성은 관리자 화면에서 하지 않음(매장 소유자가 /user/shop에서 생성).
-     관리자는 전체 매장 조회 + 수정 + 삭제만 담당.
+   CCTV 컬럼: no/sno/mac/represent/cname/ckdate/state/cdate
+   - CCTV 등록/수정/삭제는 관리자 전용입니다. 사용자(user/shop/CctvList.tsx)는
+     로그인 후 입장한 매장 소유 CCTV를 조회만 할 수 있습니다.
    - 맨 앞 "번호" 컬럼은 실제 PK(no)가 아니라, 검색 결과 총 건수 기준으로
-     내림차순 매긴 가상의 순번(cnt)입니다. (CctvIssueList.tsx와 동일 패턴)
+     내림차순 매긴 가상의 순번(cnt)입니다. (ShopList.tsx/CctvIssueList.tsx와 동일 패턴)
 
-   API (ShopCont, /shop)
-   GET    /shop/admin/search?keyword=&page=&size=  - mno 상관없이 전체 매장 검색 + 페이징
+   API (CctvCont, /cctv)
+   GET    /cctv/admin/search?sno=&state=&keyword=&page=&size=  - 전체 CCTV 검색 + 페이징
      → { content, totalElements, totalPages, page(0-base), size }
-   DELETE /shop/{pk}
+   DELETE /cctv/{pk}
 
-   상수/타입(PAGE_SIZE, Filters, EMPTY_FILTERS, RowType, ShopSearchResult)은
-   전부 ./Shop.ts 로 옮겨뒀습니다.
+   상수/타입(PAGE_SIZE, STATE_LABELS, STATE_BADGE, Filters, EMPTY_FILTERS, RowType)은
+   전부 ./CctvAdmin.ts 로 옮겨뒀습니다.
 --------------------------------------------------------------------- */
 
-export default function ShopListView() {
+export default function CctvListView() {
   const navigate = useNavigate();
 
   // draft: 입력 중인 값 (타이핑만으로는 검색 안 됨) / applied: "검색" 눌렀을 때 실제 조회에 쓰이는 값
@@ -41,10 +50,12 @@ export default function ShopListView() {
   const loadList = async () => {
     setLoading(true);
     try {
-      const res = await axiosInstance.get<ShopSearchResult>('/shop/admin/search', {
+      const res = await axiosInstance.get<CctvSearchResult>('/cctv/admin/search', {
         params: {
           page: page - 1,
           size: PAGE_SIZE,
+          sno: applied.sno.trim() !== '' ? Number(applied.sno.trim()) : undefined,
+          state: applied.state !== '' ? Number(applied.state) : undefined,
           keyword: applied.keyword.trim() || undefined,
         },
       });
@@ -90,7 +101,7 @@ export default function ShopListView() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await axiosInstance.delete(`/shop/${deleteTarget.no}`);
+      await axiosInstance.delete(`/cctv/${deleteTarget.no}`);
       setDeleteTarget(null);
       // 마지막 페이지의 마지막 1건을 지운 경우 빈 페이지가 보이지 않도록 보정
       if (rows.length === 1 && page > 1) {
@@ -108,41 +119,84 @@ export default function ShopListView() {
 
   const columns: DataTableColumn<RowType>[] = [
     { header: '번호', width: '64px', mono: true, render: (r) => r.cnt },
-    { header: '회원번호', width: '90px', mono: true, render: (r) => `#${r.mno}` },
+    { header: '매장번호', width: '90px', mono: true, render: (r) => `#${r.sno}` },
     {
-      header: '매장명',
+      header: 'CCTV명',
       width: '18%',
       render: (r) => (
         <div>
-          <div className="cell_title">{r.title}</div>
+          <div className="cell_title">{r.cname || '(이름 없음)'}</div>
           <div className="cell_sub">No.{r.no}</div>
         </div>
       ),
     },
+    { header: 'MAC 주소', width: '160px', mono: true, render: (r) => r.mac || '-' },
     {
-      header: '주소',
-      width: '28%',
+      header: '대표',
+      width: '70px',
       render: (r) => (
-        <span title={`${r.address ?? ''} ${r.address2 ?? ''}`}>
-          {r.address}
-          {r.address2 ? ` ${r.address2}` : ''}
+        <span className={`badge ${r.represent === 'Y' ? 'badge_info' : 'badge_neutral'}`}>
+          {r.represent === 'Y' ? '대표' : '-'}
         </span>
       ),
     },
-    { header: '매장연락처', width: '130px', mono: true, render: (r) => r.tel || '-' },
-    { header: '사업자번호', width: '120px', mono: true, render: (r) => r.snum || '-' },
+    {
+      header: '상태',
+      width: '90px',
+      render: (r) => (
+        <span className={`badge ${STATE_BADGE[r.state ?? 0] ?? 'badge_neutral'}`}>
+          {STATE_LABELS[r.state ?? 0] ?? r.state}
+        </span>
+      ),
+    },
+    { header: '최근 점검일', width: '110px', mono: true, render: (r) => r.ckdate || '-' },
     { header: '등록일', width: '110px', mono: true, render: (r) => r.cdate },
   ];
 
   return (
     <section className="view active">
-      <PageHeader title="매장관리" description="전체 회원의 매장을 관리자 권한으로 조회·수정·삭제합니다. (SHOP 테이블 기준, mno 상관없이 전체 대상)" />
+      <PageHeader
+        title="CCTV관리"
+        description="전체 매장의 CCTV 장비를 등록·수정·삭제합니다. (CCTV 테이블 기준, sno 상관없이 전체 대상)"
+        createLabel="+ CCTV 등록"
+        onCreate={() => navigate('new')}
+      />
 
       <AdminToolbar
         searchValue={draft.keyword}
         onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
-        searchPlaceholder="매장명·주소로 검색"
+        searchPlaceholder="CCTV명·MAC주소로 검색"
         onSearchEnter={onSearch}
+        filters={
+          <>
+            <input
+              type="number"
+              className="form_input"
+              placeholder="매장번호"
+              value={draft.sno}
+              onChange={(e) => setDraft((prev) => ({ ...prev, sno: e.target.value }))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onSearch();
+              }}
+              style={{ maxWidth: 110 }}
+              aria-label="매장번호 필터"
+            />
+
+            <select
+              className="form_select"
+              value={draft.state}
+              onChange={(e) => setDraft((prev) => ({ ...prev, state: e.target.value }))}
+              aria-label="상태 필터"
+            >
+              <option value="">상태 전체</option>
+              {Object.entries(STATE_LABELS).map(([state, label]) => (
+                <option key={state} value={state}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </>
+        }
         extra={
           <>
             <button type="button" className="btn btn_primary" onClick={onSearch}>
@@ -155,14 +209,14 @@ export default function ShopListView() {
         }
       />
 
-      <DataTable
+      <DataTable<RowType>
         columns={columns}
         data={rows}
-        rowKey={(r) => r.no}
+        rowKey={(r) => r.no ?? r.cnt}
         loading={loading}
         onEdit={(r) => navigate(`${r.no}/edit`)}
         onDelete={(r) => setDeleteTarget(r)}
-        emptyMessage="검색 결과가 없습니다."
+        emptyMessage="등록된 CCTV가 없습니다."
       />
 
       <DbmsPagination page={page} totalPages={totalPages} totalCount={totalElements} pageSize={PAGE_SIZE} onChange={setPage} />
@@ -171,7 +225,7 @@ export default function ShopListView() {
         open={deleteTarget !== null}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        targetLabel={deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.title} (회원 #${deleteTarget.mno})` : undefined}
+        targetLabel={deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.cname || '(이름 없음)'} (매장 #${deleteTarget.sno})` : undefined}
         loading={deleting}
       />
     </section>

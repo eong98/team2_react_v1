@@ -59,6 +59,15 @@
   color: var(--text-faint);
 }
 
+/* ---- 날짜 입력창 ----
+   다크 배경 위에서 브라우저 기본 달력 아이콘이 검정이라 안 보이는
+   문제를 막기 위해 color-scheme을 명시합니다. (filter_bar의 date
+   input과 동일 처리, common.css 참고) */
+.shop-calendar-page input[type="date"],
+.shop-calendar-page input[type="datetime-local"] {
+  color-scheme: dark;
+}
+
 /* ---- FullCalendar 테마 변수 ---- */
 .shop-calendar-page .fc {
   --fc-border-color: var(--border);
@@ -221,10 +230,7 @@
   background: var(--secondary-dim);
 }
 
-.shop-calendar-page .fc .fc-timegrid-now-indicator-line {
-  border-color: var(--cta);
-}
-
+.shop-calendar-page .fc .fc-timegrid-now-indicator-line,
 .shop-calendar-page .fc .fc-timegrid-now-indicator-arrow {
   border-color: var(--cta);
 }
