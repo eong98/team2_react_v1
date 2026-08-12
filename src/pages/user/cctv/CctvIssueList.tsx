@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PageHeader, DataTable, UserPagination, AlertModal, type DataTableColumn } from '../../../components/ui/index.ts';
 import Filterbar from '../../../components/ui/user/Filterbar.tsx';
 import { axiosInstance, getNowDate } from '../../../utils/Tool.ts';
@@ -19,8 +19,10 @@ import { GlobalCurrentShop } from '../../../store/UserStore.ts';
 
 // 파일이름 꼭 맞춰주세요
 /* ---------------------------------------------------------------------
-   CCTV 이슈 내역(/user/shop/cctv-issue) - Topbar에서 입장한 매장(GlobalCurrentShop().no)
+   CCTV 이슈 내역(/user/cctvissue) - Topbar에서 입장한 매장(GlobalCurrentShop().no)
    소유 CCTV에서 발생한 AI 이상행동 감지 이슈만 노출합니다.
+   /user/cctv(CCTV 목록, 조회 전용)에서 특정 CCTV를 클릭해 ?cno= 쿼리로 들어오면
+   해당 CCTV 이슈만 미리 필터링해서 보여줍니다("타고 들어가서 상황 처리 확인" 흐름).
 
    화면 디자인은 대시보드 목업(user/dashboard/Test2.tsx + EventDetailPanel)을 그대로 가져오되,
    실제 CCTV_ISSUE 테이블 데이터를 붙였습니다(목업의 카메라명/EventStatus 등 가상 필드는 없음).
@@ -28,8 +30,6 @@ import { GlobalCurrentShop } from '../../../store/UserStore.ts';
    CCTV_ISSUE 컬럼: no/cno/mno/code/state/comnet/reliability/pdate/noticeyn/cdate
    - cno(CCTV번호)만 있고 매장 컬럼이 없어서, 서버(searchByShop)에서 CNO가 속한 CCTV의
      SNO로 서브쿼리 필터링해 매장별로 걸러줍니다.
-   - ⚠️ 아직 CCTV 등록 기능이 없어서(우원님 CCTV 관리 화면 개발 전) CCTV/CCTV_ISSUE 데이터가
-     없습니다. 지금은 항상 빈 목록으로 보이는 게 정상이고, CCTV 등록 후 데이터가 쌓이면 그대로 동작합니다.
 
    API (CctvIssueCont, /cctv_issue)
    GET  /cctv_issue/search?sno=&cno=&code=&state=&noticeyn=&keyword=&cdateFrom=&cdateTo=&page=&size=
@@ -42,13 +42,20 @@ import { GlobalCurrentShop } from '../../../store/UserStore.ts';
 
 export default function CctvIssueListView() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const cnoParam = searchParams.get('cno');
+
   const { no: mno } = GlobalStoreSession();
   const shopNo = GlobalCurrentShop((state) => state.no);
   const shopTitle = GlobalCurrentShop((state) => state.title);
 
+  // /user/cctv 목록에서 특정 CCTV를 클릭해 들어온 경우, ?cno= 쿼리로 해당 CCTV의
+  // 이슈만 미리 필터링합니다(cno 입력창은 따로 없고, CCTV 목록에서 타고 들어올 때만 적용).
+  const initialFilters: Filters = { ...EMPTY_FILTERS, cno: cnoParam ?? '' };
+
   // draft: 입력 중인 값 (타이핑만으로는 검색 안 됨) / applied: "검색" 눌렀을 때 실제 조회에 쓰이는 값
-  const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS);
-  const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
+  const [draft, setDraft] = useState<Filters>(initialFilters);
+  const [applied, setApplied] = useState<Filters>(initialFilters);
   const [page, setPage] = useState(1); // 화면 표시는 1부터, 서버는 0부터
 
   const [rows, setRows] = useState<RowType[]>([]);
@@ -188,7 +195,7 @@ export default function CctvIssueListView() {
     { header: '번호', width: '64px', mono: true, render: (r) => r.cnt },
     {
       header: '발생일시',
-      width: '18%',
+      width: '22%',
       mono: true,
       render: (r) => (
         <span style={{ cursor: 'pointer' }} onClick={() => setDetail(r)}>
@@ -196,23 +203,23 @@ export default function CctvIssueListView() {
         </span>
       ),
     },
-    { header: 'CCTV', width: '80px', mono: true, render: (r) => `#${r.cno}` },
+    { header: 'CCTV', width: '10%', mono: true, render: (r) => `#${r.cno}` },
     {
       header: '유형',
-      width: '110px',
+      width: '16%',
       render: (r) => <span className="badge badge_info">{CODE_LABELS[r.code] ?? r.code}</span>,
     },
     {
       header: '오탐여부',
-      width: '90px',
+      width: '13%',
       render: (r) => (
         <span className={`badge ${STATE_BADGE[r.state] ?? 'badge_neutral'}`}>{STATE_LABELS[r.state] ?? r.state}</span>
       ),
     },
-    { header: '신뢰도', width: '80px', mono: true, render: (r) => (r.reliability ? `${r.reliability}%` : '-') },
+    { header: '신뢰도', width: '11%', mono: true, render: (r) => (r.reliability ? `${r.reliability}%` : '-') },
     {
       header: '발송여부',
-      width: '90px',
+      width: '13%',
       render: (r) => (
         <span className={`badge ${r.noticeyn === 'Y' ? 'badge_success' : 'badge_neutral'}`}>
           {r.noticeyn === 'Y' ? '발송완료' : '미발송'}
@@ -226,7 +233,35 @@ export default function CctvIssueListView() {
       <PageHeader
         title="CCTV 이슈 내역"
         description={`${shopTitle || '선택한 매장'}의 CCTV에서 감지된 이상행동 이슈입니다. AI가 감지한 폭행·기물파손·쓰러짐·무단침입·장시간체류 이벤트를 확인하고 처리할 수 있습니다.`}
+        actions={
+          <button type="button" className="btn btn_md btn_ghost" onClick={() => navigate('/user/cctv')}>
+            ← CCTV 목록으로
+          </button>
+        }
       />
+
+      {applied.cno && (
+        <div
+          className="card card_pad_md"
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}
+        >
+          <span className="b_title" style={{ margin: 0 }}>
+            CCTV <b className="mono">#{applied.cno}</b>에서 발생한 이슈만 표시 중입니다.
+          </span>
+          <button
+            type="button"
+            className="btn btn_sm btn_outline_primary"
+            onClick={() => {
+              const empty = { ...EMPTY_FILTERS };
+              setDraft(empty);
+              setPage(1);
+              setApplied(empty);
+            }}
+          >
+            전체 CCTV 이슈 보기
+          </button>
+        </div>
+      )}
 
       <Filterbar
         left={
@@ -404,6 +439,8 @@ export default function CctvIssueListView() {
               </div>
 
               <div className="detail_actions">
+                {/* 현재 오탐여부(state) 값과 상관없이 항상 눌러서 재처리할 수 있습니다.
+                    (예: 이미 '정탐'으로 처리된 건도 다시 '오탐'으로, 그 반대도 가능) */}
                 <button
                   className="btn btn_ghost"
                   disabled={processing}

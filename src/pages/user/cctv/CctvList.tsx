@@ -107,7 +107,7 @@ export default function CctvListView() {
   const to = Math.min(page * PAGE_SIZE, totalElements);
 
   const viewIssues = (cctv: CctvType) => {
-    navigate(`/user/cctv/cctv-issue?cno=${cctv.no}`);
+    navigate(`/user/cctvissue?cno=${cctv.no}`);
   };
 
   /* ---- 매장 미선택 시 안내 ---- */

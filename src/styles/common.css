@@ -333,7 +333,7 @@ table td {padding:0; word-break:break-all;}
 
 /* modal
 ========================================================================== */
-.modal_bg{position:fixed;inset:0;background:rgba(3,5,8,.6);display:none;align-items:center;justify-content:center;z-index:80;}
+.modal_bg{position:fixed;inset:0;background:rgba(3,5,8,.6);display:none;align-items:center;justify-content:center;z-index:100;}
 .modal_bg.open{display:flex;}
 .modal{width:420px;max-width:90vw;background:var(--n-850,var(--surface));border:1px solid var(--border-strong);border-radius:12px;padding:24px;}
 .modal .title{margin-bottom:16px;}
