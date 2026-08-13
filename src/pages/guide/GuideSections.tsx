@@ -1143,6 +1143,12 @@ export function ToolbarCompareSection() {
   const [userKeyword, setUserKeyword] = useState('');
   const [dbmsKeyword, setDbmsKeyword] = useState('');
 
+    // [검색 버튼 클릭] 현재 작성 중인 draft 값을 applied로 확정짓고 1페이지로 이동
+  const onSearch = () => {
+    // setPage(1);
+    // setApplied(draft);
+  };
+
   return (
     <GuideSection
       title="검색/필터 바 — user vs dbms"
@@ -1160,6 +1166,24 @@ const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
 const [totalPages, setTotalPages] = useState<number>(1);
 const [totalElements, setTotalElements] = useState(0);
 
+// [검색 버튼 클릭] 현재 작성 중인 draft 값을 applied로 확정짓고 1페이지로 이동
+const onSearch = () => {
+  setPage(1);
+  setApplied(draft);
+};
+
+// 필터 입력값(draft)/적용값(applied) 초기화. page는 여기서 안 건드림 — 필요한 곳에서 따로 처리
+const resetFilters = () => {
+  const empty = { ...EMPTY_FILTERS };
+  setDraft(empty);
+  setApplied(empty);
+};
+
+// [초기화 버튼 클릭] 모든 필터 조건을 초기화하고 1페이지로 이동
+const onReset = () => {
+  resetFilters();
+  setPage(1);
+};
 
 <Filterbar
   page={page}
@@ -1168,6 +1192,7 @@ const [totalElements, setTotalElements] = useState(0);
   searchValue={draft.keyword}
   onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
   searchPlaceholder={isFaq ? 'FAQ 제목·답변으로 검색' : '제목으로 검색'}
+  onSearchEnter={onSearch}
   filters={<select className="form_select">...</select>}
   extra={
     <>
@@ -1185,6 +1210,7 @@ const [totalElements, setTotalElements] = useState(0);
               <Filterbar
                 searchValue={userKeyword}
                 onSearchChange={setUserKeyword}
+                onSearchEnter={onSearch}
                 searchPlaceholder="검색어를 입력하세요"
                 page={2}
                 pageSize={10}
@@ -1226,6 +1252,7 @@ const [totalElements, setTotalElements] = useState(0);
   searchValue={draft.keyword}
   onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
   searchPlaceholder={tab === 'qa' ? '제목으로 검색' : 'FAQ 제목·답변으로 검색'}
+  onSearchEnter={onSearch}
   filters={<select className="form_select">...</select>}
   extra={
     <>
@@ -1243,6 +1270,7 @@ const [totalElements, setTotalElements] = useState(0);
               <AdminToolbar
                 searchValue={dbmsKeyword}
                 onSearchChange={setDbmsKeyword}
+                onSearchEnter={onSearch}
                 searchPlaceholder="검색어를 입력하세요"
                 filters={
                   <select className="form_select" defaultValue="">

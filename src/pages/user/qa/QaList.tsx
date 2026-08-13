@@ -215,6 +215,7 @@ export default function QaList() {
         totalCount={totalElements}
         searchValue={draft.keyword}
         onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
+        onSearchEnter={onSearch}
         searchPlaceholder={isFaq ? 'FAQ 제목·답변으로 검색' : '제목으로 검색'}
         filters={
           <>
