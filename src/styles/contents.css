@@ -335,8 +335,6 @@ body.alert_mode .sim_toggle .dot{background:var(--red-500);animation:blink 1s in
 .stat_mini .val{font-family:var(--font-mono);font-size:19px;font-weight:700;}
 
 /* ===== 04 · 매장 · CCTV 관리 (store-cctv-v2) ===== */
-.btn_danger_outline{background:none;border-color:rgba(255,77,94,.5);color:var(--red-200);}
-
 
 .modal_foot{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;}
 

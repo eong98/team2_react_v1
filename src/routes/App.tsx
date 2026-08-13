@@ -22,6 +22,12 @@ import Topbar from '../components/ui/common/Topbar';
 import ChatWidget from '../components/ui/user/ChatWidget';
 
 
+
+
+
+import DesignGuide from '../pages/guide/DesignGuide';
+
+
 function App() {
   return (
     <BrowserRouter>
@@ -50,6 +56,14 @@ function App() {
           {/* 서비스 영역 - 관리자 */}
           <Route element={<BaseLayout Sidebar={Sidebar} Topbar={Topbar} />}>
             <Route path="/dbms/*" element={<DbmsRoutes />} />
+          </Route>
+
+
+
+
+          {/* 가이드 */}
+          <Route element={<BaseLayout Sidebar={Sidebar} Topbar={Topbar} />}>
+            <Route path="/guide" element={<DesignGuide />} />
           </Route>
           
         </Routes>

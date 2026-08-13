@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import { axiosInstance } from '../../../utils/Tool';
 import { useTab } from '../../../hooks/useTab';
+import { usePaging } from '../../../hooks/usePaging';
 import { Filterbar, UserPagination, PageHeader, DataAcc, DataCard } from '../../../components/ui';
 import type { DataCardColumn, AccordionCardColumn } from '../../../components/ui';
 import { EMPTY_FILTERS, PAGE_SIZE, QA_STATUS_MAP, QA_TYPE_MAP } from '../../../components/ts/QaType';
@@ -16,6 +17,7 @@ export default function QaList() {
     defaultTab: 'qa',
     basePath: '/user/qa',
   });
+  const { page, setPage } = usePaging();
 
   // 탭 상태 조건 분기
   const isFaq = tab === 'faq';
@@ -29,7 +31,6 @@ export default function QaList() {
   // draft: 입력 중인 값 (타이핑만으로는 검색 안 됨) / applied: "검색" 눌렀을 때 실제 조회에 쓰이는 값
   const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
-  const [page, setPage] = useState(1); // 화면 표시는 1부터, 서버는 0부터
     
   /* 페이징 설정 */
   const [totalPages, setTotalPages] = useState<number>(1);
@@ -58,6 +59,14 @@ export default function QaList() {
       });
 
       const { content, totalElements: total, totalPages: pages, page: serverPage, size } = res.data;
+
+      // 삭제 등으로 인해 "지금 있는 페이지"에 데이터가 하나도 없는데 1페이지는 아닌 경우
+      // (예: 2페이지 마지막 1건을 상세페이지에서 지우고 돌아온 경우) 한 페이지 앞으로 자동 보정합니다.
+      // setPage가 바뀌면 이 useEffect가 page를 다시 의존성으로 갖고 있어서 알아서 재조회됩니다.
+      if (content.length === 0 && page > 1) {
+        setPage(page - 1);
+        return;
+      }
 
       // [가상 번호 생성] 전체 데이터 개수 기준 내림차순 순번(cnt) 계산하여 각 로우에 추가
       // 공식: 전체개수 - (현재페이지 * 페이지크기 + 인덱스)
@@ -94,25 +103,24 @@ export default function QaList() {
     setApplied(draft);
   };
 
-  
-  // [초기화 버튼 클릭] 모든 필터 조건을 초기화하고 1페이지로 이동
-  const onReset = () => {
+  // 필터 입력값(draft)/적용값(applied) 초기화. page는 여기서 안 건드림 — 필요한 곳에서 따로 처리
+  const resetFilters = () => {
     const empty = { ...EMPTY_FILTERS };
     setDraft(empty);
-    setPage(1);
     setApplied(empty);
   };
 
-  // [탭 버튼 클릭]  모든 필터 조건을 초기화하고
-  const handleTabChange = (next: TabKey) => {
-    // 탭 필터 초기화
-    changeTab(next, onReset);
-
-    // 검색 필터 초기화, 1페이지로 이동
-    const empty = { ...EMPTY_FILTERS };
-    setDraft(empty);
+  // [초기화 버튼 클릭] 모든 필터 조건을 초기화하고 1페이지로 이동
+  const onReset = () => {
+    resetFilters();
     setPage(1);
-    setApplied(empty);
+  };
+
+  // [탭 버튼 클릭] 필터 조건을 초기화. page 쿼리는 changeTab이 알아서 지워줘서(=1페이지로 리셋)
+  // 여기서 또 setPage(1)을 부르면 changeTab의 URL 변경이랑 같은 틱에 두 번 겹쳐서
+  // 서로 덮어쓰다가 탭 전환 자체가 씹히는 문제가 있었습니다 — 그래서 여기선 안 부릅니다.
+  const handleTabChange = (next: TabKey) => {
+    changeTab(next, resetFilters);
   };
 
 
@@ -207,6 +215,7 @@ export default function QaList() {
         totalCount={totalElements}
         searchValue={draft.keyword}
         onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
+        onSearchEnter={onSearch}
         searchPlaceholder={isFaq ? 'FAQ 제목·답변으로 검색' : '제목으로 검색'}
         filters={
           <>
@@ -255,6 +264,11 @@ export default function QaList() {
                 aria-label="회원번호 필터"
                 title='회원번호 검색'
                 style={{ maxWidth: 150 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    onSearch?.();
+                  }
+                }}
               />
             )}
           </>

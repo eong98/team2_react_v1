@@ -61,7 +61,7 @@ const axiosInstance = axios.create({
     // npm run dev: import.meta.env.PROD -> false로 자동 설정
     // npm run build: import.meta.env.PROD -> true로 자동 설정
     // '': 같은 ip에 Backend 서버가 있다는 가정하에 상대경로로 요청을 보냄.
-    baseURL: import.meta.env.PROD ? '' : `http://${getIP()}:9102`
+    baseURL: import.meta.env.PROD ? '' : 'http://10.1.205.120:9102'
 })
 
 
@@ -114,8 +114,43 @@ const isImage = (file1 = "") => {
 }
 
 
+
+/**
+ * 문자열의 UTF-8 바이트(Byte) 수를 계산합니다.
+ * - 영문, 숫자, 공백, 기본 기호: 1 Byte
+ * - 한글, 한자, 기타 특수문자: 3 Byte
+ */
+export const getByteLength = (str: string): number => {
+  let byte = 0;
+  for (let i = 0; i < str.length; i++) {
+    byte += str.charCodeAt(i) > 128 ? 3 : 1;
+  }
+  return byte;
+};
+
+/**
+ * 지정한 최대 바이트(maxBytes)를 초과하지 않도록 문자열을 잘라냅니다.
+ * 한글 중간에 잘리는 현상을 방지합니다.
+ */
+export const cutByByte = (str: string, maxBytes: number): string => {
+  let byte = 0;
+  let result = '';
+
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charAt(i);
+    const charByte = str.charCodeAt(i) > 128 ? 3 : 1;
+
+    if (byte + charByte > maxBytes) {
+      break;
+    }
+
+    byte += charByte;
+    result += char;
+  }
+
+  return result;
+};
+
+
 export { getIP, getCopyright, getNowDate, enter_chk, set_focus, axiosInstance, download, isImage };
 // import {getIP, getCopyright, getNowDate, enter_chk, set_focus} from 'Tool';
-
-
-

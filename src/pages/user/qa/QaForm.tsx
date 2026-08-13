@@ -2,7 +2,7 @@ import { useEffect, useState, type ChangeEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { AlertModal, PageHeader } from '../../../components/ui';
-import { axiosInstance, getNowDate, set_focus } from '../../../utils/Tool';
+import { axiosInstance, cutByByte, getByteLength, getNowDate, set_focus } from '../../../utils/Tool';
 import { QA_TYPE_MAP, type QCRequest, type TabKey } from '../../../components/ts/QaType';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import { useTab } from '../../../hooks/useTab';
@@ -81,8 +81,16 @@ export default function QaForm() {
   // 입력 필드 변경
   const onChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    const newValue = type === 'checkbox' ? ((e.target as HTMLInputElement).checked ? 'Y' : 'N') : value;
+    let newValue = type === 'checkbox' ? ((e.target as HTMLInputElement).checked ? 'Y' : 'N') : value;
 
+    // 제목(title) 입력 필드인 경우 200바이트 제한 적용
+    if (name === 'title' && typeof newValue === 'string') {
+      if (getByteLength(newValue) > 200) {
+        // 200 바이트 넘어가면 자동으로 200바이트까지 잘라서 설정
+        newValue = cutByByte(newValue, 200);
+      }
+    }
+    
     setInput((prev) => ({ ...prev, [name]: newValue }));
 
     // 에러 해제
@@ -98,16 +106,25 @@ export default function QaForm() {
     { field: 'pw', label: '게시글 비밀번호', id: 'password' },
   ];
 
-  // 유효성 검사
+  // 유효성 검사: 필수 필드 전부 검사해서 전부 에러로 잡고, 포커스는 맨 첫 번째 오류 필드로만 이동
   const validate = () => {
+    const newErrors: FormErrors = {};
+    let firstErrorId: string | null = null;
+
     for (const { field, label, id } of REQUIRED_FIELDS) {
       if (!String(input[field] ?? '').trim()) {
-        setErrors({ [field]: `${label}을(를) 입력해주세요.` });
-        set_focus(id);
-        return false;
+        newErrors[field] = `${label}을(를) 입력해주세요.`;
+        if (!firstErrorId) firstErrorId = id;
       }
     }
-    setErrors({});
+
+    setErrors(newErrors);
+
+    if (firstErrorId) {
+      set_focus(firstErrorId);
+      return false;
+    }
+
     return true;
   };
 
@@ -176,7 +193,7 @@ export default function QaForm() {
             : '서비스 이용에 문의할 내용을 등록합니다.'
         }
         actions={
-          <button type="button" className="btn btn_md btn_ghost" onClick={goBack}>
+          <button type="button" className="btn btn_md btn_ghost" onClick={() => goToList()}>
             ← 목록으로
           </button>
         }
@@ -195,7 +212,7 @@ export default function QaForm() {
               className="form_select"
               value={input.type}
               onChange={onChange}
-              style={{maxWidth:200}}
+              style={{ maxWidth: 200 }}
             >
               {Object.entries(QA_TYPE_MAP).map(([type, {label}]) => (
                 <option key={type} value={type}>
@@ -218,7 +235,7 @@ export default function QaForm() {
               id="user_id"
               name="ano"
               className="form_input"
-              value={`${id} (No.${mno})`}
+              value={`${isEdit ? id : '등록할때 저장된 아이디 수정예정'}  (No.${mno})`}
               readOnly
               style={{ maxWidth: 200 }}
             />
