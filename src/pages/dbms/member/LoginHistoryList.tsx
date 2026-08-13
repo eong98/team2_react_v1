@@ -4,7 +4,7 @@ import { PageHeader, DataTable, type DataTableColumn, UserPagination } from '../
 import Filterbar from '../../../components/ui/user/Filterbar';
 import { axiosInstance, getIP } from '../../../utils/Tool';
 
-import type { LoginHistory } from './LoginHistory'
+import type { LoginHistory } from './LoginHistory';
 
 const PAGE_SIZE = 10;
 const LOGIN_HISTORY_API = `http://${getIP()}:9102/history/login/list`;
@@ -22,14 +22,15 @@ const RESULT_BADGE: Record<number, string> = {
 type LogTargetType = 'USER' | 'DBMS';
 type TargetFilter = 'ALL' | LogTargetType;
 
-/**
- * mno/mnno 를 각각 받아오는 구조라서, UpdateHistoryList.tsx와 동일하게
- * 한쪽이 null이면 반대쪽 유형으로 판단합니다. (mno가 있으면 회원, mnno가 있으면 관리자)
- */
 interface ProcessedLog extends LoginHistory {
   targetType: LogTargetType;
   targetId: number;
 }
+
+const TARGET_LABEL_MAP: Record<LogTargetType, string> = {
+  USER: '회원',
+  DBMS: '관리자',
+};
 
 const TARGET_OPTIONS: Array<{ value: TargetFilter; label: string }> = [
   { value: 'ALL', label: '전체' },
@@ -43,16 +44,29 @@ const RESULT_OPTIONS: Array<{ value: 'ALL' | '0' | '1'; label: string }> = [
   { value: '0', label: '실패' },
 ];
 
+/** 검색 대상 필드 선택 옵션 — 선택 시 그 필드에서만 검색어를 매칭합니다. */
+type SearchField = 'ALL' | 'loginId' | 'targetId' | 'ipAddr' | 'failReason';
+
+const SEARCH_FIELD_OPTIONS: Array<{ value: SearchField; label: string }> = [
+  { value: 'ALL', label: '전체 항목' },
+  { value: 'loginId', label: '로그인 아이디' },
+  { value: 'targetId', label: '대상번호' },
+  { value: 'ipAddr', label: 'IP주소' },
+  { value: 'failReason', label: '실패 사유' },
+];
+
 interface Filters {
-  keyword: string; // 로그인아이디·IP주소·실패사유·대상번호 통합 검색
-  targetType: TargetFilter; // 회원 / 관리자 구분
-  result: 'ALL' | '0' | '1'; // 성공/실패
-  dateFrom: string; // 로그인일시 시작 (yyyy-MM-dd)
-  dateTo: string; // 로그인일시 종료 (yyyy-MM-dd)
+  keyword: string;
+  searchField: SearchField;
+  targetType: TargetFilter;
+  result: 'ALL' | '0' | '1';
+  dateFrom: string;
+  dateTo: string;
 }
 
 const EMPTY_FILTERS: Filters = {
   keyword: '',
+  searchField: 'ALL',
   targetType: 'ALL',
   result: 'ALL',
   dateFrom: '',
@@ -70,13 +84,8 @@ const formatDate = (val: string) => {
   return Number.isNaN(time)
     ? val
     : new Date(time).toLocaleString('ko-KR', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hourCycle: 'h23',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
       });
 };
 
@@ -88,7 +97,6 @@ export default function LoginHistoryList() {
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
 
-  // 데이터 조회 및 가공
   useEffect(() => {
     const fetchLoginHistory = async () => {
       setIsLoading(true);
@@ -96,8 +104,7 @@ export default function LoginHistoryList() {
         const response = await axiosInstance.get(LOGIN_HISTORY_API);
         const rawData: LoginHistory[] = response.data || [];
 
-        // mno가 null이면 관리자(DBMS), mnno가 null이면 회원(USER)으로 분류
-        // (UpdateHistoryList.tsx와 동일한 판별 방식)
+        // mno가 null이면 관리자(DBMS), 아니면 회원(USER)으로 분류
         const mappedData: ProcessedLog[] = rawData.map((log) => {
           const isDbms = log.mno === null;
 
@@ -120,7 +127,6 @@ export default function LoginHistoryList() {
     fetchLoginHistory();
   }, []);
 
-  // 필터링 및 정렬 - applied 기준으로만 계산
   const processedLogs = useMemo(() => {
     const searchKeyword = applied.keyword.trim().toLowerCase();
     const fromTime = applied.dateFrom ? new Date(`${applied.dateFrom}T00:00:00`).getTime() : null;
@@ -140,8 +146,21 @@ export default function LoginHistoryList() {
 
         if (!searchKeyword) return true;
 
-        const searchString = `${log.loginId} ${log.targetId} ${log.ipAddr ?? ''} ${log.failReason ?? ''}`.toLowerCase();
-        return searchString.includes(searchKeyword);
+        // 필드를 선택한 경우 해당 필드에서만 검색
+        switch (applied.searchField) {
+          case 'loginId':
+            return log.loginId.toLowerCase().includes(searchKeyword);
+          case 'targetId':
+            return String(log.targetId).includes(searchKeyword);
+          case 'ipAddr':
+            return (log.ipAddr ?? '').toLowerCase().includes(searchKeyword);
+          case 'failReason':
+            return (log.failReason ?? '').toLowerCase().includes(searchKeyword);
+          default: {
+            const searchString = `${log.loginId} ${log.targetId} ${log.ipAddr ?? ''} ${log.failReason ?? ''}`.toLowerCase();
+            return searchString.includes(searchKeyword);
+          }
+        }
       })
       .sort((a, b) => {
         const dateA = parseDate(a.loginDate);
@@ -150,7 +169,6 @@ export default function LoginHistoryList() {
       });
   }, [logs, applied]);
 
-  // 페이지네이션 처리
   const totalPages = Math.max(1, Math.ceil(processedLogs.length / PAGE_SIZE));
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
@@ -170,60 +188,34 @@ export default function LoginHistoryList() {
     setApplied(empty);
   };
 
-  // 테이블 컬럼 정의
-  const columns = useMemo<DataTableColumn<ProcessedLog>[]>(
-    () => [
-      { header: '로그번호', accessor: 'no', width: '8%', mono: true },
-      {
-        header: '구분',
-        width: '9%',
-        render: (log) => (
-          <span className={`badge ${log.targetType === 'USER' ? 'badge_neutral' : 'badge_primary'}`}>
-            {log.targetType === 'USER' ? '회원' : '관리자'}
-          </span>
-        ),
-      },
-      {
-        header: '결과',
-        width: '9%',
-        render: (log) => (
-          <span className={`badge ${RESULT_BADGE[log.loginResult] ?? 'badge_neutral'}`}>
-            {RESULT_LABELS[log.loginResult] ?? log.loginResult}
-          </span>
-        ),
-      },
-      { header: '로그인 아이디', width: '15%', render: (log) => <span className="cell_title mono">{log.loginId}</span> },
-      { header: '대상번호', width: '9%', mono: true, render: (log) => <span>{log.targetId}</span> },
-      { header: '실패 사유', width: '20%', render: (log) => <span title={log.failReason ?? '-'}>{log.failReason || '-'}</span> },
-      { header: 'IP주소', width: '13%', mono: true, render: (log) => <span>{log.ipAddr || '-'}</span> },
-      { header: '로그인 일시', width: '15%', mono: true, render: (log) => <span className="mono">{formatDate(log.loginDate)}</span> },
-    ],
-    [],
-  );
+  const columns = useMemo<DataTableColumn<ProcessedLog>[]>(() => [
+    { header: '로그번호', accessor: 'no', width: '8%', mono: true },
+    {
+      header: '구분', width: '8%',
+      render: (log) => (
+        <span className={`badge ${log.targetType === 'USER' ? 'badge_neutral' : 'badge_info'}`}>
+          {TARGET_LABEL_MAP[log.targetType]}
+        </span>
+      ),
+    },
+    {
+      header: '결과', width: '8%',
+      render: (log) => (
+        <span className={`badge ${RESULT_BADGE[log.loginResult] ?? 'badge_neutral'}`}>
+          {RESULT_LABELS[log.loginResult] ?? log.loginResult}
+        </span>
+      ),
+    },
+    { header: '로그인 아이디', width: '15%', render: (log) => <span className="cell_title mono">{log.loginId}</span> },
+    { header: '대상번호', width: '8%', mono: true, render: (log) => <span>{log.targetId}</span> },
+    { header: '실패 사유', width: '20%', render: (log) => <span title={log.failReason ?? '-'}>{log.failReason || '-'}</span> },
+    { header: 'IP주소', width: '13%', mono: true, render: (log) => <span>{log.ipAddr || '-'}</span> },
+    { header: '로그인 일시', width: '15%', mono: true, render: (log) => <span className="mono">{formatDate(log.loginDate)}</span> },
+  ], []);
 
   return (
     <section className="view active">
       <PageHeader title="로그인 로그" description="회원 및 관리자 계정의 로그인 시도(성공/실패) 이력을 통합 조회합니다." />
-
-      {/* 문제유형 필터와 동일한 칩(pill) 토글 방식 - 구분(회원/관리자) */}
-      <div className="form_group" style={{ marginBottom: 12 }}>
-        <span className="form_label" id="login-history-target-label">
-          구분
-        </span>
-        <div className="chip_select" role="group" aria-labelledby="login-history-target-label">
-          {TARGET_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              className={`chip_opt${draft.targetType === opt.value ? ' on' : ''}`}
-              aria-pressed={draft.targetType === opt.value}
-              onClick={() => setDraft((prev) => ({ ...prev, targetType: opt.value }))}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
 
       <Filterbar
         page={page}
@@ -231,10 +223,21 @@ export default function LoginHistoryList() {
         totalCount={processedLogs.length}
         searchValue={draft.keyword}
         onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
-        searchPlaceholder="아이디·대상번호·IP주소·실패사유 검색"
+        searchPlaceholder="선택한 항목에서 검색 (Enter 또는 검색 버튼)"
         onSearchEnter={onSearch}
         filters={
           <>
+            <select
+              className="form_select"
+              value={draft.targetType}
+              onChange={(e) => setDraft((prev) => ({ ...prev, targetType: e.target.value as TargetFilter }))}
+              aria-label="구분 필터"
+            >
+              {TARGET_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+
             <select
               className="form_select"
               value={draft.result}
@@ -242,9 +245,18 @@ export default function LoginHistoryList() {
               aria-label="결과 필터"
             >
               {RESULT_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+
+            <select
+              className="form_select"
+              value={draft.searchField}
+              onChange={(e) => setDraft((prev) => ({ ...prev, searchField: e.target.value as SearchField }))}
+              aria-label="검색 항목 선택"
+            >
+              {SEARCH_FIELD_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
 
@@ -253,9 +265,7 @@ export default function LoginHistoryList() {
               className="form_input"
               value={draft.dateFrom}
               onChange={(e) => setDraft((prev) => ({ ...prev, dateFrom: e.target.value }))}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') onSearch();
-              }}
+              onKeyDown={(e) => { if (e.key === 'Enter') onSearch(); }}
               aria-label="로그인일 시작"
             />
             <span style={{ alignSelf: 'center' }}>~</span>
@@ -264,9 +274,7 @@ export default function LoginHistoryList() {
               className="form_input"
               value={draft.dateTo}
               onChange={(e) => setDraft((prev) => ({ ...prev, dateTo: e.target.value }))}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') onSearch();
-              }}
+              onKeyDown={(e) => { if (e.key === 'Enter') onSearch(); }}
               aria-label="로그인일 종료"
             />
           </>
