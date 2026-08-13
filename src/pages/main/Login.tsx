@@ -68,7 +68,7 @@ export default function Login() {
       // id와 비밀번호 값이 일치하는지 확인
       const loginResult = await axiosInstance.post(`http://${getIP()}:9102/v1/user/login?id=${input.id}&password=${input.password}`);
       // 결과 저장
-      const { success, user } = loginResult.data;
+      const { success, user, message } = loginResult.data;
 
       if(success){
         // 로그인에 성공했다면 세션 스토리지에 로그인값과 아이디값을 변경
@@ -92,7 +92,7 @@ export default function Login() {
 
         navigate('/');
       } else{
-        alert("아이디 또는 비밀번호가 일치하지 않습니다")
+        alert(message)
       }
     } catch(err) {
       console.error(err);
