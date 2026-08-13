@@ -58,12 +58,19 @@ a.btn,
 .btn_ghost{background:none;border-color:var(--border-strong);color:var(--text-dim);}
 .btn_ghost:hover{color:var(--text);border-color:var(--text-faint);}
 
+.btn_danger_outline{background:none;border-color:rgba(255,77,94,.5);color:var(--red-200);}
+.btn_danger_outline:hover{background:var(--danger-dim);}
+
 .btn_outline_primary{background:none;border-color:var(--primary);color:var(--primary);}
+.btn_outline_primary:hover{background:var(--primary-dim);}
 
 .btn[disabled]{background:var(--surface-2);color:var(--text-faint);cursor:not-allowed;}
 
 /* 버튼 묶음 */
 .actions{display:flex;gap:6px;}
+/* pages/main/Home.tsx에서 쓰는데 정의가 없던 것들 — 기존 .actions와 같은 패턴으로 채움 */
+.hero_actions,.cta_actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;}
+.wall_footer{display:flex;align-items:center;justify-content:space-between;gap:10px;}
 /* 선없는 좌우 정렬 */
 .actions.both{justify-content: space-between; margin-top:20px;}
 
@@ -325,6 +332,8 @@ table td {padding:0; word-break:break-all;}
 
 .card_acc .list_row {background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);}
 .card_acc .list_row .empty_row {text-align:center;color:var(--text-faint);padding:34px;font-size:13px;}
+/* DataAcc.tsx의 col.header 라벨(예: "A. 답변 내용") — 렌더링되는 본문 내용 위에 캡션처럼 표시 */
+.acc_panel .answer{display:block;font-size:11px;font-weight:700;color:var(--primary);font-family:var(--font-mono);margin-bottom:6px;}
 
 /* tab
 ========================================================================== */

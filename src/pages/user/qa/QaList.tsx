@@ -215,6 +215,7 @@ export default function QaList() {
         totalCount={totalElements}
         searchValue={draft.keyword}
         onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
+        onSearchEnter={onSearch}
         searchPlaceholder={isFaq ? 'FAQ 제목·답변으로 검색' : '제목으로 검색'}
         filters={
           <>
@@ -263,6 +264,11 @@ export default function QaList() {
                 aria-label="회원번호 필터"
                 title='회원번호 검색'
                 style={{ maxWidth: 150 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    onSearch?.();
+                  }
+                }}
               />
             )}
           </>
