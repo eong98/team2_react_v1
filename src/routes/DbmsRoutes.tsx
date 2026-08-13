@@ -1,8 +1,6 @@
 
 
 import { Navigate, Route, Routes } from 'react-router-dom';
-import NoticeList from '../pages/dbms/qa/NoticeList';
-import NoticeForm from '../pages/dbms/qa/NoticeForm';
 import ShopList from '../pages/dbms/shop/ShopList';
 import ShopForm from '../pages/dbms/shop/ShopForm';
 import InMenuList from '../pages/dbms/menu/InMenuList';
@@ -25,6 +23,8 @@ import UpdateHistory from '../pages/dbms/member/UpdateHistoryList';
 import QaForm from '../pages/dbms/qa/QaForm';
 import QaList from '../pages/dbms/qa/QaList';
 import QaDetail from '../pages/dbms/qa/QaDetail';
+import NoticeList from '../pages/dbms/notice/NoticeList';
+import NoticeDetail from '../pages/dbms/notice/NoticeDetail';
 
 
 export default function DbmsRoutes() {
@@ -33,8 +33,9 @@ export default function DbmsRoutes() {
 
       {/* 참고해서 추가하시면 됩니다 / 페이지 추가 */}
       <Route path="notice" element={<NoticeList />} />
-      <Route path="notice/new" element={<NoticeForm />} />
-      <Route path="notice/:no/edit" element={<NoticeForm />} />
+      <Route path="notice/:no" element={<NoticeDetail />} />
+      {/* <Route path="notice/new" element={<NoticeForm />} /> */}
+      {/* <Route path="notice/:no/edit" element={<NoticeForm />} /> */}
 
       <Route path="qa" element={<QaList />} />
       <Route path="qa/new" element={<QaForm />} />

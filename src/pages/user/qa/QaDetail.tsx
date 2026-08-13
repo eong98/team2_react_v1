@@ -1,21 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
-import { AlertModal, ConfirmDeleteModal, PageHeader } from '../../../components/ui';
-import { axiosInstance } from '../../../utils/Tool';
-import { QA_STATUS_MAP, QA_TYPE_MAP, type QaTypes, type TabKey } from '../../../components/ts/QaType';
 import { GlobalStoreSession } from '../../../store/LoginStore';
-import { useTab } from '../../../hooks/useTab';
+import axios from 'axios';
+import { axiosInstance } from '../../../utils/Tool';
+import { usePaging } from '../../../hooks/usePaging';
+import { AlertModal, ConfirmDeleteModal, PageHeader } from '../../../components/ui';
+import { QA_STATUS_MAP, QA_TYPE_MAP, type QaTypes } from '../../../components/ts/QaType';
 
 export default function QaDetail() {
   const { no } = useParams<{ no: string }>(); // URL에서 no 추출
   const { no: mno, grade } = GlobalStoreSession(); // 현재 로그인한 회원 번호
 
-  // 범용 useTab 훅 사용
-  const { goToList, navigateWithTab } = useTab<TabKey>({
-    defaultTab: 'qa',
-    basePath: '/user/qa',
-  });
+  const { goToList, navigateWithQuery } = usePaging({ basePath: '/user/qa' });
 
   const [qa, setQa] = useState<QaTypes | null>(null);
   const [loading, setLoading] = useState(true);
@@ -112,7 +108,7 @@ export default function QaDetail() {
             </button>
           }
         />
-        <div className="qa_area">
+        <div className="detail_area">
           <div className="card card_pad_lg">
             <div className="empty_row">해당 문의를 찾을 수 없거나 권한이 없습니다.</div>
           </div>
@@ -137,7 +133,7 @@ export default function QaDetail() {
         }
       />
 
-      <div className="qa_area">
+      <div className="detail_area">
         {/* 질문 영역 */}
         <div className="card card_pad_lg">
           <div className="card_header">
@@ -175,7 +171,7 @@ export default function QaDetail() {
                 <button
                   type="button"
                   className="btn btn_sm btn_outline_primary"
-                  onClick={() => navigateWithTab('edit')}
+                  onClick={() => navigateWithQuery('edit')}
                 >
                   수정
                 </button>

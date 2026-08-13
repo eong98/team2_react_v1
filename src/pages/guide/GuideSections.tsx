@@ -26,7 +26,6 @@ const COLOR_TOKENS = [
   { name: '--danger', ko: '위험(레드) — 삭제/오류', value: 'var(--danger)' },
 ];
 
- 
 const COLOR_SCALES: { key: string; label: string; role: string; hex: string[] }[] = [
   {
     key: 'green',
@@ -73,6 +72,7 @@ const COLOR_SCALES: { key: string; label: string; role: string; hex: string[] }[
 ];
 const SCALE_STEPS_10 = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
 const SCALE_STEPS_N = [50, 100, 200, 300, 400, 500, 600, 700, 800, 850, 900, 950];
+
 function ColorScaleRow({ family }: { family: (typeof COLOR_SCALES)[number] }) {
   const steps = family.key === 'n' ? SCALE_STEPS_N : SCALE_STEPS_10;
   return (
@@ -103,6 +103,18 @@ export function ColorSection() {
       description="버튼·배지·상태 표시에 쓰이는 시맨틱 컬러 토큰입니다. 실제 hex 코드를 직접 쓰지 말고 항상 이 변수명으로 참조하세요 — 나중에 브랜드 컬러가 바뀌어도 index.css의 토큰 값만 고치면 전체 화면에 한 번에 반영됩니다."
     >
       <GuideBlock
+        title="전체 컬러 스케일 (50~900)"
+        description="계열별 10단계(neutral은 12단계) 원색 스케일입니다. 대부분의 화면에서는 아래 '시맨틱 컬러 토큰'만 쓰면 되고, 배지·차트처럼 진하기 단계가 여러 개 필요할 때만 이 스케일에서 직접 골라 씁니다."
+        code={`<div style={{ background: 'var(--amber-500)' }}>...</div>`}
+      >
+        <div style={{ width: '100%' }}>
+          {COLOR_SCALES.map((family) => (
+            <ColorScaleRow key={family.key} family={family} />
+          ))}
+        </div>
+      </GuideBlock>
+
+      <GuideBlock
         title="시맨틱 컬러 토큰"
         description="index.css의 :root에 정의된 색상 변수. 배경/글자색 어디든 var(--토큰명)으로 씁니다."
         code={`<div style={{ background: 'var(--primary)' }}>...</div>`}
@@ -119,19 +131,7 @@ export function ColorSection() {
           ))}
         </div>
       </GuideBlock>
- 
-      <GuideBlock
-        title="전체 컬러 스케일 (50~900)"
-        description="계열별 10단계(neutral은 12단계) 원색 스케일입니다. 대부분의 화면에서는 아래 '시맨틱 컬러 토큰'만 쓰면 되고, 배지·차트처럼 진하기 단계가 여러 개 필요할 때만 이 스케일에서 직접 골라 씁니다."
-        code={`<div style={{ background: 'var(--amber-500)' }}>...</div>`}
-      >
-        <div style={{ width: '100%' }}>
-          {COLOR_SCALES.map((family) => (
-            <ColorScaleRow key={family.key} family={family} />
-          ))}
-        </div>
-      </GuideBlock>
- 
+
     </GuideSection>
   );
 }
@@ -148,7 +148,6 @@ const TITLE_SAMPLES = [
   { cls: 'title sm', size: '16px / 700', desc: '작은 블록 타이틀' },
   { cls: 'title (기본)', size: '22px / 800', desc: '수식어 없이 기본 크기' },
 ];
-
 
 export function TypographySection() {
   return (
@@ -302,7 +301,7 @@ export function ButtonSection() {
         <button className="btn btn_md btn_danger" type="button">btn_danger</button>
         <button className="btn btn_md btn_outline_primary" type="button">btn_outline_primary</button>
         <button className="btn btn_md btn_danger_outline" type="button">btn_danger_outline</button>
-        <button className="btn btn_md" type="button" disabled>btn disabled</button>
+        <button className="btn btn_md" type="button" disabled>disabled</button>
       </GuideBlock>
 
       <GuideBlock
@@ -324,6 +323,12 @@ export function ButtonSection() {
 <div className="actions">
   <button className="btn btn_sm btn_ghost">수정</button>
   <button className="btn btn_sm btn_danger_outline">삭제</button>
+</div>
+
+{/* 검색창 옆 오른쪽 정렬 버튼줄 (gap 8px) — AdminToolbar/QaList 초기화+검색 버튼 */}
+<div className="form_row_inline">
+  <button className="btn btn_ghost">초기화</button>
+  <button className="btn btn_primary">검색</button>
 </div>
 
 {/* 상세페이지 하단 액션 (gap 10px) — EventDetailPanel의 오탐지/확인완료 등 */}
@@ -731,36 +736,33 @@ export function HooksSection() {
     >
       <GuideBlock
         title="useTab — 탭 상태 (URL 쿼리 기반)"
-        description="tab을 URL 쿼리(?tab=qa)로 관리해서, 새로고침하거나 뒤로가기해도 탭이 유지됩니다. changeTab은 탭이 바뀌면 page 쿼리도 같이 지워서(=1페이지로) usePaging과 자동으로 맞물립니다."
+        description="tab을 URL 쿼리(?tab=qa)로 관리해서, 새로고침하거나 뒤로가기해도 탭이 유지됩니다. changeTab은 탭이 바뀌면 page 쿼리도 같이 지워서(=1페이지로) usePaging과 자동으로 맞물립니다. tab UI가 없는 화면(상세/작성 페이지 등)은 이 훅 자체를 안 씁니다."
         code={`import { useTab } from 'hooks/useTab';
 
-const { tab, changeTab, navigateWithTab, goToList } = useTab<'qa' | 'faq'>({
-  defaultTab: 'qa',
-  basePath: '/user/qa',
-});
+const { tab, changeTab } = useTab<'qa' | 'faq'>({ defaultTab: 'qa' });
 
-changeTab('faq');           // 탭 전환 + page 쿼리 초기화
-navigateWithTab(\`\${no}\`);   // 지금 쿼리(tab, page)를 유지한 채 상세로 이동
-goToList();                 // 지금 쿼리를 유지한 채 목록으로 복귀`}
+changeTab('faq'); // 탭 전환 + page 쿼리 초기화 (콜백으로 필터 초기화 등도 같이 처리 가능)`}
       >
         <p className="cell_sub">
-          hooks/useTab.ts · <code className="mono">tab</code>/<code className="mono">changeTab</code>/
-          <code className="mono">navigateWithTab</code>/<code className="mono">goToList</code> 반환
+          hooks/useTab.ts · <code className="mono">tab</code>/<code className="mono">changeTab</code> 반환
         </p>
       </GuideBlock>
 
       <GuideBlock
-        title="usePaging — 페이지 번호 (URL 쿼리 기반, useTab과 독립)"
-        description="page를 URL 쿼리(?page=2)로 관리합니다. useTab과 완전히 분리된 훅이라 각자 따로 setSearchParams를 부르지 않고, changeTab이 page 쿼리를 지우는 방식으로만 서로 연동됩니다 (동시에 여러 번 URL을 바꾸다가 서로 덮어쓰는 문제를 피하기 위함)."
+        title="usePaging — 페이지 번호 + 쿼리유지 이동 (URL 쿼리 기반, useTab과 독립)"
+        description="page를 URL 쿼리(?page=2)로 관리합니다. navigateWithQuery/goToList는 원래 useTab에 있었는데, 실제로는 tab 값을 참조하지 않고 '지금 URL의 쿼리스트링을 통째로 들고 이동'할 뿐이라 여기로 옮겼습니다 — 탭이 없는 화면(QaDetail/QaForm 등)도 useTab 없이 이 훅만으로 그대로 씁니다."
         code={`import { usePaging } from 'hooks/usePaging';
 
-const { page, setPage, resetPage } = usePaging();
+const { page, setPage, navigateWithQuery, goToList } = usePaging({ basePath: '/user/qa' });
 
-<UserPagination page={page} totalPages={5} totalCount={42} pageSize={10} onChange={setPage} />`}
+<UserPagination page={page} totalPages={5} totalCount={42} pageSize={10} onChange={setPage} />
+navigateWithQuery(\`\${no}\`); // 지금 쿼리(예: ?tab=faq&page=2)를 유지한 채 상세로 이동
+goToList();                  // 지금 쿼리를 유지한 채 목록으로 복귀`}
       >
         <p className="cell_sub">
           hooks/usePaging.ts · <code className="mono">page</code>/<code className="mono">setPage</code>/
-          <code className="mono">resetPage</code> 반환
+          <code className="mono">resetPage</code>/<code className="mono">navigateWithQuery</code>/
+          <code className="mono">goToList</code> 반환
         </p>
       </GuideBlock>
 
@@ -1055,7 +1057,6 @@ export function TabSection() {
         title="기본 탭"
         description="tabs가 감싸고, 각 버튼에 tab(선택된 것엔 on 추가). role=tablist/tab, aria-selected는 필수입니다."
         code={`const [active, setActive] = useState('all');
-
 
 <div className="tabs" role="tablist" aria-label="문의 보기 전환">
   {(['qa', 'faq'] as TabKey[]).map((tKey) => {

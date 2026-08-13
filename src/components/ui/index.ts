@@ -7,6 +7,8 @@ export { default as DataAcc } from './common/DataAcc';
 export type { AccordionCardColumn } from './common/DataAcc';
 export { default as AlertModal } from './common/AlertModal';
 export { default as ConfirmDeleteModal } from './common/ConfirmDeleteModal';
+export { default as PrevNextNav } from './common/PrevNextNav';
+export type { NavPost } from './common/PrevNextNav';
 
 export { default as AdminToolbar } from './dbms/AdminToolbar';
 export { default as DbmsPagination } from './dbms/DbmsPagination';

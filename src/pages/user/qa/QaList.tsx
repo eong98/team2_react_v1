@@ -13,11 +13,8 @@ export default function QaList() {
 
   /* 탭 이동시 저장 설정 */
   // 범용 useTab 훅 사용 (URL Query Parameter 기반 탭 제어)
-  const { tab, changeTab, navigateWithTab } = useTab<TabKey>({
-    defaultTab: 'qa',
-    basePath: '/user/qa',
-  });
-  const { page, setPage } = usePaging();
+  const { tab, changeTab } = useTab<TabKey>({ defaultTab: 'qa' });
+  const { page, setPage, navigateWithQuery } = usePaging({ basePath: '/user/qa' });
 
   // 탭 상태 조건 분기
   const isFaq = tab === 'faq';
@@ -143,7 +140,7 @@ export default function QaList() {
       render: (n) => (
         <div className="lt">
           <div className="cell_title">
-            <button className='link' onClick={() => navigateWithTab(`${n.no}`)}>
+            <button className='link' onClick={() => navigateWithQuery(`${n.no}`)}>
               {n.title}
               {n.vmode === 'Y' ? 
                 (<span className='lock'>
@@ -187,7 +184,7 @@ export default function QaList() {
         title="문의사항"
         description="자주 묻는 질문과 등록한 문의, 답변 상태를 확인할 수 있습니다."
         createLabel={isFaq ? undefined : '+ 문의 작성'}
-        onCreate={() => navigateWithTab('new')}
+        onCreate={() => navigateWithQuery('new')}
       />
 
       {/* 💡 탭 선택 버튼 3개 분기 */}

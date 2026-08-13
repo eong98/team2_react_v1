@@ -6,6 +6,7 @@ import { QA_TYPE_MAP, type FaqCRequest, type TabKey } from '../../../components/
 import axios from 'axios';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import { useTab } from '../../../hooks/useTab';
+import { usePaging } from '../../../hooks/usePaging';
 
 /**
  * 
@@ -25,12 +26,7 @@ export default function QaForm() {
   type FormErrors = Partial<Record<keyof FaqCRequest, string>>;
   const [errors, setErrors] = useState<FormErrors>({});
 
-  // 범용 useTab 훅 사용
-  const { goToList, navigateWithTab } = useTab<TabKey>({
-    defaultTab: 'qa',
-    basePath: '/dbms/qa',
-  });
-
+  const { goToList, navigateWithQuery } = usePaging({ basePath: '/dbms/qa' });
 
   const [input, setInput] = useState<FaqCRequest>({
     ano: ano,
