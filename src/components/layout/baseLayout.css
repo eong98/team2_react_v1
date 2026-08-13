@@ -12,7 +12,15 @@
 .logo_mark{flex-shrink:0;}
 .logo_placeholder{width:26px;height:26px;border-radius:8px;border:1.5px dashed var(--border-strong);flex-shrink:0;display:inline-block;}
 
-.lnb {overflow-y:auto; padding:0 14px;}
+/* 스크롤바는 평소엔 숨겨져 있다가 마우스를 올렸을 때만 살짝 보이게 (스크롤 동작 자체는 항상 그대로 유지되므로
+   키보드 탐색·휠·터치 스크롤에는 영향 없습니다 — 시각적으로만 숨김/표시). 위아래 화살표 버튼은 제거. */
+.lnb {overflow-y:auto; padding:0 14px; scrollbar-width:thin; scrollbar-color:transparent transparent; transition:.4s;}
+.lnb:hover{scrollbar-color:var(--border-strong) transparent;}
+.lnb::-webkit-scrollbar{width:6px;}
+.lnb::-webkit-scrollbar-track{background:transparent;}
+.lnb::-webkit-scrollbar-thumb{background:transparent;border-radius:100px;}
+.lnb:hover::-webkit-scrollbar-thumb{background:var(--border-strong);}
+.lnb::-webkit-scrollbar-button{display:none;width:0;height:0;}
 .nav_label{font-size:11px;color:var(--text-faint);font-family:var(--font-mono);padding:10px 10px 4px;}
 .nav_item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:1px solid transparent;color:var(--text-dim);font-size:13px;padding:9px 12px;border-radius:8px;cursor:pointer;}
 .nav_item:hover{background:var(--surface);color:var(--text);}
