@@ -659,41 +659,44 @@ const [useYn, setUseYn] = useState<'Y' | 'N'>('Y');
 </div>
 
 {/* 라디오 (같은 name으로 그룹핑) */}
-<div className="form_check">
-  <input type="radio" id="use_y" name="useYn" value="Y" checked={useYn === 'Y'} onChange={() => setUseYn('Y')} />
-  <label htmlFor="use_y" className="b_title">사용</label>
+<div className='check_row'>
+  <div className="form_check">
+    <input type="radio" id="use_y" name="useYn" value="Y" checked={useYn === 'Y'} onChange={() => setUseYn('Y')} />
+    <label htmlFor="use_y" className="b_title">사용</label>
+  </div>
+  <div className="form_check">
+    <input type="radio" id="use_n" name="useYn" value="N" checked={useYn === 'N'} onChange={() => setUseYn('N')} />
+    <label htmlFor="use_n" className="b_title">미사용</label>
+  </div>
 </div>
-<div className="form_check">
-  <input type="radio" id="use_n" name="useYn" value="N" checked={useYn === 'N'} onChange={() => setUseYn('N')} />
-  <label htmlFor="use_n" className="b_title">미사용</label>
-</div>`}
+`}
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="form_check">
+            <input type="checkbox" id="guide_secret" defaultChecked />
+            <label htmlFor="guide_secret" className="b_title">
+              체크박스 — 비밀글 설정
+            </label>
+          </div>
+
+<br />
+          <div className='check_row'>
             <div className="form_check">
-              <input type="checkbox" id="guide_secret" defaultChecked />
-              <label htmlFor="guide_secret" className="b_title">
-                체크박스 — 비밀글 설정
+              <input type="radio" id="guide_use_y" name="guide_useYn" defaultChecked />
+              <label htmlFor="guide_use_y" className="b_title">
+                라디오 — 사용
               </label>
             </div>
-            <div style={{ display: 'flex', gap: 16 }}>
-              <div className="form_check">
-                <input type="radio" id="guide_use_y" name="guide_useYn" defaultChecked />
-                <label htmlFor="guide_use_y" className="b_title">
-                  라디오 — 사용
-                </label>
-              </div>
-              <div className="form_check">
-                <input type="radio" id="guide_use_n" name="guide_useYn" />
-                <label htmlFor="guide_use_n" className="b_title">
-                  라디오 — 미사용
-                </label>
-              </div>
+            <div className="form_check">
+              <input type="radio" id="guide_use_n" name="guide_useYn" />
+              <label htmlFor="guide_use_n" className="b_title">
+                라디오 — 미사용
+              </label>
             </div>
           </div>
         </GuideBlock>
 
         <GuideBlock
-          title="체크박스 대안 — .check_row / .switch (토글)"
+          title="체크박스 그룹/ 토글 스위치 — .check_row / .switch (토글)"
           description="CSS는 이미 완성돼 있지만 지금은 예시 화면(Test1~5)에서만 쓰이고, 실제 서비스 화면은 아직 이 스타일을 쓰지 않고 있습니다. 여러 개를 세로로 쭉 나열하는 체크리스트엔 check_row, on/off 하나만 표시하는 설정값(알림 켜기/끄기 등)엔 switch가 더 어울립니다."
           code={`{/* check_row — 체크리스트형 */}
 <div className="check_row">
@@ -709,8 +712,28 @@ const [useYn, setUseYn] = useState<'Y' | 'N'>('Y');
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div className="check_row">
-              <input type="checkbox" id="guide_push" defaultChecked />
-              <label htmlFor="guide_push">check_row — 앱 푸시 알림</label>
+              <div className="form_check">
+                <input
+                  type="checkbox"
+                  id="label_08"
+                  name="vmode"
+                />
+                <label htmlFor="label_08" className="b_title">
+                  고정
+                </label>
+              </div>
+
+              <div className="form_check">
+                <input
+                  type="checkbox"
+                  id="label_08"
+                  name="vmode"
+                />
+                <label htmlFor="label_08" className="b_title">
+                  고정
+                </label>
+              </div>
+              
             </div>
           </div>
           <label className="switch">

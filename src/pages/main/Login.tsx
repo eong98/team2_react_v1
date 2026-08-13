@@ -76,6 +76,7 @@ export default function Login() {
         GlobalStoreSession.getState().setId(input.id);       
         GlobalStoreSession.getState().setNo(user.no);  
         GlobalStoreSession.getState().setGrade(user.grade);
+        GlobalStoreSession.getState().setMname(user.mname);
         
         console.log("-> 회원등급", user.grade)
         console.log(user.mname+"님이 로그인 하였습니다.")

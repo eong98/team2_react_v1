@@ -196,7 +196,8 @@ select::-ms-expand {display:none;}
 
 
 /* 파일첨부 */
-.file_drop{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:28px 20px;border:1.5px dashed var(--border-strong);border-radius:12px;background:var(--surface);cursor:pointer;}
+.file_area {}
+.file_drop{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:28px 20px;border:1.5px dashed var(--border-strong);border-radius:12px;background:var(--surface);cursor:pointer; transition:.3s;}
 .file_drop:hover{border-color:var(--primary);background:var(--primary-dim);}
 .file_drop .fd_icon{font-size:20px;color:var(--text-faint);}
 .file_drop .fd_text{font-size:12.5px;color:var(--text-dim);line-height:1.6;}
@@ -246,6 +247,10 @@ select::-ms-expand {display:none;}
 .pin {display:inline-block; background:url('../assets/images/icon/ico-pin.png') no-repeat center; background-size:contain;}
 /* 첨부파일 */
 .file {display:inline-block; background:url('../assets/images/icon/ico-file.png') no-repeat center; background-size:contain;}
+.file_upload {display:inline-block; width:14px; height:14px; background-image:url('../assets/images/icon/ico-upload.png'); background-repeat:no-repeat; background-position:center; background-size:contain; transition:.3s;}
+.file_area:hover .file_upload {background-image:url('../assets/images/icon/ico-upload-primary.png');}
+/* .file_down
+.no_img */
 
 
 /* badge
@@ -490,6 +495,34 @@ table td {padding:0; word-break:break-all;}
  
 
 .copyright{font-size:12px;color:var(--text-faint);font-family:var(--font-mono);}
+
+
+/* ---------------------------------------------------------------------
+   첨부파일 관련 - NoticeDetail.tsx
+   파일첨부 등록 영역, 첨부파일 목록, 업로드된 이미지 목록
+--------------------------------------------------------------------- */
+/* 업로드 이미지 썸네일 */
+.img_thumb_grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+@media(max-width:700px){.img-thumb-grid{grid-template-columns:repeat(2,1fr);}}
+.img_thumb_card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;padding:0;cursor:pointer;text-align:left;font-family:var(--font-disp);}
+.img_thumb_card:hover{border-color:var(--primary);}
+.img_thumb_preview{display:block;aspect-ratio:1/1;background:linear-gradient(150deg,var(--surface-2),var(--n-900,#0A0E13));}
+.img_thumb_name{display:block;padding:8px 10px;font-size:11px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+.attach_row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border);font-size:12.5px;}
+.attach_row:last-child{border-bottom:none;}
+.attach_row .ic{width:32px;height:32px;border-radius:6px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;font-family:var(--font-mono);color:var(--text-faint);flex-shrink:0;}
+.attach_row .fn{flex:1;color:var(--text);}
+.attach_row .fs{color:var(--text-faint);font-family:var(--font-mono);font-size:11px;}
+.dl-btn{width:28px;height:28px;border-radius:7px;background:none;border:1px solid var(--border-strong);color:var(--text-dim);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+.dl_btn:hover{color:var(--primary);border-color:var(--primary);}
+
+.lightbox_box{width:auto;background:var(--n-850,var(--surface));border:1px solid var(--border-strong);border-radius:12px;padding:16px;position:relative;}
+.lightbox_close{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:8px;background:none;border:1px solid var(--border-strong);color:var(--text-dim);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;}
+.lightbox_close:hover{color:var(--text);border-color:var(--text-faint);}
+.lightbox_img{width:min(70vw,520px);aspect-ratio:4/3;background:linear-gradient(150deg,var(--surface-2),var(--n-900,#0A0E13));border-radius:8px;}
+
+
 
 
 /* ---------------------------------------------------------------------

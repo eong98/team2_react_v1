@@ -28,7 +28,7 @@ export interface NoticeTypes {
   fixyn: string;
   fileyn: string;
   vmode: string;
-  vseq?: string;
+  vseq?: number;
 
   isdel?: string;
   ddate?: string;
@@ -41,7 +41,6 @@ export const NOTICE_TYPE_MAP: Record<number, { label: string; className: string 
   1: { label: '중요',   className: 'orange' },
   2: { label: '신규', className: 'success' },
   3: { label: '알림', className: 'info' },
-  
 };
 
 
@@ -53,12 +52,14 @@ export interface Filters {
   keyword: string; /* 검색어로 검색 (유형,제목,내용,답변내용) */
   type: string; /* 공지유형으로 검색 0,1,2... */
   fix?: string; /* 고정여부로 검색 */
+  vmode?: string; /* 공개여부로 검색 */
 }
 
 export const EMPTY_FILTERS: Filters = {
   keyword: '',
   type: '',
   fix: '',
+  vmode: '',
 };
 
 
@@ -84,8 +85,8 @@ export interface NCRequest {
   content: string;
   cdate: string;
   pw: string;
-  fixyn: string;
-  fileyn: string;
+  fixyn?: string;
+  fileyn?: string;
   vmode: string;
-  vseq?: string;
+  vseq?: number;
 }

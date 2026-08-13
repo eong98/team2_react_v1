@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
+import axios from 'axios';
 import { axiosInstance } from '../../../utils/Tool';
 import { usePaging } from '../../../hooks/usePaging';
-import { DataCard, Filterbar, PageHeader, UserPagination, type DataCardColumn } from '../../../components/ui';
+import { AdminToolbar, AlertModal, ConfirmDeleteModal, DataCard, DbmsPagination, PageHeader, type DataCardColumn } from '../../../components/ui';
 import { EMPTY_FILTERS, NOTICE_TYPE_MAP, PAGE_SIZE, type Filters, type NoticeSearchResult, type NoticeTypes } from '../../../components/ts/NoticeType';
+import { GlobalStoreSession } from '../../../store/LoginStore';
 
 export default function NoticeList() {
-  // const { no:mno, id } = GlobalStoreSession();
+  const { no:ano, id, grade } = GlobalStoreSession();
 
-  const { page, setPage, navigateWithQuery } = usePaging({ basePath: '/user/notice' });
+  const { page, setPage, navigateWithQuery } = usePaging({ basePath: '/dbms/notice' });
 
   /* API 데이터 저장 */
   const [noticeList, setNoticeList] = useState<NoticeTypes[]>([]);
@@ -21,16 +23,28 @@ export default function NoticeList() {
   /* 페이징 설정 */
   const [totalPages, setTotalPages] = useState<number>(1);
   const [totalElements, setTotalElements] = useState(0);
+  
+  // 삭제 모달 대상 Q&A 및 삭제 중 상태
+  const [deleteTarget, setDeleteTarget] = useState<NoticeTypes | null>(null);
+  const [deleting, setDeleting] = useState<boolean>(false);
+  
+  const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
+  
 
   const loadNoticeList = async () => {
     setLoading(true);
     try {
-      const res = await axiosInstance.get<NoticeSearchResult>('/notice/list', {
+      const res = await axiosInstance.get<NoticeSearchResult>('/notice/list/admin', {
+        headers: {
+          accessNo: String(ano),
+          grade: String(grade),
+        },
         params: {
           page: page - 1,
           size: PAGE_SIZE,
           word: applied.keyword.trim() || undefined,
-          type: applied.type === '' ? undefined : Number(applied.type)
+          type: applied.type === '' ? undefined : Number(applied.type),
+          vmode: applied.vmode === '' ? undefined : applied.vmode
         },
       });
 
@@ -92,15 +106,85 @@ export default function NoticeList() {
     setPage(1);
   };
 
+  /** 삭제 핸들러 (비밀번호 입력) */
+  const handleDeleteWithPw = async (inputPw: string = '') => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    console.log(inputPw)
+
+    try {
+      // Axios DELETE 요청 시 Body로 데이터를 전달할 때는 { data: ... } 옵션을 사용합니다.
+      await axiosInstance.delete('/notice', {
+        data: {
+          no: deleteTarget.no,
+          pw: inputPw,
+        },
+      });
+      
+      // 빈 페이지 보정(현재 페이지에 데이터가 없으면 한 칸 앞으로)은 이제 loadQaList 안에서
+      // 알아서 처리하므로, 여기서는 그냥 다시 조회하면 됩니다.
+      setAlert({
+        message: '삭제되었습니다.',
+        variant: 'success',
+        onConfirm: loadNoticeList,
+      });
+      setDeleteTarget(null);
+
+    } catch (error) {
+      console.error('삭제 실패:', error);
+
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status; // HTTP 상태 코드 (400, 401, 404, 500 등)
+        const data = error.response?.data; // 백엔드가 보내준 JSON 데이터
+                // ----------------------------------------------------
+        // 1. HTTP 상태 코드(Status)에 따른 에러 처리
+        // ----------------------------------------------------
+        if (status === 400 || status === 401) {
+          // 비밀번호 틀림 / 잘못된 입력값인 경우
+          // const msg = data?.message || '비밀번호가 올바르지 않거나 입력값이 잘못되었습니다.';
+          // alert(msg);
+
+        } else if (status === 404) {
+          // 존재하지 않는 글번호(no)인 경우
+          setAlert({ message: '존재하지 않거나 이미 삭제된 FAQ입니다.', variant: 'error' });
+
+        } else if (status === 500) {
+          // 🚨 500 에러일 때: 백엔드 메시지에 "비밀번호"라는 단어가 포함되어 있는지 체크
+          if (data?.message?.includes('비밀번호') || data?.message?.includes('password')) {
+            setAlert({ message: '비밀번호가 일치하지 않습니다.', variant: 'error' });
+          } else {
+            setAlert({ message: '서버 내부 오류가 발생했습니다. 관리자에게 문의하세요.', variant: 'error' });
+          }
+          
+        } else {
+          // 기타 상태 코드 처리
+          setAlert({ message: `오류가 발생했습니다. (에러 코드: ${status || 'Unknown'})`, variant: 'error' });
+        }
+        
+      } else {
+        // Axios 에러가 아닌 일반 자바스크립트 오류
+        setAlert({ message: '알 수 없는 오류가 발생했습니다.' , variant: 'error' });
+      }
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   // ==========================================
-  // DataCard / DataAcc 컬럼 정의
+  // DataCard 컬럼 정의
   // ==========================================
   const noticeColumns: DataCardColumn<NoticeTypes>[] = [
     {
       header: '상태',
       render: (n) => (
         <div className='badge_area'>
+          {n.fixyn === 'Y' && (
+            <div className='notice_icons'>
+              <div className='icon pin'>
+                <span className='hidden'>상단 고정</span>
+              </div>
+            </div>
+          )}
           <span className={`badge ${NOTICE_TYPE_MAP[n.type].className}`}>
             {NOTICE_TYPE_MAP[n.type].label}
           </span>
@@ -114,6 +198,11 @@ export default function NoticeList() {
           <div className="cell_title">
             <button type='button' className='link' onClick={() => navigateWithQuery(`${n.no}`)}>
               {n.title}
+              {n.vmode === 'N' ? 
+                (<span className='lock'>
+                  <span className='hidden'>비밀글</span>
+                </span> ) : null
+              }
             </button>
           </div>
           <div className="cell_sub">
@@ -123,7 +212,7 @@ export default function NoticeList() {
       ),
     },
     {
-      header: '고정 여부',
+      header: '고정 및 파일 정보',
       render: (n) => {
         if (n.fixyn !== 'Y' && n.fileyn !== 'Y') return null;
         
@@ -135,12 +224,6 @@ export default function NoticeList() {
                   <span className='hidden'>첨부파일 포함</span>
                 </div>
               )}
-  
-              {n.fixyn === 'Y' && (
-                <div className='icon pin'>
-                  <span className='hidden'>상단 고정</span>
-                </div>
-              )}
             </div>
           </div>
         )
@@ -148,18 +231,19 @@ export default function NoticeList() {
     },
   ];
 
+  console.log(draft.vmode)
+
 
   return (
     <section className="view active">
       <PageHeader
         title="공지사항"
-        description="서비스 업데이트와 점검 안내를 확인하세요."
+        description="서비스 업데이트와 점검 안내를 관리할 수 있습니다."
+        createLabel='+ 공지사항 작성'
+        onCreate={() => navigateWithQuery('new')}
       />
 
-      <Filterbar
-        page={page}
-        pageSize={PAGE_SIZE}
-        totalCount={totalElements}
+      <AdminToolbar
         searchValue={draft.keyword}
         onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
         onSearchEnter={onSearch}
@@ -181,6 +265,19 @@ export default function NoticeList() {
                 </option>
               ))}
             </select>
+
+            {/* 공개여부 필터 */}
+            <select
+              className="form_select"
+              value={draft.vmode}
+              onChange={(e) => setDraft((prev) => ({ ...prev, vmode: e.target.value }))}
+              aria-label="공개여부 필터"
+              title='공개여부 선택'
+            >
+              <option value="">공개여부 전체</option>
+              <option value="Y">전체공개</option>
+              <option value="N">비공개</option>
+            </select>
           </>
         }
         extra={
@@ -196,20 +293,44 @@ export default function NoticeList() {
       />
 
       <DataCard
-         columns={noticeColumns}
-         data={noticeList}
-         rowKey={(n) => n.no}
-         loading={loading}
-         emptyMessage="등록된 공지사항가 없습니다."
-       />
+        columns={noticeColumns}
+        data={noticeList}
+        rowKey={(n) => n.no}
+        loading={loading}
+        emptyMessage="등록된 공지사항이 없습니다."
+        onEdit={(n) => navigateWithQuery(`${n.no}/edit`)}
+        onDelete={(n) => setDeleteTarget(n)}
+      />
 
       {/* 페이지네이션 컴포넌트 */}
-      <UserPagination
+      <DbmsPagination
         page={page}
         totalPages={totalPages}
         totalCount={totalElements}
         pageSize={PAGE_SIZE}
         onChange={setPage}
+      />
+
+      {/* 🔑 삭제 확인 모달 (수정됨) */}
+      <ConfirmDeleteModal
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={(pw) => handleDeleteWithPw(pw)}
+        loading={deleting}
+        targetLabel={
+          deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.title}` : undefined
+        }
+        requirePassword={true}
+      />
+
+      
+      
+      <AlertModal
+        open={alert !== null}
+        onClose={() => setAlert(null)}
+        onConfirm={alert?.onConfirm}
+        message={alert?.message ?? ''}
+        variant={alert?.variant}
       />
 
     </section>
