@@ -13,3 +13,5 @@ export { default as DbmsPagination } from './dbms/DbmsPagination';
 
 export { default as Filterbar } from './user/Filterbar';
 export { default as UserPagination } from './user/UserPagination';
+
+export { default as Modal } from './Modal';

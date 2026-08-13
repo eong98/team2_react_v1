@@ -1,13 +1,10 @@
-export interface UpdateLog {
+export interface UpdateHistory {
   /** 업데이트 로그 번호 */
   no: number;
 
-  /**
-   * 로그 대상 번호
-   * - 회원 업데이트 로그: 회원 번호
-   * - 관리자 업데이트 로그: 관리자 번호
-   */
-  mno: number;
+  mno: number | null;
+
+  mnno: number | null;
 
   /** 변경한 항목 */
   changedColumn: string;
@@ -22,5 +19,5 @@ export interface UpdateLog {
   changeDate: string;
 
   /** 변경한 관리자 번호 */
-  updtMnno: number;
+  updtMnno: number| null;
 }

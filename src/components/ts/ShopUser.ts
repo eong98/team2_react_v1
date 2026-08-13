@@ -46,6 +46,8 @@ export interface ShopType {
   snum?: string;
   udate?: string;
   cdate?: string;
+  /** 이 매장에 등록된 CCTV 대수. /shop/search(목록) 응답에만 내려옴(ShopWithCctvCount). */
+  cctvCount?: number;
 }
 
 /** GET /shop/search 응답 형태 (Spring Page 대신 서버에서 Map으로 직접 내려줌) */

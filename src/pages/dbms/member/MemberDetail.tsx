@@ -3,9 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../../components/ui'; // 공통 UI 컴포넌트 경로에 맞게 확인
 import { axiosInstance, getIP } from '../../../utils/Tool';
 import type { TotalMemberUser } from '../../../store/DbmsStore';
+import { GlobalStoreSession } from '../../../store/LoginStore';
 
 export default function MemberDetail() {
   const { role, no } = useParams<{ role: 'USER' | 'ADMIN'; no: string }>();
+  const { no: mnno } = GlobalStoreSession();
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -31,7 +33,7 @@ export default function MemberDetail() {
         // role(USER/ADMIN)에 따라 각각 알맞은 단건 조회 API를 호출합니다.
         const endpoint = role === 'ADMIN' 
           ? `http://${getIP()}:9102/v1/dbms/find/${no}`  // 관리자 단건 조회 API (예시)
-          : `http://${getIP()}:9102/v1/member/find/${no}`; // 일반회원 단건 조회 API (예시)
+          : `http://${getIP()}:9102/v1/user/find/${no}`; // 일반회원 단건 조회 API (예시)
 
         const res = await axiosInstance.get(endpoint);
         if (res.data) {
@@ -66,8 +68,8 @@ export default function MemberDetail() {
     try {
       // 대상을 수정(Update)하기 위한 분기 처리 API 호출
       const endpoint = role === 'ADMIN'
-        ? ``
-        : ``;
+        ? `http://10.1.205.120:9102/v1/dbms/update/manager/${no}/${mnno}`
+        : `http://10.1.205.120:9102/v1/user/update/manager/${no}/${mnno}`;
 
       await axiosInstance.put(endpoint, formData);
       alert("수정이 정상적으로 완료되었습니다.");

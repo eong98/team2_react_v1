@@ -28,11 +28,14 @@ import CctvVisitorList from '../pages/user/cctv/CctvVisitorList';
 import SurveyUserList from '../pages/user/survey/SurveyUserList';
 import SurveyAnswerForm from '../pages/user/survey/SurveyAnswerForm';
 
+import ShopMapUserList from '../pages/user/shopmap/ShopMapUserList';
+
 
 export default function UserRoutes() {
   return (
     <Routes>
       {/* 참고해서 추가하시면 됩니다 / 페이지 추가 */}
+      <Route index element={<Navigate to="shop" replace />} />
       {/* 
       <Route path="notice" element={<NoticeList />} />
       <Route path="notice/new" element={<NoticeForm />} />
@@ -68,6 +71,8 @@ export default function UserRoutes() {
       <Route path="send/list" element={<SendList />} />
       <Route path="survey" element={<SurveyUserList />} />
       <Route path="survey/:no" element={<SurveyAnswerForm />} />
+
+      <Route path="shopmap" element={<ShopMapUserList />} />
 
 
     </Routes>

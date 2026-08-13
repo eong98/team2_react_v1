@@ -198,6 +198,9 @@ export default function ShopListView() {
                   <div>
                     사업자번호<b>{s.snum || '-'}</b>
                   </div>
+                  <div>
+                    등록 CCTV<b>{s.cctvCount ?? 0}대</b>
+                  </div>
                 </div>
                 <button type="button" className="btn btn_primary" onClick={() => enterStore(s)}>
                   입장하기
