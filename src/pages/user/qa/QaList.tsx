@@ -264,6 +264,11 @@ export default function QaList() {
                 aria-label="회원번호 필터"
                 title='회원번호 검색'
                 style={{ maxWidth: 150 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    onSearch?.();
+                  }
+                }}
               />
             )}
           </>

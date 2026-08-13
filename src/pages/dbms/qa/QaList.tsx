@@ -273,6 +273,7 @@ export default function QaList() {
         searchValue={draft.keyword}
         onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
         searchPlaceholder={tab === 'qa' ? '제목으로 검색' : 'FAQ 제목·답변으로 검색'}
+        onSearchEnter={onSearch}
         filters={
           <>
             {/* 접수 유형 필터 */}
@@ -318,6 +319,11 @@ export default function QaList() {
                   aria-label="회원번호 필터"
                   title='회원번호 검색'
                   style={{ maxWidth: 150 }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      onSearch?.();
+                    }
+                  }}
                 />
               </>
             )}
