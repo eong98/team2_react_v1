@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { fetchMenuNav, type MenuNavBase, type MenuNavGroup } from '../ts/menuNav';
+import { GlobalStoreSession } from '../../store/LoginStore';
 
 interface SidebarProps {
   open: boolean;
@@ -22,6 +23,8 @@ const navItemClass = ({ isActive }: { isActive: boolean }) => `nav_item${isActiv
 --------------------------------------------------------------------- */
 export default function Sidebar({ open, onNavigate }: SidebarProps) {
   const location = useLocation();
+
+  const { mname } = GlobalStoreSession();
 
   const isDbms = location.pathname.startsWith('/dbms');
   const apiBase: MenuNavBase = isDbms ? '/inmenu' : '/shopmenu';
@@ -146,10 +149,10 @@ export default function Sidebar({ open, onNavigate }: SidebarProps) {
         </a>
 
         <div className="user_chip">
-          <div className="avatar">{isDbms ? '관' : '점'}</div>
+          <div className="avatar">{mname.slice(0, 1)}</div>
           <div>
-            <div className="name">{isDbms ? '관리자' : '점주'}</div>
-            <div className="role">본점 · 스터디카페 A</div>
+            <div className="name">{mname}</div>
+            {/* <div className="role">본점 · 스터디카페 A</div> */}
           </div>
         </div>
       </div>

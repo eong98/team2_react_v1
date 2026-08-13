@@ -68,7 +68,7 @@ export default function Login() {
       // id와 비밀번호 값이 일치하는지 확인
       const loginResult = await axiosInstance.post(`http://${getIP()}:9102/v1/dbms/login?id=${input.id}&password=${input.password}`);
       // 결과 저장
-      const { success, dbms } = loginResult.data;
+      const { success, dbms, message } = loginResult.data;
 
       console.log("성공 여부" + success)
 
@@ -79,6 +79,7 @@ export default function Login() {
         GlobalStoreSession.getState().setId(input.id);
         GlobalStoreSession.getState().setNo(dbms.no);
         GlobalStoreSession.getState().setGrade(dbms.grade);
+        GlobalStoreSession.getState().setMname(dbms.mname);
 
 
         if(storeId) {
@@ -91,7 +92,7 @@ export default function Login() {
 
         navigate('/dbms/menus');
       } else {
-        alert("아이디 또는 비밀번호가 일치하지 않습니다")
+        alert(message)
       }
     } catch(err) {
       console.error(err);
