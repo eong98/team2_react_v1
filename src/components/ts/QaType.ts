@@ -45,7 +45,7 @@ export const QA_TYPE_MAP: Record<number, { label: string; className: string }> =
   0: { label: '기타', className: 'neutral_30' },
   1: { label: '관제신청',   className: 'badge_success' },
   2: { label: '영상요청', className: 'badge_info' },
-  3: { label: '장비장애', className: 'badge_warning' },
+  3: { label: '장비장애', className: 'orange' },
   
 };
 

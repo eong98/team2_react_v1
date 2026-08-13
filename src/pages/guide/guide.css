@@ -1,0 +1,22 @@
+/* =========================================================
+   디자인 가이드 전용 CSS (GuideBlock/GuideCompare/GuideStack)
+   /dbms/guide, /user/guide 화면에서만 씁니다. 다른 실제 서비스 화면은
+   이 파일을 참조하지 않으니, common.css/contents.css와 절대 합치지 마세요.
+   ========================================================= */
+.guide_section{margin-bottom:28px;}
+.guide_section_head{margin-bottom:14px;}
+.guide_block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;margin-bottom:16px;}
+.guide_desc{margin:4px 0 16px;line-height:1.6;}
+.guide_demo{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:16px;background:var(--surface-2);border-radius:8px;margin-bottom:14px;}
+.guide_code_wrap{border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.guide_code_head{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface-2);border-bottom:1px solid var(--border);}
+.guide_code{margin:0;padding:14px;overflow-x:auto;background:var(--n-950,#0b0d10);font-family:var(--font-mono);font-size:12px;line-height:1.7;color:var(--text-dim);}
+.guide_code code{white-space:pre;}
+
+/* 좌우 비교 (user vs dbms 디자인이 다를 때) — 좁은 화면에선 위아래로 */
+.guide_compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+.guide_compare_col > .guide_block{margin-bottom:0;height:100%;}
+@media (max-width:860px){.guide_compare{grid-template-columns:1fr;}}
+
+/* 위아래 배치 (폼 구조처럼 폭이 넓은 것) */
+.guide_stack{display:flex;flex-direction:column;gap:16px;}

@@ -121,8 +121,9 @@ export default function QaDetail() {
     );
   }
 
-  // 답변 완료 여부
-  const answered = qa.status !== 0;
+  // 답변 대기중이 아닌경우만
+  const isWait = qa.status !== 0;
+  const answered = qa.status === 2 && qa.answer;
 
   return (
     <section className="view active">
@@ -170,7 +171,7 @@ export default function QaDetail() {
                 삭제
               </button>
               {/* 답변대기인 경우에만 수정 버튼 노출 */}
-              {!answered && (
+              {!isWait && (
                 <button
                   type="button"
                   className="btn btn_sm btn_outline_primary"

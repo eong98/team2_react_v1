@@ -19,6 +19,8 @@ import DbmsRoutes from './DbmsRoutes';
 import Sidebar from '../components/layout/Sidebar';
 import Topbar from '../components/ui/common/Topbar';
 import ChatWidget from '../components/ui/user/ChatWidget';
+import DbmsDesignGuide from '../pages/guide/DBDesignGuide';
+import UserDesignGuide from '../pages/guide/UserDesignGuide';
 
 
 function App() {
@@ -47,6 +49,15 @@ function App() {
           {/* 서비스 영역 - 관리자 */}
           <Route element={<BaseLayout Sidebar={Sidebar} Topbar={Topbar} />}>
             <Route path="/dbms/*" element={<DbmsRoutes />} />
+          </Route>
+
+
+
+
+          {/* 가이드 */}
+          <Route element={<BaseLayout Sidebar={Sidebar} Topbar={Topbar} />}>
+            <Route path="/dbms/guide" element={<DbmsDesignGuide />} />
+            <Route path="/user/guide" element={<UserDesignGuide />} />
           </Route>
           
         </Routes>

@@ -14,9 +14,7 @@ import { useTab } from '../../../hooks/useTab';
  */
 export default function QaDetail() {
   const { no } = useParams<{ no: string }>();
-  // const { no:ano, id, grade } = GlobalStoreSession();
-  const ano = 1;
-  const grade = 1;
+  const { no:ano, id, grade } = GlobalStoreSession();
 
   const [qa, setQa] = useState<QaTypes | null>(null);
   const [loading, setLoading] = useState(true);
