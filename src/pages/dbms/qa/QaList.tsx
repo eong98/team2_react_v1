@@ -15,11 +15,9 @@ export default function QaList() {
 
   /* 탭 이동시 저장 설정 */
   // 범용 useTab 훅 사용 (URL Query Parameter 기반 탭 제어)
-  const { tab, changeTab, navigateWithTab } = useTab<TabKey>({
-    defaultTab: 'qa',
-    basePath: '/dbms/qa',
-  });
-  const { page, setPage } = usePaging();
+  const { tab, changeTab } = useTab<TabKey>({ defaultTab: 'qa' });
+  // navigateWithQuery/goToList는 usePaging 쪽에 있음 (탭 없는 화면도 쓸 수 있게 분리됨)
+  const { page, setPage, navigateWithQuery } = usePaging({ basePath: '/dbms/qa' });
 
   /* API 데이터 저장 */
   const [qaList, setQaList] = useState<QaTypes[]>([]);
@@ -203,7 +201,7 @@ export default function QaList() {
       render: (n) => (
         <div className="lt">
           <div className="cell_title">
-            <button className='link' onClick={() => navigateWithTab(`${n.no}`)}>
+            <button className='link' onClick={() => navigateWithQuery(`${n.no}`)}>
               {n.title}
               {n.vmode === 'Y' ? 
                 (<span className='lock'>
@@ -248,7 +246,7 @@ export default function QaList() {
         title="문의사항"
         description="문의사항 및 FAQ를 관리할 수 있습니다."
         createLabel={tab === 'qa' ? undefined : '+ FAQ 작성'}
-        onCreate={() => navigateWithTab('new')}
+        onCreate={() => navigateWithQuery('new')}
       />
 
       <div className="tabs" role="tablist" aria-label="문의 보기 전환">
@@ -365,7 +363,7 @@ export default function QaList() {
           data={qaList}
           rowKey={(n) => n.no}
           emptyMessage="등록된 FAQ가 없습니다."
-          onEdit={(n) => navigateWithTab(`${n.no}/edit`)}
+          onEdit={(n) => navigateWithQuery(`${n.no}/edit`)}
           onDelete={(n) => setDeleteTarget(n)}
           allowMultiple={false}
         />

@@ -240,7 +240,13 @@ select::-ms-expand {display:none;}
 
 /* icons
 ========================================================================== */
+/* 자물쇠 */
 .lock {display:inline-block; width:14px; height:14px; margin-left:4px; vertical-align: text-top; background:url('../assets/images/icon/ico-lock.png') no-repeat center; background-size:contain;}
+/* 고정핀 */
+.pin {display:inline-block; background:url('../assets/images/icon/ico-pin.png') no-repeat center; background-size:contain;}
+/* 첨부파일 */
+.file {display:inline-block; background:url('../assets/images/icon/ico-file.png') no-repeat center; background-size:contain;}
+
 
 /* badge
 ========================================================================== */
@@ -254,9 +260,12 @@ select::-ms-expand {display:none;}
 .badge_info{background:var(--secondary-dim);color:var(--teal-300);}
 .badge_neutral{background:var(--surface-2);color:var(--text);}
 
+.badge.success{background:var(--primary-dim);color:var(--green-400);}
+.badge.ok{background:var(--primary-dim);color:var(--green-500);}
+.badge.info{background:var(--secondary-dim);color:var(--teal-300);}
+
 .badge.danger{background:var(--danger-dim);color:var(--red-200);}
 .badge.warn{background:var(--amber-dim);color:var(--amber-500);}
-.badge.ok{background:var(--primary-dim);color:var(--green-500);}
 .badge.neutral{background:var(--surface-2);color:var(--text);}
 .badge.neutral_30{background:var(--n-300);color:var(--n-850);}
 .badge.check{background:var(--teal-600);color:var(--n-900);}
@@ -305,6 +314,24 @@ table td {padding:0; word-break:break-all;}
 .card_pad_lg{padding:28px;}
 .card.danger {border-color:var(--danger)}
 
+
+/* PrevNextNav.tsx — 이전글/다음글.*/
+.pn_nav{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden; margin-top:20px;}
+.pn_row{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);text-decoration:none;color:var(--text);}
+.pn_row:last-child{border-bottom:none;}
+.pn_row:not(.disabled):hover{background:var(--surface-2);}
+
+.pn_label{position:relative; padding-left:30px; display:inline-block; font-size:12px;color:var(--text-faint);flex-shrink:0;}
+.pn_label::before{display:block; content:''; position:absolute; left:0; top:calc(50% - 6.5px); width:13px; height:13px; background:url('../assets/images/icon/ico-arr-down-white.png') no-repeat center; background-size:contain;}
+.pn_row.prev .pn_label::before{transform: rotate(180deg);}
+
+.pn_title{text-align:left; flex:1;font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; padding:0; transition:.3s;}
+.pn_title:hover{color:var(--primary);}
+.pn_row .info {display:inline-flex; gap:8px; align-items: center;}
+.pn_date{font-size:11.5px;color:var(--text-faint);flex-shrink:0;}
+
+.pn_row.disabled{cursor:default;}
+.pn_row.disabled .pn_title{font-weight:400;color:var(--text-faint);}
 
 
 /* 통계 요약(전체문의 -건, 답변대기 -건 등. */

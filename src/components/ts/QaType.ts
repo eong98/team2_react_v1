@@ -14,8 +14,6 @@
 // ISDEL       CHAR(1)     DEFAULT 'N'         NULL, -- 삭제여부(Y/N)
 // DDATE       VARCHAR2(30)                    NULL, -- 삭제일시
 
-import { useLocation } from "react-router-dom";
-
 export interface QaTypes {
   no: number;
   mno: number;

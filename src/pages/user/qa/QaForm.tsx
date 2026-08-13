@@ -6,6 +6,7 @@ import { axiosInstance, cutByByte, getByteLength, getNowDate, set_focus } from '
 import { QA_TYPE_MAP, type QCRequest, type TabKey } from '../../../components/ts/QaType';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import { useTab } from '../../../hooks/useTab';
+import { usePaging } from '../../../hooks/usePaging';
 
 /**
  * 
@@ -24,16 +25,12 @@ export default function QaForm() {
   type FormErrors = Partial<Record<keyof QCRequest, string>>;
   const [errors, setErrors] = useState<FormErrors>({});
 
-  // 범용 useTab 훅 사용
-  const { goToList, navigateWithTab } = useTab<TabKey>({
-    defaultTab: 'qa',
-    basePath: '/user/qa',
-  });
+  const { goToList, navigateWithQuery } = usePaging({ basePath: '/user/qa' });
 
   // 뒤로 가기 (수정이면 상세로, 신규 작성이면 목록으로)
   const goBack = () => {
     if (isEdit) {
-      navigateWithTab(`../qa/${no}`);
+      navigateWithQuery(`../qa/${no}`);
     } else {
       goToList();
     }

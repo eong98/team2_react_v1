@@ -6,6 +6,7 @@ import { GlobalStoreSession } from '../../../store/LoginStore';
 import axios from 'axios';
 import { QA_STATUS_MAP, QA_TYPE_MAP, type QARequest, type QaTypes, type TabKey } from '../../../components/ts/QaType';
 import { useTab } from '../../../hooks/useTab';
+import { usePaging } from '../../../hooks/usePaging';
 
 /**
  * 
@@ -27,11 +28,7 @@ export default function QaDetail() {
   type FormErrors = Partial<Record<keyof QARequest, string>>;
   const [errors, setErrors] = useState<FormErrors>({});
 
-  // 범용 useTab 훅 사용
-  const { goToList, navigateWithTab } = useTab<TabKey>({
-    defaultTab: 'qa',
-    basePath: '/dbms/qa',
-  });
+  const { goToList, navigateWithQuery } = usePaging({ basePath: '/dbms/qa' });
 
   const [input, setInput] = useState<QARequest>({
     ano: ano,
@@ -179,7 +176,7 @@ export default function QaDetail() {
         />
 
         
-        <div className='qa_area'>
+        <div className='detail_area'>
           <div className="card card_pad_lg">
             <div className='empty_row'>
               해당 문의를 찾을 수 없거나 권한이 없습니다.
@@ -203,7 +200,7 @@ export default function QaDetail() {
         }
       />
       
-      <div className='qa_area'>
+      <div className='detail_area'>
         <div className="card card_pad_lg">
           <div className='card_header'>
             <p className="b_title">No.{qa.no}</p>
