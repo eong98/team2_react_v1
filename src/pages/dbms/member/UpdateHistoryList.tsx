@@ -3,7 +3,6 @@ import { PageHeader, DataTable, type DataTableColumn, UserPagination } from '../
 import Filterbar from '../../../components/ui/user/Filterbar';
 import { axiosInstance, getIP } from '../../../utils/Tool';
 
-// ✅ UpdateHistory.ts 파일에서 UpdateLog 타입을 가져옵니다.
 import type { UpdateHistory } from './UpdateHistory';
 
 const PAGE_SIZE = 10;
@@ -12,30 +11,41 @@ const UPDATE_LOG_API = `http://${getIP()}:9102/history/update/list`;
 type LogTargetType = 'USER' | 'DBMS';
 type TargetFilter = 'ALL' | LogTargetType;
 
-/**
- * UpdateHistory.ts에서 가져온 기본 UpdateLog 타입에
- * 화면 표시를 위한 targetType과 targetId 속성만 추가합니다.
- */
 interface ProcessedLog extends UpdateHistory {
   targetType: LogTargetType;
   targetId: number;
 }
 
-const COLUMN_LABELS: Record<string, string> = {
-  id: '아이디', mname: '이름', email: '이메일', phone: '연락처', status: '계정 상태',
-  zipcode: '우편번호', addr: '주소', addrDetail: '상세 주소', nation: '국가',
-  grade: '등급', role: '권한', password: '비밀번호'
+/** 구분(회원/관리자) 표시 라벨 */
+const TARGET_LABEL_MAP: Record<LogTargetType, string> = {
+  USER: '회원',
+  DBMS: '관리자',
 };
 
-// ✅ FIELD_OPTIONS의 value는 반드시 COLUMN_LABELS(= 실제 changedColumn 값)의 키와 일치해야
-//    필터 선택 시 행 데이터와 매칭됩니다.
+/**
+ * 백엔드가 changedColumn에 저장하는 필드명(대문자, 예: MNAME/PHONE)을
+ * 화면에 보여줄 한글 라벨로 매핑합니다.
+ */
+const FIELD_LABEL_MAP: Record<string, string> = {
+  MNAME: '이름',
+  EMAIL: '이메일',
+  PHONE: '연락처',
+  STATUS: '상태',
+  ZIPCODE: '우편번호',
+  ADDR: '주소',
+  ADDRDETAIL: '상세 주소',
+  NATION: '국가',
+  GRADE: '권한',
+  PASSWORD: '비밀번호',
+};
+
 const FIELD_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'ALL', label: '전체 항목' },
-  ...Object.entries(COLUMN_LABELS).map(([value, label]) => ({ value, label })),
+  ...Object.entries(FIELD_LABEL_MAP).map(([value, label]) => ({ value, label })),
 ];
 
-const getColumnLabel = (col: string) => COLUMN_LABELS[col] ?? col;
-const formatValue = (val?: string | null) => val || '-';
+const getFieldLabel = (col: string) => FIELD_LABEL_MAP[col.toUpperCase()] ?? col;
+const formatValue = (val?: string | null) => (val && val.trim() !== '' ? val : '-');
 
 const parseDate = (val: string) => {
   if (!val) return NaN;
@@ -45,22 +55,28 @@ const parseDate = (val: string) => {
 const formatDate = (val: string) => {
   if (!val) return '-';
   const time = parseDate(val);
-  return Number.isNaN(time) ? val : new Date(time).toLocaleString('ko-KR', {
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
-  });
+  return Number.isNaN(time)
+    ? val
+    : new Date(time).toLocaleString('ko-KR', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+      });
 };
 
-/* ---------------------------------------------------------------------
-   검색 필터 - dbms/cctv/CctvIssueList.tsx 패턴 참고
-   draft: 입력 중인 값 (타이핑만으로는 검색 안 됨) / applied: "검색" 눌렀을 때 실제 필터링에 쓰이는 값
---------------------------------------------------------------------- */
+/** changedColumn(':::' 구분)과 oldValue/newValue('/' 구분)를 같은 인덱스로 짝지어 반환합니다. */
+const splitFields = (log: ProcessedLog) => {
+  const fields = log.changedColumn ? log.changedColumn.split(':::').filter(Boolean) : [];
+  const oldValues = log.oldValue ? log.oldValue.split(':::') : [];
+  const newValues = log.newValue ? log.newValue.split(':::') : [];
+  return { fields, oldValues, newValues };
+};
+
 interface Filters {
-  keyword: string; // 대상번호·변경내용·관리자번호 통합 검색
-  targetType: TargetFilter; // USER / DBMS 구분
-  field: string; // 변경 항목(changedColumn)
-  dateFrom: string; // 변경일시 시작 (yyyy-MM-dd)
-  dateTo: string; // 변경일시 종료 (yyyy-MM-dd)
+  keyword: string;
+  targetType: TargetFilter;
+  field: string; // 'ALL' | 'MNAME' | 'PHONE' ...
+  dateFrom: string;
+  dateTo: string;
 }
 
 const EMPTY_FILTERS: Filters = {
@@ -79,7 +95,6 @@ export default function UpdateLogList() {
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
 
-  // 데이터 조회 및 가공
   useEffect(() => {
     const fetchUpdateLogs = async () => {
       setIsLoading(true);
@@ -87,14 +102,14 @@ export default function UpdateLogList() {
         const response = await axiosInstance.get(UPDATE_LOG_API);
         const rawData: UpdateHistory[] = response.data || [];
 
-        // ✅ mno가 null이면 관리자(DBMS), null이 아니면 일반회원(USER)으로 분류
+        // mno가 null이면 관리자(DBMS), null이 아니면 일반회원(USER)으로 분류
         const mappedData: ProcessedLog[] = rawData.map((log) => {
           const isDbms = log.mno === null;
 
           return {
             ...log,
             targetType: isDbms ? 'DBMS' : 'USER',
-            targetId: isDbms ? (log.mnno ?? 0) : (log.mno ?? 0)
+            targetId: isDbms ? (log.mnno ?? 0) : (log.mno ?? 0),
           };
         });
 
@@ -119,8 +134,10 @@ export default function UpdateLogList() {
     return logs
       .filter((log) => {
         if (applied.targetType !== 'ALL' && log.targetType !== applied.targetType) return false;
-        if (applied.field !== 'ALL' && log.changedColumn !== applied.field) return false;
 
+        const { fields, newValues } = splitFields(log);
+
+        // 변경일시 범위 필터는 항목 필터와 무관하게 공통 적용
         if (fromTime !== null || toTime !== null) {
           const changeTime = parseDate(log.changeDate);
           if (Number.isNaN(changeTime)) return false;
@@ -128,6 +145,17 @@ export default function UpdateLogList() {
           if (toTime !== null && changeTime > toTime) return false;
         }
 
+        // 특정 항목(예: 연락처)을 선택한 경우
+        // → 그 항목이 실제로 변경된 로그만 표시하고, 검색어는 해당 항목의 "변경 후" 값에서만 매칭
+        if (applied.field !== 'ALL') {
+          const idx = fields.indexOf(applied.field);
+          if (idx === -1) return false;
+
+          if (!searchKeyword) return true;
+          return (newValues[idx] ?? '').toLowerCase().includes(searchKeyword);
+        }
+
+        // 전체 항목 조회 시에는 기존처럼 로그 전체에서 검색
         if (!searchKeyword) return true;
 
         const searchString = `${log.targetId} ${log.changedColumn} ${log.oldValue} ${log.newValue} ${log.updtMnno} ${log.targetType}`.toLowerCase();
@@ -136,7 +164,7 @@ export default function UpdateLogList() {
       .sort((a, b) => {
         const dateA = parseDate(a.changeDate);
         const dateB = parseDate(b.changeDate);
-        return (!Number.isNaN(dateA) && !Number.isNaN(dateB)) ? dateB - dateA : b.no - a.no;
+        return !Number.isNaN(dateA) && !Number.isNaN(dateB) ? dateB - dateA : b.no - a.no;
       });
   }, [logs, applied]);
 
@@ -164,19 +192,68 @@ export default function UpdateLogList() {
 
   // 테이블 컬럼 정의
   const columns = useMemo<DataTableColumn<ProcessedLog>[]>(() => [
-    { header: '로그번호', accessor: 'no', width: '8%', mono: true },
+    { header: '로그번호', accessor: 'no', width: '7%', mono: true },
     {
-      header: '구분', width: '9%',
-      render: (log) => <span className={`badge ${log.targetType === 'USER' ? 'badge_neutral' : 'badge_primary'}`}>{log.targetType}</span>
+      header: '구분', width: '8%',
+      render: (log) => (
+        <span className={`badge ${log.targetType === 'USER' ? 'badge_neutral' : 'badge_info'}`}>
+          {TARGET_LABEL_MAP[log.targetType]}
+        </span>
+      ),
     },
     {
-      header: '대상번호', width: '10%', mono: true,
-      render: (log) => <span>{log.targetId}</span>
+      header: '대상번호', width: '9%', mono: true,
+      render: (log) => <span>{log.targetId}</span>,
     },
-    { header: '변경 항목', width: '14%', render: (log) => <span className="cell_title">{getColumnLabel(log.changedColumn)}</span> },
-    { header: '변경 전', width: '18%', render: (log) => <span title={formatValue(log.oldValue)}>{formatValue(log.oldValue)}</span> },
-    { header: '변경 후', width: '18%', render: (log) => <span title={formatValue(log.newValue)}>{formatValue(log.newValue)}</span> },
-    { header: '변경 일시', width: '15%', mono: true, render: (log) => <span className="mono">{formatDate(log.changeDate)}</span> },
+    {
+      header: '변경 항목', width: '13%',
+      render: (log) => {
+        const { fields } = splitFields(log);
+        if (fields.length === 0) return <span className="cell_sub">-</span>;
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {fields.map((f, i) => (
+              <span key={`${f}-${i}`} className="cell_title">
+                {getFieldLabel(f)}
+              </span>
+            ))}
+          </div>
+        );
+      },
+    },
+    {
+      header: '변경 전', width: '17%',
+      render: (log) => {
+        const { fields, oldValues } = splitFields(log);
+        if (fields.length === 0) return <span>{formatValue(log.oldValue)}</span>;
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {fields.map((f, i) => (
+              <span key={`${f}-${i}`} title={formatValue(oldValues[i])}>
+                {formatValue(oldValues[i])}
+              </span>
+            ))}
+          </div>
+        );
+      },
+    },
+    {
+      header: '변경 후', width: '17%',
+      render: (log) => {
+        const { fields, newValues } = splitFields(log);
+        if (fields.length === 0) return <span>{formatValue(log.newValue)}</span>;
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {fields.map((f, i) => (
+              <span key={`${f}-${i}`} title={formatValue(newValues[i])}>
+                {formatValue(newValues[i])}
+              </span>
+            ))}
+          </div>
+        );
+      },
+    },
+    { header: '변경 일시', width: '14%', mono: true, render: (log) => <span className="mono">{formatDate(log.changeDate)}</span> },
     { header: '변경 관리자', width: '8%', mono: true, render: (log) => <span>{log.updtMnno || '-'}</span> },
   ], []);
 
@@ -184,17 +261,16 @@ export default function UpdateLogList() {
     <section className="view active">
       <PageHeader
         title="업데이트 로그"
-        description="USER 및 DBMS 계정의 정보 변경 이력을 통합 조회합니다."
+        description="회원 및 관리자 계정의 정보 변경 이력을 통합 조회합니다."
       />
 
-      {/* ✅ 하드코딩 left 문구 제거 - page/pageSize/totalCount만 넘기면 Filterbar가 안내문구를 자동 계산 (QaList.tsx 패턴) */}
       <Filterbar
         page={page}
         pageSize={PAGE_SIZE}
         totalCount={processedLogs.length}
         searchValue={draft.keyword}
         onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
-        searchPlaceholder="대상번호·변경내용·관리자번호 검색"
+        searchPlaceholder="변경 후 값으로 검색 (항목을 선택하면 해당 항목에서만 검색)"
         onSearchEnter={onSearch}
         filters={
           <>
@@ -204,9 +280,9 @@ export default function UpdateLogList() {
               onChange={(e) => setDraft((prev) => ({ ...prev, targetType: e.target.value as TargetFilter }))}
               aria-label="구분 필터"
             >
-              <option value="ALL">USER + DBMS</option>
-              <option value="USER">USER</option>
-              <option value="DBMS">DBMS</option>
+              <option value="ALL">회원 + 관리자</option>
+              <option value="USER">회원</option>
+              <option value="DBMS">관리자</option>
             </select>
 
             <select
@@ -225,9 +301,7 @@ export default function UpdateLogList() {
               className="form_input"
               value={draft.dateFrom}
               onChange={(e) => setDraft((prev) => ({ ...prev, dateFrom: e.target.value }))}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') onSearch();
-              }}
+              onKeyDown={(e) => { if (e.key === 'Enter') onSearch(); }}
               aria-label="변경일 시작"
             />
             <span style={{ alignSelf: 'center' }}>~</span>
@@ -236,14 +310,11 @@ export default function UpdateLogList() {
               className="form_input"
               value={draft.dateTo}
               onChange={(e) => setDraft((prev) => ({ ...prev, dateTo: e.target.value }))}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') onSearch();
-              }}
+              onKeyDown={(e) => { if (e.key === 'Enter') onSearch(); }}
               aria-label="변경일 종료"
             />
           </>
         }
-        // ✅ 버튼 순서/스타일 QaList.tsx 통일 (초기화 ghost → 검색 primary)
         extra={
           <>
             <button type="button" className="btn btn_ghost" onClick={onReset}>
