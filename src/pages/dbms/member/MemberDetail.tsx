@@ -122,9 +122,9 @@ export default function MemberDetail() {
           <div className="form_group">
             <label className="form_label" htmlFor="status">계정 상태</label>
             <select id="status" className="form_select" value={formData.status} onChange={handleInputChange}>
-              <option value="ACTIVE">정상 이용</option>
-              <option value="SUSPENDED">이용 정지</option>
-              <option value="PENDING">승인 대기</option>
+              <option value={1}>정상 이용</option>
+              <option value={0}>회원 탈퇴</option>
+              <option value={2}>이용 정지</option>
             </select>
           </div>
 
