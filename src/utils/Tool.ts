@@ -3,7 +3,7 @@ import type { KeyboardEvent } from 'react';
 
 const getIP = () => {
   // return "localhost";
-  return "10.1.205.120"; // 학원
+  return "10.1.205.118"; // 학원
   return "1.201.122.5"; // 학원
 }
 
