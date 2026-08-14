@@ -1,12 +1,10 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { AlertModal, ConfirmDeleteModal, PageHeader } from '../../../components/ui';
+import { AlertModal, PageHeader } from '../../../components/ui';
 import { axiosInstance, set_focus } from '../../../utils/Tool';
 import { GlobalStoreSession } from '../../../store/LoginStore';
-import axios from 'axios';
 import { QA_STATUS_MAP, QA_TYPE_MAP, type QARequest, type QaTypes, type TabKey } from '../../../components/ts/QaType';
-import { useTab } from '../../../hooks/useTab';
 import { usePaging } from '../../../hooks/usePaging';
+import { useParams } from 'react-router-dom';
 
 /**
  * 
@@ -28,7 +26,7 @@ export default function QaDetail() {
   type FormErrors = Partial<Record<keyof QARequest, string>>;
   const [errors, setErrors] = useState<FormErrors>({});
 
-  const { goToList, navigateWithQuery } = usePaging({ basePath: '/dbms/qa' });
+  const { goToList } = usePaging({ basePath: '/dbms/qa' });
 
   const [input, setInput] = useState<QARequest>({
     ano: ano,

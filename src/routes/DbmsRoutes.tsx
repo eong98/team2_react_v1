@@ -26,6 +26,7 @@ import QaList from '../pages/dbms/qa/QaList';
 import QaDetail from '../pages/dbms/qa/QaDetail';
 import NoticeList from '../pages/dbms/notice/NoticeList';
 import NoticeDetail from '../pages/dbms/notice/NoticeDetail';
+import NoticeForm from '../pages/dbms/notice/NoticeForm';
 
 
 export default function DbmsRoutes() {
@@ -35,8 +36,8 @@ export default function DbmsRoutes() {
       {/* 참고해서 추가하시면 됩니다 / 페이지 추가 */}
       <Route path="notice" element={<NoticeList />} />
       <Route path="notice/:no" element={<NoticeDetail />} />
-      {/* <Route path="notice/new" element={<NoticeForm />} /> */}
-      {/* <Route path="notice/:no/edit" element={<NoticeForm />} /> */}
+      <Route path="notice/new" element={<NoticeForm />} />
+      <Route path="notice/:no/edit" element={<NoticeForm />} />
 
       <Route path="qa" element={<QaList />} />
       <Route path="qa/new" element={<QaForm />} />
