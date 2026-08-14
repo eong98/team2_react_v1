@@ -2,9 +2,7 @@ import axios from 'axios';
 import type { KeyboardEvent } from 'react';
 
 const getIP = () => {
-  // return "localhost";
-  // return "10.1.205.126"; // 승연
-  return "10.1.205.118"; // 학원
+  return "10.1.205.120"; // 학원
   // return "1.201.122.5"; // 학원
 }
 
@@ -54,7 +52,6 @@ function set_focus(nextTag: string) {
 
 // Ajax 통신 패키지 설정
 const axiosInstance = axios.create({
-<<<<<<< HEAD
     // 개발 환경과 배포 환경에 따라 baseURL 설정
     // Vite 환경 변수 사용
     // 개발 환경: http://localhost:4000
@@ -64,18 +61,6 @@ const axiosInstance = axios.create({
     // npm run build: import.meta.env.PROD -> true로 자동 설정
     // '': 같은 ip에 Backend 서버가 있다는 가정하에 상대경로로 요청을 보냄.
     baseURL: import.meta.env.PROD ? '' : `http://${getIP()}:9102`
-=======
-  // 개발 환경과 배포 환경에 따라 baseURL 설정
-  // Vite 환경 변수 사용
-  // 개발 환경: http://localhost:4000
-  // 배포 환경: 상대 경로 ''
-  // import.meta.env.PROD : vite 자동 제공 환경 변수 true: 배포, false: 개발,
-  // npm run dev: import.meta.env.PROD -> false로 자동 설정
-  // npm run build: import.meta.env.PROD -> true로 자동 설정
-  // '': 같은 ip에 Backend 서버가 있다는 가정하에 상대경로로 요청을 보냄.
-  baseURL: import.meta.env.PROD ? '' : `http://${getIP()}:9102`
-  // baseURL: import.meta.env.PROD ? '' : 'http://10.1.205.120:9102'
->>>>>>> 259f7be5d3420e3ef0d3b3dedda474ab9ae3a971
 })
 
 
