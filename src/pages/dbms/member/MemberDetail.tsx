@@ -68,8 +68,8 @@ export default function MemberDetail() {
     try {
       // 대상을 수정(Update)하기 위한 분기 처리 API 호출
       const endpoint = role === 'ADMIN'
-        ? `http://10.1.205.120:9102/v1/dbms/update/manager/${no}/${mnno}`
-        : `http://10.1.205.120:9102/v1/user/update/manager/${no}/${mnno}`;
+        ? `${getIP()}:9102/v1/dbms/update/manager/${no}/${mnno}`
+        : `${getIP()}:9102/v1/user/update/manager/${no}/${mnno}`;
 
       await axiosInstance.put(endpoint, formData);
       alert("수정이 정상적으로 완료되었습니다.");
