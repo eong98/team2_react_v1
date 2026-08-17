@@ -7,10 +7,6 @@ import Test2 from '../pages/user/dashboard/Test2';
 import Test3 from '../pages/user/dashboard/Test3';
 import Test4 from '../pages/user/dashboard/Test4';
 import Test5 from '../pages/user/dashboard/Test5';
-import Form from '../pages/user/form/Form';
-import List from '../pages/user/form/List';
-import SendForm from '../pages/user/send/Form';
-import SendList from '../pages/user/send/List';
 
 
 import QaList from '../pages/user/qa/QaList';
@@ -67,10 +63,6 @@ export default function UserRoutes() {
         <Route path="dashboard/test5" element={<Test5 />} />
       </Route>
 
-      <Route path="form" element={<Form />} />
-      <Route path="list" element={<List />} />
-      <Route path="send/form" element={<SendForm />} />
-      <Route path="send/list" element={<SendList />} />
       <Route path="survey" element={<SurveyUserList />} />
       <Route path="survey/:no" element={<SurveyAnswerForm />} />
 

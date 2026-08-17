@@ -12,7 +12,7 @@ import {
 } from '../../components/ui';
 import type { DataTableColumn } from '../../components/ui';
 import type { DataCardColumn } from '../../components/ui/common/DataCard';
-import type { AccordionCardColumn } from '../../components/ui/common/DataAcc';
+import type { DataAccColumn } from '../../components/ui/common/DataAcc';
 import { GuideBlock, GuideCompare, GuideSection, GuideStack } from './GuideBlock';
 
 /* =========================================================================
@@ -933,7 +933,7 @@ export function TableSection() {
     },
   ];
 
-  const accColumns: AccordionCardColumn<DemoRow>[] = [{ header: '작성자', render: (r) => <div className="lt">{r.writer}</div> }];
+  const accColumns: DataAccColumn<DemoRow>[] = [{ header: '작성자', render: (r) => <div className="lt">{r.writer}</div> }];
 
   return (
     <GuideSection

@@ -3,7 +3,8 @@ import type { KeyboardEvent } from 'react';
 
 const getIP = () => {
   // return "localhost";
-  return "10.1.205.126"; // 승연
+  return "192.168.68.101"; // 승연
+  // return "10.1.205.126"; // 승연
   // return "10.1.205.118"; // 학원
   // return "1.201.122.5"; // 학원
 }
@@ -62,18 +63,29 @@ const axiosInstance = axios.create({
     // npm run dev: import.meta.env.PROD -> false로 자동 설정
     // npm run build: import.meta.env.PROD -> true로 자동 설정
     // '': 같은 ip에 Backend 서버가 있다는 가정하에 상대경로로 요청을 보냄.
-    baseURL: import.meta.env.PROD ? '' : `http://${getIP}:9102`
+    baseURL: import.meta.env.PROD ? '' : `http://${getIP()}:9102`
 })
+
+/**
+ * 첨부파일(이미지 등)의 절대 URL을 만듭니다. <img src>는 axios를 안 거치고 브라우저가
+ * 직접 요청하기 때문에 절대경로가 필요한데, 그 origin을 axiosInstance의 baseURL과
+ * 똑같이 맞춰줍니다 (매 컴포넌트마다 http://${getIP()}:9102를 직접 조합하지 않도록).
+ *
+ * @param purl AttachType.purl (예: '/attach/storage/notice/images')
+ * @param sname AttachType.sname (서버 저장 파일명)
+ */
+const getAttachUrl = (purl: string, sname: string) => `${axiosInstance.defaults.baseURL}${purl}/${sname}`;
+
 
 
 // 파일 다운로드 함수
-const download = async (dir: string, filename: string, downname: string) => {
+const download = async (dir: string, filename: string, downname: string, displayName?: string) => {
   try {
     // ① Spring Boot의 /download 엔드포인트 호출
     // dir: 폴더명, filename: 서버에 저장된 파일명, downname: 원래 파일명
     // Donwload.java 호출
     const response = await axiosInstance.get("/download", {
-      params: { dir, filename, downname },  // 쿼리 파라미터 전달
+      params: { dir, filename, downname },  // 쿼리 파라미터 전달 (Download.java 조회 로직은 그대로 downname을 씀)
       responseType: "blob",                 // 응답을 binary(blob)로 받기
     });
 
@@ -85,8 +97,12 @@ const download = async (dir: string, filename: string, downname: string) => {
 
     // ④ 임시로 <a> 태그를 만들어서 클릭 이벤트를 트리거
     const link = document.createElement("a");
-    link.href = url;                // Blob 데이터의 URL 지정
-    link.download = downname;       // 실제 저장될 파일 이름 지정
+    link.href = url;                          // Blob 데이터의 URL 지정
+    link.download = displayName ?? downname;  // 실제 저장될 파일 이름 지정
+    // ⭐ displayName을 넘기면 그걸로, 안 넘기면 기존처럼 downname을 그대로 씁니다.
+    // (downname이 서버 조회용 경로일 때 저장 파일명까지 그 경로로 나오는 걸 막고 싶을 때 씁니다 —
+    //  예: 첨부파일 다운로드에서 조회는 "notice/images/abc123.jpg"로 하되, 저장 파일명은
+    //  displayName="고양이.jpg"로 예쁘게 보이게)
 
     // ⑤ <a> 태그를 문서에 추가하고, 강제로 클릭해서 다운로드 실행
     document.body.appendChild(link);
@@ -101,6 +117,7 @@ const download = async (dir: string, filename: string, downname: string) => {
     console.error(err);
   }
 };
+
 
 const isImage = (file1 = "") => {
   // console.log('-> file1.toLowerCase():', "ABC.jpg".toLowerCase());
@@ -153,5 +170,5 @@ export const cutByByte = (str: string, maxBytes: number): string => {
 };
 
 
-export { getIP, getCopyright, getNowDate, enter_chk, set_focus, axiosInstance, download, isImage };
+export { getIP, getCopyright, getNowDate, enter_chk, set_focus, axiosInstance, download, isImage, getAttachUrl };
 // import {getIP, getCopyright, getNowDate, enter_chk, set_focus} from 'Tool';

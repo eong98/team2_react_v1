@@ -1,13 +1,12 @@
-import { useEffect, useState, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
-import { AlertModal, PageHeader } from '../../../components/ui';
+import { AlertModal, AttachUploader, PageHeader, type AttachUploaderHandle } from '../../../components/ui';
 import { axiosInstance, cutByByte, getByteLength, getNowDate, set_focus } from '../../../utils/Tool';
-import { QA_TYPE_MAP, type QCRequest, type TabKey } from '../../../components/ts/QaType';
 import { GlobalStoreSession } from '../../../store/LoginStore';
-import { useTab } from '../../../hooks/useTab';
 import { usePaging } from '../../../hooks/usePaging';
 import { NOTICE_TYPE_MAP, type NCRequest } from '../../../components/ts/NoticeType';
+import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 
 export default function NoticeForm() {
   const { no } = useParams<{ no: string }>(); // URL에 no가 있으면 수정 모드
@@ -15,6 +14,9 @@ export default function NoticeForm() {
   const isEdit = Boolean(no);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
+
+  /* 첨부파일 변경확인 */
+  const attachRef = useRef<AttachUploaderHandle>(null);
 
   /* 에러타입 정의 */
   type FormErrors = Partial<Record<keyof NCRequest, string>>;
@@ -43,6 +45,21 @@ export default function NoticeForm() {
     vmode: 'Y',
     vseq: 1
   });
+
+  const test = () => {
+    
+        setInput((prev) => ({
+          ...prev,
+          ano: ano,
+          type: 0,
+          title: '첨부파일 테스트',
+          content: '첨부파일 테스트',
+          fixyn: 'N',
+          vmode: 'Y',
+          pw:'1234',
+          vseq: 0
+        }));
+  }
 
   
   // 수정 모드일 때 기존 게시글 정보 조회
@@ -88,7 +105,6 @@ export default function NoticeForm() {
         newValue = cutByByte(newValue, 200);
       }
     }
-    
     setInput((prev) => ({ ...prev, [name]: newValue }));
 
     // 에러 해제
@@ -127,7 +143,8 @@ export default function NoticeForm() {
   };
 
   // 저장 (등록 / 수정)
-  const handleSave = async () => {
+  const send = async (e: React.SyntheticEvent) => {
+    e.preventDefault();
     if (!validate() || submitting) return;
 
     setSubmitting(true);
@@ -147,8 +164,28 @@ export default function NoticeForm() {
 
       if (isEdit) {
         await axiosInstance.put(`/notice/${no}`, payload);
+        // 수정: 이미 있는 bno로, 그동안 담아둔 업로드/삭제 예정 파일들을 실제로 반영
+        if (attachRef.current?.hasPendingChanges()) {
+          try {
+            await attachRef.current.commit();
+          } catch (attachErr) {
+            console.error('첨부파일 반영 실패 (글은 정상 저장됨):', attachErr);
+          }
+        }
       } else {
-        await axiosInstance.post('/notice', payload);
+        // 신규 작성: 글을 먼저 저장해서 실제 bno를 받아온 다음,
+        // AttachUploader에 로컬로만 담겨있던 파일들을 그 bno로 한 번에 업로드합니다.
+        const res = await axiosInstance.post<number>('/notice', payload);
+        // NoticeCont.createNotice()는 ResponseEntity<Long>으로, 생성된 no 하나만 그대로 반환합니다.
+        const newNo = res.data;
+
+        if (newNo && attachRef.current?.hasPendingChanges()) {
+          try {
+            await attachRef.current.commit(Number(newNo));
+          } catch (attachErr) {
+            console.error('첨부파일 반영 실패 (글은 정상 저장됨):', attachErr);
+          }
+        }
       }
 
       setAlert({
@@ -200,224 +237,195 @@ export default function NoticeForm() {
         }
       />
 
-      <div className="card card_pad_lg form_page">
-        {/* 공지 유형 */}
-        <div className="form_group">
-          <label className="form_label" htmlFor="type">
-            공지 유형<span className="req" title="필수 입력 요소">*</span>
-          </label>
-          <div className="form_control">
-            <select
-              id="type"
-              name="type"
-              className="form_select"
-              value={input.type}
-              onChange={onChange}
-              style={{ maxWidth: 200 }}
-            >
-              {Object.entries(NOTICE_TYPE_MAP).map(([type, {label}]) => (
-                <option key={type} value={type}>
-                  {label}
-                </option>
-              ))}
-            </select>
-            <div className="form_hint">유형을 선택하지 않을 경우 신규유형으로 등록됩니다.</div>
-          </div>
-        </div>
-
-        {/* 작성자 ID (읽기 전용) */}
-        <div className="form_group">
-          <label className="form_label" htmlFor="user_id">
-            작성자 ID
-          </label>
-          <div className="form_control">
-            <input
-              type="text"
-              id="user_id"
-              name="ano"
-              className="form_input"
-              value={`${isEdit ? id : '등록할때 저장된 아이디 수정예정'}  (No.${ano})`}
-              readOnly
-              style={{ maxWidth: 200 }}
-            />
-          </div>
-        </div>
-
-        {/* 공지 제목 */}
-        <div className="form_group">
-          <label className="form_label" htmlFor="title">
-            공지 제목<span className="req" title="필수 입력 요소">*</span>
-          </label>
-          <div className="form_control">
-            <input
-              type="text"
-              id="title"
-              className={`form_input ${errors.title ? 'is_error' : ''}`}
-              placeholder="공지사항 제목을 입력하세요"
-              name="title"
-              value={input.title}
-              onChange={onChange}
-            />
-            {errors.title ? (
-              <div className="form_hint error">{errors.title}</div>
-            ) : (
-              <div className="form_hint">제목은 200자 이내만 가능합니다. </div>
-            )}
-          </div>
-        </div>
-
-        {/* 공지 내용 */}
-        <div className="form_group">
-          <label className="form_label" htmlFor="content">
-            공지 내용<span className="req" title="필수 입력 요소">*</span>
-          </label>
-          <div className="form_control">
-            <textarea
-              id="content"
-              className={`form_textarea ${errors.content ? 'is_error' : ''}`}
-              placeholder="공지사항 내용을 입력하세요"
-              value={input.content}
-              name="content"
-              onChange={onChange}
-              style={{ minHeight: 220 }}
-            />
-            {errors.content ? (
-              <div className="form_hint error">{errors.content}</div>
-            ) : (
-              <div className="form_hint">등록 후에도 공지사항 목록에서 수정할 수 있습니다.</div>
-            )}
-          </div>
-        </div>
-
-        {/* 파일영역 */}
-        <div className="form_group">
-          <label className="form_label" htmlFor='file'>
-            첨부파일<span className="req" title="필수 입력 요소">*</span>
-          </label>
-          
-          <div className="form_control">
-            <div className='file_area'>
-              <label className="file_drop">
-                <input type="file" className="sr_only_input" />
-                <span className="file_upload" aria-hidden="true"></span>
-                <span className="fd_text">
-                  <b>클릭하거나 파일을 끌어다 놓으세요</b>
-                  <br />
-                  사업자등록증 · PDF, JPG (최대 10MB)
-                </span>
-              </label>
-
-              {input.fileyn && (
-                <div className='list_files'>
-                  {/* 업로드된 파일 갯수 노출 */}
-
-                  <div className='list'>
-                    <div className='attach_row'>
-                      <span className='ic' aria-hidden='true'>PDF</span>
-                      <span className="fn">사업자등록증.pdf</span>
-                      <span className="fs">1.2MB</span>
-                      <button type="button" className="btn btn_xsm btn_del"><span className='hidden'>첨부파일 삭제</span></button>
-                    </div>
-                    <div className='attach_row'>
-                      <span className='ic' aria-hidden='true'>PDF</span>
-                      <span className="fn">사업자등록증.pdf</span>
-                      <span className="fs">1.2MB</span>
-                      <button type="button" className="btn btn_xsm btn_del"><span className='hidden'>첨부파일 삭제</span></button>
-                    </div>
-                  </div>
-                </div>
-              )}
+        
+      <form onSubmit={send}  encType="multipart/form-data">
+        <div className="card card_pad_lg form_page">
+          {/* 공지 유형 */}
+          <div className="form_group">
+            <label className="form_label" htmlFor="type">
+              공지 유형<span className="req" title="필수 입력 요소">*</span>
+            </label>
+            <div className="form_control">
+              <select
+                id="type"
+                name="type"
+                className="form_select"
+                value={input.type}
+                onChange={onChange}
+                style={{ maxWidth: 200 }}
+              >
+                {Object.entries(NOTICE_TYPE_MAP).map(([type, {label}]) => (
+                  <option key={type} value={type}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <div className="form_hint">유형을 선택하지 않을 경우 신규유형으로 등록됩니다.</div>
             </div>
-
-            {errors.vmode && <div className="form_hint error">{errors.vmode}</div>}
           </div>
-        </div>
 
-        {/* 고정여부 설정 */}
-        <div className="form_group">
-          <div className="form_label">
-            고정 여부<span className="req" title="필수 입력 요소">*</span>
-          </div>
-          
-          <div className="form_control">
-            <div className="form_check">
+          {/* 작성자 ID (읽기 전용) */}
+          <div className="form_group">
+            <label className="form_label" htmlFor="user_id">
+              작성자 ID
+            </label>
+            <div className="form_control">
               <input
-                type="checkbox"
-                id="label_08"
-                name="fixyn"
-                checked={input.fixyn === 'Y'}
+                type="text"
+                id="user_id"
+                name="ano"
+                className="form_input"
+                value={`${isEdit ? id : '등록할때 저장된 아이디 수정예정'}  (No.${ano})`}
+                readOnly
+                style={{ maxWidth: 200 }}
+              />
+            </div>
+          </div>
+
+          {/* 공지 제목 */}
+          <div className="form_group">
+            <label className="form_label" htmlFor="title">
+              공지 제목<span className="req" title="필수 입력 요소">*</span>
+            </label>
+            <div className="form_control">
+              <input
+                type="text"
+                id="title"
+                className={`form_input ${errors.title ? 'is_error' : ''}`}
+                placeholder="공지사항 제목을 입력하세요"
+                name="title"
+                value={input.title}
                 onChange={onChange}
               />
-              <label htmlFor="label_08" className="b_title">
-                고정
-              </label>
+              {errors.title ? (
+                <div className="form_hint error">{errors.title}</div>
+              ) : (
+                <div className="form_hint">제목은 200자 이내만 가능합니다. </div>
+              )}
             </div>
-
-            <div className="form_hint">최 상단에 해당 게시글을 고정시킵니다.</div>
-          </div>
-        </div>
-
-        {/* 공개 여부 설정 */}
-        <div className="form_group">
-          <div className="form_label">
-            공개 여부<span className="req" title="필수 입력 요소">*</span>
           </div>
 
-          <div className="form_control">
-            <div className="check_row">
+          {/* 공지 내용 */}
+          <div className="form_group">
+            <label className="form_label" htmlFor="content">
+              공지 내용<span className="req" title="필수 입력 요소">*</span>
+            </label>
+            <div className="form_control">
+              <textarea
+                id="content"
+                className={`form_textarea ${errors.content ? 'is_error' : ''}`}
+                placeholder="공지사항 내용을 입력하세요"
+                value={input.content}
+                name="content"
+                onChange={onChange}
+                style={{ minHeight: 220 }}
+              />
+              {errors.content ? (
+                <div className="form_hint error">{errors.content}</div>
+              ) : (
+                <div className="form_hint">등록 후에도 공지사항 목록에서 수정할 수 있습니다.</div>
+              )}
+            </div>
+          </div>
+
+          {/* 파일영역 */}
+          <AttachUploader 
+              ref={attachRef} 
+              tname={ATTACH_BOARD_LABEL[1].table} 
+              bno={isEdit ? Number(no) : undefined}
+              onCountChange={(count) => {
+                setInput((prev) => ({ ...prev, fileyn: count > 0 ? 'Y' : 'N' }))
+              }}
+          />
+
+          {/* 고정여부 설정 */}
+          <div className="form_group">
+            <div className="form_label">
+              고정 여부<span className="req" title="필수 입력 요소">*</span>
+            </div>
+            
+            <div className="form_control">
               <div className="form_check">
-                <input type="radio" id="Y" name="vmode" value='Y' checked={input.vmode === 'Y'} onChange={onChange} />
-                <label htmlFor="Y" className="b_title">
-                  공개
+                <input
+                  type="checkbox"
+                  id="label_08"
+                  name="fixyn"
+                  checked={input.fixyn === 'Y'}
+                  onChange={onChange}
+                />
+                <label htmlFor="label_08" className="b_title">
+                  고정
                 </label>
               </div>
 
-              <div className="form_check">
-                <input type="radio" id="N" name="vmode" value='N' checked={input.vmode === 'N'} onChange={onChange} />
-                <label htmlFor="N" className="b_title">
-                  비공개
-                </label>
-              </div>
+              <div className="form_hint">최 상단에 해당 게시글을 고정시킵니다.</div>
+            </div>
+          </div>
+
+          {/* 공개 여부 설정 */}
+          <div className="form_group">
+            <div className="form_label">
+              공개 여부<span className="req" title="필수 입력 요소">*</span>
             </div>
 
-            {errors.vmode && <div className="form_hint error">{errors.vmode}</div>}
+            <div className="form_control">
+              <div className="check_row">
+                <div className="form_check">
+                  <input type="radio" id="Y" name="vmode" value='Y' checked={input.vmode === 'Y'} onChange={onChange} />
+                  <label htmlFor="Y" className="b_title">
+                    공개
+                  </label>
+                </div>
+
+                <div className="form_check">
+                  <input type="radio" id="N" name="vmode" value='N' checked={input.vmode === 'N'} onChange={onChange} />
+                  <label htmlFor="N" className="b_title">
+                    비공개
+                  </label>
+                </div>
+              </div>
+
+              {errors.vmode && <div className="form_hint error">{errors.vmode}</div>}
+            </div>
+          </div>
+
+          {/* 게시글 비밀번호 */}
+          <div className="form_group">
+            <label className="form_label" htmlFor="password">
+              게시글 비밀번호<span className="req" title="필수 입력 요소">*</span>
+            </label>
+            <div className="form_control">
+              <input
+                type="password"
+                id="password"
+                name="pw"
+                className={`form_input ${errors.pw ? 'is_error' : ''}`}
+                value={input.pw}
+                onChange={onChange}
+                style={{ maxWidth: 200 }}
+              />
+              {errors.pw && <div className="form_hint error">{errors.pw}</div>}
+            </div>
+          </div>
+
+          {/* 푸터 버튼 */}
+          <div className="form_page_footer">
+            <button type="button" className="btn btn_md btn_ghost" onClick={goBack}>
+              취소
+            </button>
+            <button type="button" className="btn btn_md btn_ghost" onClick={test}>
+              테스트
+            </button>
+            <button
+              type="submit"
+              className="btn btn_md btn_primary"
+              disabled={submitting}
+            >
+              {submitting ? '저장 중...' : '저장'}
+            </button>
           </div>
         </div>
-
-        {/* 게시글 비밀번호 */}
-        <div className="form_group">
-          <label className="form_label" htmlFor="password">
-            게시글 비밀번호<span className="req" title="필수 입력 요소">*</span>
-          </label>
-          <div className="form_control">
-            <input
-              type="password"
-              id="password"
-              name="pw"
-              className={`form_input ${errors.pw ? 'is_error' : ''}`}
-              value={input.pw}
-              onChange={onChange}
-              style={{ maxWidth: 200 }}
-            />
-            {errors.pw && <div className="form_hint error">{errors.pw}</div>}
-          </div>
-        </div>
-
-        {/* 푸터 버튼 */}
-        <div className="form_page_footer">
-          <button type="button" className="btn btn_md btn_ghost" onClick={goBack}>
-            취소
-          </button>
-          <button
-            type="button"
-            className="btn btn_md btn_primary"
-            onClick={handleSave}
-            disabled={submitting}
-          >
-            {submitting ? '저장 중...' : '저장'}
-          </button>
-        </div>
-      </div>
+      </form>
 
       {/* 안내 알림 모달 */}
       <AlertModal

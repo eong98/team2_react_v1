@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { GlobalStoreSession } from '../../../store/LoginStore';
-import { axiosInstance } from '../../../utils/Tool';
+import { axiosInstance, getAttachUrl } from '../../../utils/Tool';
 import { useTab } from '../../../hooks/useTab';
 import { usePaging } from '../../../hooks/usePaging';
 import { Filterbar, UserPagination, PageHeader, DataAcc, DataCard } from '../../../components/ui';
-import type { DataCardColumn, AccordionCardColumn } from '../../../components/ui';
+import type { DataCardColumn, DataAccColumn } from '../../../components/ui';
 import { EMPTY_FILTERS, PAGE_SIZE, QA_STATUS_MAP, QA_TYPE_MAP } from '../../../components/ts/QaType';
 import type { Filters, QaSearchResult, QaTypes, TabKey } from '../../../components/ts/QaType';
+import type { AttachType } from '../../../components/ts/Attach';
 
 export default function QaList() {
   const { no:mno, id } = GlobalStoreSession();
@@ -22,7 +23,9 @@ export default function QaList() {
 
   /* API 데이터 저장 */
   const [qaList, setQaList] = useState<QaTypes[]>([]);
+  const [attachMap, setAttachMap] = useState<Record<number, AttachType[]>>({});
   const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState('');
 
   /* 필터바 설정 */
   // draft: 입력 중인 값 (타이핑만으로는 검색 안 됨) / applied: "검색" 눌렀을 때 실제 조회에 쓰이는 값
@@ -93,6 +96,29 @@ export default function QaList() {
     loadQaList();
   }, [tab, applied, page]);
 
+  /* 첨부파일 목록 조회 */
+  useEffect(() => {
+    if (tab !== 'faq') return;
+ 
+    const targets = qaList.filter((n) => n.fileyn === 'Y');
+    if (targets.length === 0) return;
+ 
+    Promise.all(
+      targets.map((n) =>
+        axiosInstance
+          .get<AttachType[]>(`/attach/list/${n.no}`)
+          .then((res) => [n.no, res.data] as const)
+          .catch((err) => {
+            console.error(`첨부파일 조회 실패 (no:${n.no}):`, err);
+            return [n.no, []] as const;
+          }),
+      ),
+    ).then((results) => {
+      setAttachMap(Object.fromEntries(results));
+    });
+  }, [tab, qaList]);
+ 
+
   
   // [검색 버튼 클릭] 현재 작성 중인 draft 값을 applied로 확정짓고 1페이지로 이동
   const onSearch = () => {
@@ -150,31 +176,52 @@ export default function QaList() {
             </button>
           </div>
           <div className="cell_sub">
-            접수유형: {Object.entries(QA_TYPE_MAP).find(([type]) => Number(type) === n.type)?.[1].label ?? n.type}
+            접수유형: {Object.entries(QA_TYPE_MAP).find(([type]) => Number(type) === n.type)?.[1].label ?? n.type} · {n.cdate.split(' ')[0]}
           </div>
         </div>
       ),
     },
     {
-      header: '등록일 정보',
-      render: (n) => (
-        <div className='me' style={{'textAlign':'right', 'alignSelf':'flex-end'}}>
-          <div className="cell_sub">
-            {n.cdate.split(' ')[0]}
+      header: '첨부파일 정보',
+      render: (n) => {
+        if (n.fileyn !== 'Y') return null;
+        
+        return (
+          <div className="me">
+            <div className='icon_row'>
+              <div className='icon file'>
+                <span className='hidden'>첨부파일 포함</span>
+              </div>
+            </div>
           </div>
-        </div>
-      ),
+        )
+      },
     },
   ];
 
-  const faqColumns: AccordionCardColumn<QaTypes>[] = [
+  const faqColumns: DataAccColumn<QaTypes>[] = [
     {
       header: 'A. 답변 내용',
-      render: (n) => (
-        <div className="lt">
-          <div className="cell_title">{n.answer}</div>
-        </div>
-      ),
+      render: (n) => {
+        const images = (attachMap[n.no] ?? []).filter((a) => a.type === 0);
+ 
+        return (
+          <>
+            <div className="lt">
+              <div className="cell_title">{n.answer}</div>
+              {images.map((a) => (
+                <div className='img_area' key={a.no}>
+                  <img src={getAttachUrl(a.purl, a.sname)} alt={a.name} />
+                </div>
+              ))}
+            </div>
+ 
+            <div className="me a-r">
+              <div className="cell_sub">{n.cdate}</div>
+            </div>
+          </>
+        )
+      }
     },
   ];
 
@@ -224,7 +271,7 @@ export default function QaList() {
               aria-label="접수 유형 필터"
               title='접수 유형 선택'
             >
-              <option value="">전체</option>
+              <option value="">유형 전체</option>
               {Object.entries(QA_TYPE_MAP).map(([type, {label}]) => (
                 <option key={type} value={type}>
                   {label}
@@ -241,7 +288,7 @@ export default function QaList() {
                 aria-label="답변 상태 필터"
                 title='답변 상태 선택'
               >
-                <option value="">전체</option>
+                <option value="">답변상태 전체</option>
                 {Object.entries(QA_STATUS_MAP).map(([status, {label}]) => (
                   <option key={status} value={status}>
                     {label}
@@ -260,7 +307,7 @@ export default function QaList() {
                 onChange={(e) => setDraft((prev) => ({ ...prev, mno: e.target.value }))}
                 aria-label="회원번호 필터"
                 title='회원번호 검색'
-                style={{ maxWidth: 150 }}
+                style={{ maxWidth: 115 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     onSearch?.();

@@ -5,6 +5,7 @@ export interface NavPost {
   no: number | string;
   title: string;
   fileyn?: string;
+  vmode?: string;
   cdate: string;
 }
 
@@ -45,14 +46,24 @@ export default function PrevNextNav({ prev, next, basePath = '' }: PrevNextNavPr
           <>
             <button type="button" className="pn_title" onClick={() => navigateWithQuery(`${basePath}/${prev.no}`)}>
               {prev.title}
+              {prev.vmode === 'Y' || prev.fileyn === 'Y' ? (
+                <span className='icon_row'>
+                  {prev.vmode === 'Y' && (
+                    <span className='icon lock'>
+                      <span className='hidden'>비밀글</span>
+                    </span>
+                  )}
+
+                  {prev.fileyn === 'Y' && (
+                    <span className='icon file'>
+                      <span className='hidden'>첨부파일 포함</span>
+                    </span>
+                  )}
+                </span>
+              ) : null}
             </button>
 
             <div className="info">
-              {prev.fileyn === 'Y' && (
-                <span className='icon file'>
-                  <span className='hidden'>첨부파일 포함</span>
-                </span>
-              )}
               <span className="pn_date">{prev.cdate.split(' ')[0]}</span>
             </div>
           </>
@@ -68,14 +79,23 @@ export default function PrevNextNav({ prev, next, basePath = '' }: PrevNextNavPr
           <>
             <button type="button" className="pn_title" onClick={() => navigateWithQuery(`${basePath}/${next.no}`)}>
               {next.title}
+              
+              <div className='icon_row'>
+                {next.vmode === 'Y' && (
+                  <span className='icon lock'>
+                    <span className='hidden'>비밀글</span>
+                  </span>
+                )}
+
+                {next.fileyn === 'Y' && (
+                  <span className='icon file'>
+                    <span className='hidden'>첨부파일 포함</span>
+                  </span>
+                )}
+              </div>
             </button>
 
             <div className="info">
-              {next.fileyn === 'Y' && (
-                <span className='icon file'>
-                  <span className='hidden'>첨부파일 포함</span>
-                </span>
-              )}
               <span className="pn_date">{next.cdate.split(' ')[0]}</span>
             </div>
           </>
