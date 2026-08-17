@@ -108,7 +108,7 @@ export default function DataTable<T>({
                 ))}
                 {hasActions && (
                   <td>
-                    <div className="actions">
+                    <div className="actions" style={{justifyContent: 'flex-end'}}>
                       {onEdit && (
                         <button type="button" className="btn btn_sm btn_ghost" onClick={() => onEdit(row)}>
                           {editLabel}

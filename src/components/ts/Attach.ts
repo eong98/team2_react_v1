@@ -5,6 +5,8 @@ export interface AttachType {
 
   /* 게시판번호를 조회할 테이블 이름(해당 이름으로 폴더명 생성됨) */
   tname: string;
+  /* 게시판 번호 */
+  tno?: number;
   
   /* 게시글 번호 : 게시글 등록시 전달 */
   bno: number;
@@ -23,7 +25,7 @@ export interface AttachType {
   cdate: string;
 }
 
-/** GET /attach/list_all_paging_search 응답 */
+/** GET /attach/list/admin 응답 */
 export interface AttachSearchResult {
   content: AttachType[];
   totalElements: number;
@@ -32,15 +34,15 @@ export interface AttachSearchResult {
   size: number;
 }
 
-/** 관리자 첨부파일 검색 필터 (list_all_paging_search 쿼리 파라미터와 매칭) */
-export interface AttachFilters {
+/** 관리자 첨부파일 검색 필터 (searchAllAttach 쿼리 파라미터와 매칭) */
+export interface Filters {
   word: string;
   tno?: string;
   type: string;
   cdate: string;
 }
 
-export const EMPTY_ATTACH_FILTERS: AttachFilters = {
+export const EMPTY_FILTERS: Filters = {
   word: '',
   tno: '',
   type: '',
@@ -70,3 +72,6 @@ export function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }
+
+// 페이지네이션
+export const PAGE_SIZE = 6;
