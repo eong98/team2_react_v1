@@ -1,6 +1,7 @@
 import { PageHeader } from '../../components/ui';
 import {
   AccordionPrimitiveSection,
+  AttachSection,          // ← 추가
   BadgeSection,
   ButtonSection,
   ColorSection,
@@ -32,12 +33,14 @@ export default function DesignGuide() {
       <BadgeSection />
       <TabSection />
       <FormSection />
+      <AttachSection />   {/* ← 추가 */}
       <HooksSection />
       <ToolbarCompareSection />
       <PaginationCompareSection />
       <TableSection />
       <AccordionPrimitiveSection />
       <ModalSection />
+      
     </section>
   );
 }

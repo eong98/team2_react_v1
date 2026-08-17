@@ -14,6 +14,8 @@ import type { DataTableColumn } from '../../components/ui';
 import type { DataCardColumn } from '../../components/ui/common/DataCard';
 import type { DataAccColumn } from '../../components/ui/common/DataAcc';
 import { GuideBlock, GuideCompare, GuideSection, GuideStack } from './GuideBlock';
+import { useRef } from 'react'; // 이미 useState만 import 중이면 이 줄 추가
+import { AttachUploader, AttachViewer, type AttachUploaderHandle } from '../../components/ui';
 
 /* =========================================================================
    1. 컬러 팔레트
@@ -1377,6 +1379,176 @@ const [totalElements, setTotalElements] = useState(0);
           </GuideBlock>
         }
       />
+    </GuideSection>
+  );
+}
+/* =========================================================================
+   12. 첨부파일 (Attach) — 등록 2종 + 조회 2종 + 전체 CRUD 흐름
+========================================================================= */
+export function AttachSection() {
+  const dragRef = useRef<AttachUploaderHandle>(null);
+  const clickRef = useRef<AttachUploaderHandle>(null);
+
+  return (
+    <GuideSection
+      title="첨부파일 (Attach)"
+      description="업로드는 AttachUploader, 조회 전용은 AttachViewer로 분리되어 있습니다. 선택/삭제는 로컬에만 쌓이고 ref.current.commit(bno)를 호출해야 실제 서버에 반영됩니다."
+    >
+      {/* 등록 디자인 2종 */}
+      <GuideCompare
+        left={
+          <GuideBlock
+            title="등록 — 드래그 앤 드롭형 (dtype='drag', 기본값)"
+            description="파일을 끌어다 놓거나 영역을 클릭해서 선택합니다. dtype을 안 주면 이게 기본값입니다."
+            code={`<AttachUploader
+  ref={attachRef}
+  tname={ATTACH_BOARD_LABEL[1].table}
+  bno={isEdit ? Number(no) : undefined}
+  dtype="drag"
+  description="사업자등록증 · PDF, JPG (최대 10MB)"
+  onCountChange={(count) =>
+    setInput((prev) => ({ ...prev, fileyn: count > 0 ? 'Y' : 'N' }))
+  }
+/>`}
+          >
+            <AttachUploader ref={dragRef} tname="guide_demo" dtype="drag" description="가이드 데모 · 실제 저장 안 됨" />
+          </GuideBlock>
+        }
+        right={
+          <GuideBlock
+            title="등록 — 라벨 클릭형 (dtype='button')"
+            description="드롭존 없이 '+ 파일 선택' 버튼(라벨)만 노출합니다. 폼 안에 입력이 많아 드롭존이 부담스러울 때 씁니다."
+            code={`<AttachUploader
+  ref={attachRef}
+  tname={ATTACH_BOARD_LABEL[0].table}
+  bno={isEdit ? Number(no) : undefined}
+  dtype="button"
+  onCountChange={(count) =>
+    setInput((prev) => ({ ...prev, fileyn: count > 0 ? 'Y' : 'N' }))
+  }
+/>`}
+          >
+            <AttachUploader ref={clickRef} tname="guide_demo" dtype="button" description="가이드 데모 · 실제 저장 안 됨" />
+          </GuideBlock>
+        }
+      />
+
+      {/* 조회 디자인 2종 — 실제 bno 데이터가 없어 시각 구조만 정적으로 재현 */}
+      <GuideCompare
+        left={
+          <GuideBlock
+            title="조회 — 콘텐츠에 이미지 포함 (onlyList 기본값 true)"
+            description="상세페이지 콘텐츠에 이미지를 직접 뿌리고, AttachViewer는 다운로드 목록만 노출(이미지는 목록에 다시 노출 안 함)."
+            code={`{/* 상세페이지 콘텐츠 영역 */}
+{attach
+  .filter((a) => a.type === 0)
+  .map((a) => (
+    <div className='img_area' key={a.no}>
+      <img src={getAttachUrl(a.purl, a.sname)} alt={a.name} />
+    </div>
+  ))}
+
+{/* 다운로드 목록 영역 — onlyList 기본값 true */}
+{notice.fileyn === 'Y' && <AttachViewer bno={notice.no} />}`}
+          >
+            <div className="img_area" style={{ marginBottom: 10 }}>
+              <div style={{ height: 140, borderRadius: 8, background: '#f1f1f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span className="cell_sub">콘텐츠 안에 뿌려진 이미지</span>
+              </div>
+            </div>
+            <div className="attach_list">
+              <ul>
+                <li className="attach_item">
+                  <div className="icon_row" aria-hidden="true"><div className="icon img"><span className="hidden">이미지 파일</span></div></div>
+                  <span className="attach_name">매장전경.jpg</span>
+                  <span className="attach_size">1.2MB</span>
+                  <span className="attach_info">JPG · 2026-08-10</span>
+                  <button type="button" className="attach_btn download" aria-label="다운로드" />
+                </li>
+                <li className="attach_item">
+                  <div className="icon_row" aria-hidden="true"><div className="icon file"><span className="hidden">첨부파일</span></div></div>
+                  <span className="attach_name">사업자등록증.pdf</span>
+                  <span className="attach_size">340KB</span>
+                  <span className="attach_info">PDF · 2026-08-10</span>
+                  <button type="button" className="attach_btn download" aria-label="다운로드" />
+                </li>
+              </ul>
+            </div>
+          </GuideBlock>
+        }
+        right={
+          <GuideBlock
+            title="조회 — 콘텐츠엔 이미지 없음, 썸네일+목록 노출 (onlyList={false})"
+            description="콘텐츠엔 이미지를 안 뿌리고, AttachViewer 하나가 이미지 썸네일 그리드 + 일반 파일 다운로드 목록을 같이 보여줍니다."
+            code={`{/* 콘텐츠 영역엔 이미지 없이 텍스트만 */}
+<div className='qa_content'>{qa.content}</div>
+
+{/* 이미지 썸네일 + 다운로드 목록 같이 노출 — onlyList={false} */}
+{qa.fileyn === 'Y' && <AttachViewer bno={qa.no} onlyList={false} />}`}
+          >
+            <div className="img_thumb_grid" style={{ marginBottom: 10 }}>
+              <div className="img_thumb_card">
+                <div className="img_thumb_preview" style={{ height: 90, borderRadius: 8, background: '#f1f1f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span className="cell_sub">썸네일</span>
+                </div>
+                <div className="img_thumb_meta">
+                  <span className="img_thumb_name">영수증.jpg</span>
+                </div>
+              </div>
+            </div>
+            <div className="attach_list">
+              <ul>
+                <li className="attach_item">
+                  <div className="icon_row" aria-hidden="true"><div className="icon file"><span className="hidden">첨부파일</span></div></div>
+                  <span className="attach_name">문의내역.hwp</span>
+                  <span className="attach_size">88KB</span>
+                  <span className="attach_info">HWP · 2026-08-11</span>
+                  <button type="button" className="attach_btn download" aria-label="다운로드" />
+                </li>
+              </ul>
+            </div>
+          </GuideBlock>
+        }
+      />
+
+      {/* 전체 CRUD 흐름 */}
+      <GuideBlock
+        title="첨부파일 CRUD 전체 흐름 (등록 폼 → 저장 → 상세조회)"
+        description="선택/삭제는 로컬 예정 상태로만 쌓이다가, 글 저장(등록/수정) 성공 직후 commit()을 호출해야 실제 서버(/attach/create, /attach/delete)에 반영됩니다. 신규 등록은 방금 발급된 bno를, 수정은 인자 없이 그대로 호출합니다."
+        code={`// 1) 등록/수정 폼
+const attachRef = useRef<AttachUploaderHandle>(null);
+
+<AttachUploader
+  ref={attachRef}
+  tname={ATTACH_BOARD_LABEL[1].table}   // 'NOTICE' | 'QA' 등 — 코드에 고정된 문자열만 사용
+  bno={isEdit ? Number(no) : undefined} // 수정: 실제 bno / 신규: undefined
+  dtype="drag"                          // 또는 "button"
+  onCountChange={(count) =>
+    setInput((prev) => ({ ...prev, fileyn: count > 0 ? 'Y' : 'N' }))
+  }
+/>
+
+// 2) 저장 버튼 클릭 시
+const handleSave = async () => {
+  if (isEdit) {
+    await axiosInstance.put(\`/notice/\${no}\`, payload);
+    if (attachRef.current?.hasPendingChanges()) {
+      await attachRef.current.commit(); // 수정: bno 그대로
+    }
+  } else {
+    const res = await axiosInstance.post<number>('/notice', payload);
+    const newNo = res.data;
+    if (newNo && attachRef.current?.hasPendingChanges()) {
+      await attachRef.current.commit(Number(newNo)); // 신규: 방금 발급된 bno 전달
+    }
+  }
+};
+
+// 3) 상세페이지(조회 전용) — 삭제 기능 없음, 목록/다운로드만
+{notice.fileyn === 'Y' && <AttachViewer bno={notice.no} onlyList={false} />}`}
+      >
+        <p className="b_title">실제 API 호출(POST/DELETE)이 들어가는 흐름이라 여기선 데모 없이 코드만 제공합니다.</p>
+      </GuideBlock>
     </GuideSection>
   );
 }
