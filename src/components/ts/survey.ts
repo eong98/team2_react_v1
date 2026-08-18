@@ -29,7 +29,7 @@ export interface Survey {
   startDate: string;
   endDate: string;
   cdate?: string;
-  questions?: SurveyQuestion[];
+  questions: SurveyQuestion[];
 }
 
 export interface SurveyInfo {
