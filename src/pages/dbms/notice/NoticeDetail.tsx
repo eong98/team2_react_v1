@@ -1,11 +1,12 @@
+import axios from 'axios';
+import { axiosInstance, getAttachUrl } from '../../../utils/Tool';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { NOTICE_TYPE_MAP, type NoticeTypes } from '../../../components/ts/NoticeType';
-import { axiosInstance } from '../../../utils/Tool';
 import { usePaging } from '../../../hooks/usePaging';
-import { AlertModal, ConfirmDeleteModal, PageHeader, PrevNextNav } from '../../../components/ui';
 import { GlobalStoreSession } from '../../../store/LoginStore';
-import axios from 'axios';
+import { AlertModal, AttachViewer, ConfirmDeleteModal, PageHeader, PrevNextNav } from '../../../components/ui';
+import { NOTICE_TYPE_MAP, type NoticeTypes } from '../../../components/ts/NoticeType';
+import { type AttachType } from '../../../components/ts/Attach';
 
 export default function NoticeDetail() {
   const { no } = useParams<{ no: string }>(); // URL에서 no 추출
@@ -13,6 +14,7 @@ export default function NoticeDetail() {
   const { goToList, navigateWithQuery } = usePaging({ basePath: '/dbms/notice' });
 
   const [notice, setNotice] = useState<NoticeTypes | null>(null);
+  const [attach, setAttach] = useState<AttachType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,8 +27,6 @@ export default function NoticeDetail() {
   // 삭제 모달 대상 Q&A 및 삭제 중 상태
   const [deleteTarget, setDeleteTarget] = useState<NoticeTypes | null>(null);
   const [deleting, setDeleting] = useState<boolean>(false); // 👈 삭제 진행 로딩 상태 추가
-
-  
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
   
   /* 공지사항내용 상세 데이터 */
@@ -46,7 +46,7 @@ export default function NoticeDetail() {
           next: data.next ?? null,
         })
 
-        console.log(data)
+        loadAttachList()
       })
       .catch((err) => {
         console.error('공지사항 상세 조회 실패:', err);
@@ -54,7 +54,6 @@ export default function NoticeDetail() {
       })
       .finally(() => setLoading(false));
   }
-
 
   useEffect(() => {
     if (!no) return;
@@ -65,8 +64,24 @@ export default function NoticeDetail() {
 
   }, [no, ano, grade]);
 
+  /* 첨부파일 목록 조회 */
+  const loadAttachList = () => {
+    setLoading(true);
+    axiosInstance.get<AttachType[]>(`/attach/list/${no}`)
+      .then((result) => result.data)
+      .then((data) => {
+        setAttach(data);
+
+      })
+      .catch((err) => {
+        console.error('첨부파일 목록 조회 실패:', err);
+        setError('첨부파일을 불러오지 못했습니다.');
+      })
+      .finally(() => setLoading(false));
+  };
+
   
-  /** Q&A / FAQ 삭제 핸들러 (비밀번호 입력) */
+  /** 삭제 핸들러 (비밀번호 입력) */
   const handleDeleteWithPw = async (inputPw: string = '') => {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -74,7 +89,7 @@ export default function NoticeDetail() {
 
     try {
       // Axios DELETE 요청 시 Body로 데이터를 전달할 때는 { data: ... } 옵션을 사용합니다.
-      await axiosInstance.delete('/qa', {
+      await axiosInstance.delete('/notice', {
         data: {
           no: deleteTarget.no,
           pw: inputPw,
@@ -86,7 +101,7 @@ export default function NoticeDetail() {
       setAlert({
         message: '삭제되었습니다.',
         variant: 'success',
-        onConfirm: loadNotice,
+        onConfirm: goToList,
       });
       setDeleteTarget(null);
 
@@ -173,13 +188,13 @@ export default function NoticeDetail() {
       />
 
       <div className="detail_area">
-        {/* 질문 영역 */}
+        {/* 공지사항 영역 */}
         <div className="card card_pad_lg">
           <div className="card_header">
             <p className="b_title">No.{notice.no}</p>
             {notice.vmode === 'N' && (
               <span className="badge neutral">
-                <span className="lock" aria-hidden="true"></span> 비밀글
+                <span className="lock" aria-hidden="true"></span> 비공개
               </span>
             )}
           </div>
@@ -203,15 +218,27 @@ export default function NoticeDetail() {
             </p>
           </div>
 
-          <p className="card_contents">{notice.content}</p>
+          <div className="card_contents">
+            {/* 이미지 상세보기 */}
+            {attach
+              .filter((a) => a.type === 0)
+              .map((a) => (
+                <div className='img_area' key={a.no}>
+                  <img src={getAttachUrl(a.purl, a.sname)} alt={a.name} />
+                </div>
+              ))}
+            {notice.content}
+          </div>
+
+          {notice.fileyn === 'Y' && <AttachViewer bno={notice.no} />}
 
           <div className="form_page_footer">
-            <button type="button" className="btn btn_sm btn_danger" onClick={() => setDeleteTarget(notice)}>
+            <button type="button" className="btn btn_danger" onClick={() => setDeleteTarget(notice)}>
               삭제
             </button>
             <button
               type="button"
-              className="btn btn_sm btn_outline_primary"
+              className="btn btn_outline_primary"
               onClick={() => navigateWithQuery('edit')}
             >
               수정
@@ -237,6 +264,7 @@ export default function NoticeDetail() {
           deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.title}` : undefined
         }
         requirePassword={true}
+        deleteWithAttach={deleteTarget?.no}
       />
 
 

@@ -110,7 +110,6 @@ export default function NoticeList() {
   const handleDeleteWithPw = async (inputPw: string = '') => {
     if (!deleteTarget) return;
     setDeleting(true);
-    console.log(inputPw)
 
     try {
       // Axios DELETE 요청 시 Body로 데이터를 전달할 때는 { data: ... } 옵션을 사용합니다.
@@ -175,16 +174,21 @@ export default function NoticeList() {
   // ==========================================
   const noticeColumns: DataCardColumn<NoticeTypes>[] = [
     {
+      header: '고정여부',
+      render: (n) => {
+        if (n.fixyn !== 'Y') return null
+        return (
+        <div className='icon_row'>
+          <div className='icon pin'>
+            <span className='hidden'>상단 고정</span>
+          </div>
+        </div>
+      )},
+    },
+    {
       header: '상태',
       render: (n) => (
         <div className='badge_area'>
-          {n.fixyn === 'Y' && (
-            <div className='notice_icons'>
-              <div className='icon pin'>
-                <span className='hidden'>상단 고정</span>
-              </div>
-            </div>
-          )}
           <span className={`badge ${NOTICE_TYPE_MAP[n.type].className}`}>
             {NOTICE_TYPE_MAP[n.type].label}
           </span>
@@ -212,18 +216,16 @@ export default function NoticeList() {
       ),
     },
     {
-      header: '고정 및 파일 정보',
+      header: '파일 정보',
       render: (n) => {
-        if (n.fixyn !== 'Y' && n.fileyn !== 'Y') return null;
+        if (n.fileyn !== 'Y') return null;
         
         return (
           <div className="me">
-            <div className='notice_icons'>
-              {n.fileyn === 'Y' && (
-                <div className='icon file'>
-                  <span className='hidden'>첨부파일 포함</span>
-                </div>
-              )}
+            <div className='icon_row'>
+              <div className='icon file'>
+                <span className='hidden'>첨부파일 포함</span>
+              </div>
             </div>
           </div>
         )
@@ -231,7 +233,6 @@ export default function NoticeList() {
     },
   ];
 
-  console.log(draft.vmode)
 
 
   return (
@@ -321,6 +322,7 @@ export default function NoticeList() {
           deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.title}` : undefined
         }
         requirePassword={true}
+        deleteWithAttach={deleteTarget?.no}
       />
 
       

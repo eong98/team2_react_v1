@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 
-export interface AccordionCardColumn<T> {
+export interface DataAccColumn<T> {
   /** 라벨 (선택 사항) */
   header?: string;
   /** 값을 렌더링하는 함수 */
@@ -12,11 +12,11 @@ export interface AccordionCardColumn<T> {
   className?: string;
 }
 
-interface AccordionCardProps<T> {
+interface DataAccProps<T> {
   /** 접혀있을 때도 보이는 트리거(제목) 영역 */
   title: (row: T) => ReactNode;
   /** 펼쳤을 때 .acc_panel 안에 순서대로 렌더링되는 컬럼들 (DataCard와 동일한 인터페이스) */
-  columns: AccordionCardColumn<T>[];
+  columns: DataAccColumn<T>[];
   data: T[];
   rowKey: (row: T) => string | number;
   /** 지정하면 펼친 영역 하단에 수정 버튼 노출 */
@@ -36,7 +36,7 @@ interface AccordionCardProps<T> {
  * 트리거를 눌러야 상세 컬럼(.acc_panel)이 펼쳐지는 아코디언 카드 리스트.
  *
  * 사용 예:
- *   <AccordionCard
+ *   <DataAcc
  *     title={(r) => <>{r.name}<span className="badge badge_success">{r.status}</span></>}
  *     columns={[
  *       { header: '연락처', accessor: 'tel' },
@@ -60,7 +60,7 @@ export default function DataAcc<T>({
   emptyMessage = '등록된 데이터가 없습니다.',
   loading = false,
   allowMultiple = true,
-}: AccordionCardProps<T>) {
+}: DataAccProps<T>) {
   const [openKeys, setOpenKeys] = useState<Set<string | number>>(new Set());
   const hasActions = Boolean(onEdit || onDelete);
 
@@ -110,7 +110,7 @@ export default function DataAcc<T>({
                 ))}
 
                 {hasActions && (
-                  <div className="actions">
+                  <div className="form_page_footer">
                     {onEdit && (
                       <button type="button" className="btn btn_sm btn_ghost" onClick={() => onEdit(row)}>
                         {editLabel}

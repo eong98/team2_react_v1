@@ -98,6 +98,18 @@ export default function NoticeList() {
   // ==========================================
   const noticeColumns: DataCardColumn<NoticeTypes>[] = [
     {
+      header: '고정여부',
+      render: (n) => {
+        if (n.fixyn !== 'Y') return null
+        return (
+        <div className='icon_row'>
+          <div className='icon pin'>
+            <span className='hidden'>상단 고정</span>
+          </div>
+        </div>
+      )},
+    },
+    {
       header: '상태',
       render: (n) => (
         <div className='badge_area'>
@@ -114,6 +126,11 @@ export default function NoticeList() {
           <div className="cell_title">
             <button type='button' className='link' onClick={() => navigateWithQuery(`${n.no}`)}>
               {n.title}
+              {n.vmode === 'N' ? 
+                (<span className='lock'>
+                  <span className='hidden'>비밀글</span>
+                </span> ) : null
+              }
             </button>
           </div>
           <div className="cell_sub">
@@ -123,24 +140,16 @@ export default function NoticeList() {
       ),
     },
     {
-      header: '고정 여부',
+      header: '파일 정보',
       render: (n) => {
-        if (n.fixyn !== 'Y' && n.fileyn !== 'Y') return null;
+        if (n.fileyn !== 'Y') return null;
         
         return (
           <div className="me">
-            <div className='notice_icons'>
-              {n.fileyn === 'Y' && (
-                <div className='icon file'>
-                  <span className='hidden'>첨부파일 포함</span>
-                </div>
-              )}
-  
-              {n.fixyn === 'Y' && (
-                <div className='icon pin'>
-                  <span className='hidden'>상단 고정</span>
-                </div>
-              )}
+            <div className='icon_row'>
+              <div className='icon file'>
+                <span className='hidden'>첨부파일 포함</span>
+              </div>
             </div>
           </div>
         )

@@ -1,10 +1,11 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
-import { AlertModal, PageHeader } from '../../../components/ui';
-import { axiosInstance, set_focus } from '../../../utils/Tool';
+import { AlertModal, AttachViewer, PageHeader, PrevNextNav } from '../../../components/ui';
+import { axiosInstance, getAttachUrl, set_focus } from '../../../utils/Tool';
 import { GlobalStoreSession } from '../../../store/LoginStore';
-import { QA_STATUS_MAP, QA_TYPE_MAP, type QARequest, type QaTypes, type TabKey } from '../../../components/ts/QaType';
+import { QA_STATUS_MAP, QA_TYPE_MAP, type QARequest, type QaTypes } from '../../../components/ts/QaType';
 import { usePaging } from '../../../hooks/usePaging';
 import { useParams } from 'react-router-dom';
+import type { AttachType } from '../../../components/ts/Attach';
 
 /**
  * 
@@ -16,11 +17,19 @@ export default function QaDetail() {
   const { no:ano, id, grade } = GlobalStoreSession();
 
   const [qa, setQa] = useState<QaTypes | null>(null);
+  const [attach, setAttach] = useState<AttachType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEdit, setIsEdit] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
+
+  // 이전글 다음글
+  const [navPosts, setNavPosts] = useState({
+    prev: null,
+    next: null
+  });
+
   
   /* 에러타입 정의 */
   type FormErrors = Partial<Record<keyof QARequest, string>>;
@@ -42,9 +51,15 @@ export default function QaDetail() {
           grade: String(grade),
         }
       })
-      .then((res) => setQa(res.data))
-      .then((res) => {
-        console.log(res)
+      .then(res => res.data)
+      .then((data) => {
+        setQa(data);
+        setNavPosts({
+          prev : data.prev ?? null,
+          next: data.next ?? null,
+        })
+
+        loadAttachList()
       })
       .catch((err) => {
         console.error('문의 상세 조회 실패:', err);
@@ -74,6 +89,24 @@ export default function QaDetail() {
     }));
 
   }, [isEdit]);
+
+
+  /* 첨부파일 목록 조회 */
+  const loadAttachList = () => {
+    setLoading(true);
+    axiosInstance.get<AttachType[]>(`/attach/list/${no}`)
+      .then((result) => result.data)
+      .then((data) => {
+        setAttach(data);
+
+      })
+      .catch((err) => {
+        console.error('첨부파일 목록 조회 실패:', err);
+        setError('첨부파일을 불러오지 못했습니다.');
+      })
+      .finally(() => setLoading(false));
+  };
+
 
   
   const onChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -114,11 +147,11 @@ export default function QaDetail() {
     if (answered) {
       setIsEdit(true);
     } else {
-      handleSave();
+      send();
     }
   }
 
-  const handleSave = async () => {
+  const send = async () => {
     if (!validate() || submitting) return;
 
     setIsEdit(true);
@@ -217,7 +250,14 @@ export default function QaDetail() {
           </div>
 
           <div className='title_area'>
-            <h2 className='title md'>{qa.title}</h2>
+            <h3 className="title md">
+              {qa.title} 
+              {qa.fileyn === 'Y' && (
+                <span className='icon file'>
+                  <span className='hidden'>첨부파일 포함</span>
+                </span>
+              )}
+            </h3>
             <p className="b_title">
               <span>작성자 No.{qa.mno}</span>
               <span className='right'>{qa.cdate}</span>
@@ -225,59 +265,71 @@ export default function QaDetail() {
 
           </div>
 
-          <p className='card_contents'>
+          <div className='card_contents'>
             {qa.content}
-          </p>
+          </div>
+
+          {qa.fileyn === 'Y' && <AttachViewer bno={qa.no} onlyList={false} />}
         </div>
+        
 
-        <div className="card card_pad_lg">
-          <h3 className='title sm'>답변</h3>
+        <form onSubmit={send}  encType="multipart/form-data">
+          <div className="card card_pad_lg">
+            <h3 className='title sm'>답변</h3>
 
-          <div className='answer_area'>
-            {loading ? (
-              <div className="empty_row">로딩중...</div>
-            ) : answered ? (
-              /* 1. 답변이 있고 / 수정 중이 아니면: 답변 조회 화면 노출 */
-              <>
-                <p className="cell_title">{qa.answer}</p>
-                {qa.adate && (
-                  <div className="cell_sub">
-                    답변일 · {qa.adate}
+            <div className='answer_area'>
+              {loading ? (
+                <div className="empty_row">로딩중...</div>
+              ) : answered ? (
+                /* 1. 답변이 있고 / 수정 중이 아니면: 답변 조회 화면 노출 */
+                <>
+                  <p className="cell_title">{qa.answer}</p>
+                  {qa.adate && (
+                    <div className="cell_sub">
+                      답변일 · {qa.adate}
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* 2. 답변이 없거나 / 수정 중이면: 입력 Form 노출 */
+                <div className="form_group">
+                  <label className="form_label" htmlFor="answer">
+                    답변 내용<span className="req" title="필수 입력 요소">*</span>
+                  </label>
+
+                  <div className="form_control">
+                    <textarea
+                      id="answer"
+                      className={`form_textarea ${errors.answer ? 'is_error' : ''}`}
+                      placeholder="답변 내용을 입력하세요"
+                      name="answer"
+                      value={input.answer}
+                      onChange={onChange}
+                    />
+                    {errors.answer && <div className="form_hint error">{errors.answer}</div>}
                   </div>
-                )}
-              </>
-            ) : (
-              /* 2. 답변이 없거나 / 수정 중이면: 입력 Form 노출 */
-              <div className="form_group">
-                <label className="form_label" htmlFor="answer">
-                  답변 내용<span className="req" title="필수 입력 요소">*</span>
-                </label>
-
-                <div className="form_control">
-                  <textarea
-                    id="answer"
-                    className={`form_textarea ${errors.answer ? 'is_error' : ''}`}
-                    placeholder="답변 내용을 입력하세요"
-                    name="answer"
-                    value={input.answer}
-                    onChange={onChange}
-                  />
-                  {errors.answer && <div className="form_hint error">{errors.answer}</div>}
                 </div>
-              </div>
-            )}
+              )}
 
-            
-            <div className='form_page_footer'>
-              <button type='button' className='btn btn_primary' onClick={handleEdit} disabled={submitting}>
-                {!isEdit && qa?.status === 2 && !!qa?.answer ? '수정' : '저장'}
-              </button>
+              
+              <div className='form_page_footer'>
+                <button type='button' className='btn btn_primary' onClick={handleEdit} disabled={submitting}>
+                  {!isEdit && qa?.status === 2 && !!qa?.answer ? '수정' : '저장'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </form>
       </div>
 
       
+      {/* 🔑 이전글 / 다음글 컴포넌트 연동 */}
+      <PrevNextNav
+        prev={navPosts.prev}
+        next={navPosts.next}
+        basePath="../qa"
+      />
+
       {/* 알림 모달 */}
       <AlertModal
         open={alert !== null}

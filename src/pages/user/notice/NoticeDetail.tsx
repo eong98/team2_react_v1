@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { NOTICE_TYPE_MAP, type NoticeTypes } from '../../../components/ts/NoticeType';
-import { axiosInstance } from '../../../utils/Tool';
+import { axiosInstance, getAttachUrl } from '../../../utils/Tool';
 import { usePaging } from '../../../hooks/usePaging';
-import { PageHeader, PrevNextNav } from '../../../components/ui';
+import { AttachViewer, PageHeader, PrevNextNav } from '../../../components/ui';
+import type { AttachType } from '../../../components/ts/Attach';
 
 export default function NoticeDetail() {
   const { no } = useParams<{ no: string }>(); // URL에서 no 추출
   const { goToList } = usePaging({ basePath: '/user/notice' });
 
   const [notice, setNotice] = useState<NoticeTypes | null>(null);
+  const [attach, setAttach] = useState<AttachType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,7 +34,7 @@ export default function NoticeDetail() {
           next: data.next ?? null,
         })
 
-        console.log(data)
+        loadAttachList()
       })
       .catch((err) => {
         console.error('공지사항 상세 조회 실패:', err);
@@ -51,6 +53,23 @@ export default function NoticeDetail() {
 
   }, [no]);
 
+  /* 첨부파일 목록 조회 */
+  const loadAttachList = () => {
+    setLoading(true);
+    axiosInstance.get<AttachType[]>(`/attach/list/${no}`)
+      .then((result) => result.data)
+      .then((data) => {
+        setAttach(data);
+
+      })
+      .catch((err) => {
+        console.error('첨부파일 목록 조회 실패:', err);
+        setError('첨부파일을 불러오지 못했습니다.');
+      })
+      .finally(() => setLoading(false));
+  };
+
+  
   if (loading) {
     return (
       <section className="view active">
@@ -93,15 +112,10 @@ export default function NoticeDetail() {
       />
 
       <div className="detail_area">
-        {/* 질문 영역 */}
+        {/* 공지사항 영역 */}
         <div className="card card_pad_lg">
           <div className="card_header">
             <p className="b_title">No.{notice.no}</p>
-            {notice.vmode === 'N' && (
-              <span className="badge neutral">
-                <span className="lock" aria-hidden="true"></span> 비밀글
-              </span>
-            )}
           </div>
 
           <div className="badge_area">
@@ -123,7 +137,21 @@ export default function NoticeDetail() {
             </p>
           </div>
 
-          <p className="card_contents">{notice.content}</p>
+          <div className="card_contents">
+            {/* 이미지 상세보기 */}
+            {attach
+              .filter((a) => a.type === 0)
+              .map((a) => (
+                <div className='img_area' key={a.no}>
+                  <img src={getAttachUrl(a.purl, a.sname)} alt={a.name} />
+                </div>
+              ))}
+
+            {notice.content}
+          </div>
+          
+          
+          {notice.fileyn === 'Y' && <AttachViewer bno={notice.no} />}
         </div>
 
         {/* 🔑 이전글 / 다음글 컴포넌트 연동 */}

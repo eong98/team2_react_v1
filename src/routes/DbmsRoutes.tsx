@@ -29,6 +29,7 @@ import QaDetail from '../pages/dbms/qa/QaDetail';
 import NoticeList from '../pages/dbms/notice/NoticeList';
 import NoticeDetail from '../pages/dbms/notice/NoticeDetail';
 import NoticeForm from '../pages/dbms/notice/NoticeForm';
+import AttachList from '../pages/dbms/attach/AttachList';
 
 
 export default function DbmsRoutes() {
@@ -45,6 +46,8 @@ export default function DbmsRoutes() {
       <Route path="qa/new" element={<QaForm />} />
       <Route path="qa/:no/edit" element={<QaForm />} />
       <Route path="qa/:no" element={<QaDetail />} />
+
+      <Route path="attach" element={<AttachList />} />
 
 
       <Route path="inmenu" element={<InMenuList />} />
