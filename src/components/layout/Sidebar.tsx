@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { fetchMenuNav, type MenuNavBase, type MenuNavGroup } from '../ts/menuNav';
 import { GlobalStoreSession } from '../../store/LoginStore';
+import { axiosInstance } from '../../utils/Tool';
+import { isAdminGrade } from '../ts/MyPage';
 
 interface SidebarProps {
   open: boolean;
@@ -24,11 +26,15 @@ const navItemClass = ({ isActive }: { isActive: boolean }) => `nav_item${isActiv
 export default function Sidebar({ open, onNavigate }: SidebarProps) {
   const location = useLocation();
 
-  const { mname } = GlobalStoreSession();
+  const navigate = useNavigate();
+
+  const { mname, no, grade } = GlobalStoreSession();
+  const isMyPageAdmin = isAdminGrade(grade);
 
   const isDbms = location.pathname.startsWith('/dbms');
   const apiBase: MenuNavBase = isDbms ? '/inmenu' : '/shopmenu';
   const linkPrefix = isDbms ? '/dbms' : '/user';
+
 
   const resolveHref = (purl: string) => {
     if (!purl) return linkPrefix;
@@ -84,6 +90,44 @@ export default function Sidebar({ open, onNavigate }: SidebarProps) {
       else next.add(no);
       return next;
     });
+  };
+
+  const [avatarUrl, setAvatarUrl] = useState('');
+  useEffect(() => {
+    let objectUrl = '';
+    if (!no || isMyPageAdmin) {
+      setAvatarUrl('');
+      return;
+    }
+    axiosInstance
+      .get(`/profile/img/${no}`)
+      .then((res) => {
+        const storeFilename = res.data?.storeFilename;
+        if (!storeFilename) return;
+        return axiosInstance
+          .get('/download', {
+            params: { dir: 'profile', filename: storeFilename, downname: storeFilename },
+            responseType: 'blob',
+          })
+          .then((imgRes) => {
+            objectUrl = URL.createObjectURL(new Blob([imgRes.data]));
+            setAvatarUrl(objectUrl);
+          });
+      })
+      .catch(() => setAvatarUrl(''));
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [no, isMyPageAdmin]);
+
+  const handleLogout = () => {
+    GlobalStoreSession.getState().setLogin(false);
+    GlobalStoreSession.getState().setNo(0);
+    GlobalStoreSession.getState().setGrade(99);
+    GlobalStoreSession.getState().setId('');
+    GlobalStoreSession.getState().setMname('');
+    onNavigate();
+    navigate('/login');
   };
 
   return (
@@ -149,10 +193,32 @@ export default function Sidebar({ open, onNavigate }: SidebarProps) {
         </a>
 
         <div className="user_chip">
-          <div className="avatar">{mname.slice(0, 1)}</div>
+          <div className="avatar">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="프로필 이미지"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}
+              />
+            ) : (
+              mname.slice(0, 1)
+            )}
+          </div>
           <div>
             <div className="name">{mname}</div>
-            {/* <div className="role">본점 · 스터디카페 A</div> */}
+            <div className="role" style={{ display: 'flex', gap: 6 }}>
+              <NavLink to={isDbms ? '/dbms/mypage' : '/user/mypage'} onClick={onNavigate}>
+                마이페이지
+              </NavLink>
+              <span>·</span>
+              <button
+                type="button"
+                onClick={handleLogout}
+                style={{ padding: 0, background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', font: 'inherit' }}
+              >
+                로그아웃
+              </button>
+            </div>
           </div>
         </div>
       </div>

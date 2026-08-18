@@ -16,6 +16,7 @@ export type MenuNavBase = '/inmenu' | '/shopmenu';
 export interface MenuNavItem {
   no: number;
   fkno: number | null;
+  title: string;
   dept: number;
   ord: number;
   purl: string;
