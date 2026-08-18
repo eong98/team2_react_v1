@@ -33,7 +33,10 @@ export const getSurvey = async (
     `/api/surveys/${surveyNo}`
   );
 
-  return response.data;
+  return {
+    ...response.data,
+    questions: response.data.questions ?? [],
+  };
 };
 
 

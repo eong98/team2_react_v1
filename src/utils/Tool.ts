@@ -2,7 +2,13 @@ import axios from 'axios';
 import type { KeyboardEvent } from 'react';
 
 const getIP = () => {
+<<<<<<< HEAD
   return "10.1.205.120"; // 학원
+=======
+  // return "localhost";
+  // return "10.1.205.126"; // 승연
+  return "10.1.205.119"; // 장우원
+>>>>>>> 4286595212cbc77332083da79b3a2ae29b31766c
   // return "1.201.122.5"; // 학원
 }
 
@@ -25,10 +31,10 @@ const getNowDate = () => {
   }).replace(/\./g, '-').replace(/- /g, '-').replace(/ /, ' ').trim();
 
   // rdate 결과물 예시: "2026. 07. 12. 14:12:00" (맨 끝에 마침표가 안 붙음)
-  
+
   // 💡 2. 점(.)과 공백을 하이픈(-)과 한 칸 공백으로 깔끔하게 정리합니다.
   // return rdate.
-  
+
   return rdate.replace(/-([0-9]{2}:)/, ' $1'); // 2024-11-06 16:29:5
   // 최종 결과: "2026-07-12 14:12:00" (초 단위 00까지 완벽하게 보존!)
 };
