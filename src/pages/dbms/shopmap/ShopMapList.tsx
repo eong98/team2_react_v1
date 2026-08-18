@@ -13,8 +13,8 @@ import { axiosInstance } from '../../../utils/Tool';
 import './ShopMapList.css';
 
 interface ShopMap {
-  shopmapno: number;
   no: number;
+  sno: number;
   fname: string;
   fsaved: string;
   cdate: string;
@@ -242,7 +242,7 @@ export default function ShopMapList() {
 
     try {
       await axiosInstance.delete(
-        `/api/shopmaps/${deleteTarget.shopmapno}`
+        `/api/shopmaps/${deleteTarget.no}`
       );
 
       setDeleteTarget(null);
@@ -300,7 +300,7 @@ export default function ShopMapList() {
         <div>
           <div className="cell_title">{row.fname}</div>
           <div className="cell_sub">
-            도면번호 {row.shopmapno}
+            도면번호 {row.sno}
           </div>
         </div>
       ),
@@ -379,7 +379,7 @@ export default function ShopMapList() {
       <DataTable
         columns={columns}
         data={paged}
-        rowKey={(row) => row.shopmapno}
+        rowKey={(row) => row.sno}
         loading={loading}
         emptyMessage="등록된 매장 도면이 없습니다."
       />

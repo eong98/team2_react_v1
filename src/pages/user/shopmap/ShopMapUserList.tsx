@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useState } from 'react';
+import { type ChangeEvent, useEffect, useState } from 'react';
 import {
     AlertModal,
     ConfirmDeleteModal,
@@ -20,7 +20,7 @@ import './ShopMapUserList.css';
 
 // SHOPMAP API 데이터
 interface ShopMap {
-    shopmapno: number;
+    sno: number;
     no: number;
     fname: string;
     fsaved: string;
