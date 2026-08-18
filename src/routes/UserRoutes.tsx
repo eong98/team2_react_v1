@@ -33,6 +33,9 @@ import SurveyAnswerForm from '../pages/user/survey/SurveyAnswerForm';
 
 import ShopMapUserList from '../pages/user/shopmap/ShopMapUserList';
 
+import MyPage from '../pages/main/mypage/MyPage';
+import ChangePassword from '../pages/main/mypage/ChangePassword';
+
 
 export default function UserRoutes() {
   return (
@@ -55,6 +58,9 @@ export default function UserRoutes() {
       <Route path="cctvissue" element={<CctvIssueList />} />
       <Route path="cctvvisitor" element={<CctvVisitorList />} />
       <Route path="calendar" element={<ShopCalendar />} />
+
+      <Route path="mypage" element={<MyPage />} />
+      <Route path="mypage/change-password" element={<ChangePassword />} />
 
 
 

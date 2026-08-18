@@ -20,6 +20,8 @@ import DbmsLogin from '../pages/main/DbmsLogin'
 import MemberDetail from '../pages/dbms/member/MemberDetail';
 import UpdateHistory from '../pages/dbms/member/UpdateHistoryList';
 import LoginHistory from '../pages/dbms/member/LoginHistoryList';
+import MyPage from '../pages/main/mypage/MyPage';
+import ChangePassword from '../pages/main/mypage/ChangePassword';
 
 import QaForm from '../pages/dbms/qa/QaForm';
 import QaList from '../pages/dbms/qa/QaList';
@@ -77,6 +79,8 @@ export default function DbmsRoutes() {
       <Route path="history/update" element = {<UpdateHistory />} />
       <Route path="history/login" element = {<LoginHistory />} />
       
+      <Route path="mypage" element={<MyPage />} />
+      <Route path="mypage/change-password" element={<ChangePassword />} />
     </Routes>
   );
 }
