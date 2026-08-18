@@ -20,7 +20,6 @@ export interface MenuNavItem {
   dept: number;
   ord: number;
   purl: string;
-  title: string;
   useYn?: 'Y' | 'N';
 }
 
