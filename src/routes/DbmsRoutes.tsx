@@ -30,6 +30,8 @@ import NoticeList from '../pages/dbms/notice/NoticeList';
 import NoticeDetail from '../pages/dbms/notice/NoticeDetail';
 import NoticeForm from '../pages/dbms/notice/NoticeForm';
 import AttachList from '../pages/dbms/attach/AttachList';
+import ShopPlanForm from '../pages/dbms/shopplan/ShopPlanForm';
+import ShopPlanList from '../pages/dbms/shopplan/ShopPlanList';
 
 
 export default function DbmsRoutes() {
@@ -48,6 +50,10 @@ export default function DbmsRoutes() {
       <Route path="qa/:no" element={<QaDetail />} />
 
       <Route path="attach" element={<AttachList />} />
+
+      <Route path="shopplan" element={<ShopPlanList />} />
+      <Route path="shopplan/new" element={<ShopPlanForm />} />
+      <Route path="shopplan/:no/edit" element={<ShopPlanForm />} />
 
 
       <Route path="inmenu" element={<InMenuList />} />
