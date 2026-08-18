@@ -38,7 +38,7 @@ export default function QaForm() {
     answer: '',
     cdate: '',
     pw: '',
-    vseq: 1,
+    vseq: undefined,
     fileyn : 'N'
   });
 
@@ -59,7 +59,7 @@ export default function QaForm() {
           title: data.title,
           content: data.content,
           answer: data.answer ?? '',
-          vseq: data.vseq != null ? Number(data.vseq) : 1,
+          vseq: data.vseq != null ? Number(data.vseq) : undefined,
           fileyn: data.fileyn === 'Y' || data.fileyn === true ? 'Y' : 'N'
         }))
       })

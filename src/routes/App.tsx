@@ -26,6 +26,7 @@ import ChatWidget from '../components/ui/user/ChatWidget';
 
 
 import DesignGuide from '../pages/guide/DesignGuide';
+import ShopPlan from '../pages/main/shopplan/ShopPlan';
 
 
 function App() {
@@ -43,6 +44,7 @@ function App() {
 
             {/* 회원가입, 구독권 등.... */}
             <Route path='/singup' element={<Singup />} />
+            <Route path='/shopplan' element={<ShopPlan />} />
         
           </Route>
 
