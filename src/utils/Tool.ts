@@ -2,11 +2,7 @@ import axios from 'axios';
 import type { KeyboardEvent } from 'react';
 
 const getIP = () => {
-<<<<<<< HEAD
   return "10.1.205.120"; // 학원
-=======
-  return "192.168.68.101"; // 학원
->>>>>>> 8e479dfb6311e496baa56fad92fc9e866fb70766
   // return "1.201.122.5"; // 학원
 }
 
