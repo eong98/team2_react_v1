@@ -3,7 +3,8 @@ import type { KeyboardEvent } from 'react';
 
 const getIP = () => {
   // return "localhost";
-  return "10.1.205.126"; // 학원
+  // return "10.1.205.126"; // 승연
+  return "10.1.205.119"; // 장우원
   // return "1.201.122.5"; // 학원
 }
 
@@ -26,10 +27,10 @@ const getNowDate = () => {
   }).replace(/\./g, '-').replace(/- /g, '-').replace(/ /, ' ').trim();
 
   // rdate 결과물 예시: "2026. 07. 12. 14:12:00" (맨 끝에 마침표가 안 붙음)
-  
+
   // 💡 2. 점(.)과 공백을 하이픈(-)과 한 칸 공백으로 깔끔하게 정리합니다.
   // return rdate.
-  
+
   return rdate.replace(/-([0-9]{2}:)/, ' $1'); // 2024-11-06 16:29:5
   // 최종 결과: "2026-07-12 14:12:00" (초 단위 00까지 완벽하게 보존!)
 };
@@ -53,15 +54,16 @@ function set_focus(nextTag: string) {
 
 // Ajax 통신 패키지 설정
 const axiosInstance = axios.create({
-    // 개발 환경과 배포 환경에 따라 baseURL 설정
-    // Vite 환경 변수 사용
-    // 개발 환경: http://localhost:4000
-    // 배포 환경: 상대 경로 ''
-    // import.meta.env.PROD : vite 자동 제공 환경 변수 true: 배포, false: 개발,
-    // npm run dev: import.meta.env.PROD -> false로 자동 설정
-    // npm run build: import.meta.env.PROD -> true로 자동 설정
-    // '': 같은 ip에 Backend 서버가 있다는 가정하에 상대경로로 요청을 보냄.
-    baseURL: import.meta.env.PROD ? '' : 'http://10.1.205.126:9102'
+  // 개발 환경과 배포 환경에 따라 baseURL 설정
+  // Vite 환경 변수 사용
+  // 개발 환경: http://localhost:4000
+  // 배포 환경: 상대 경로 ''
+  // import.meta.env.PROD : vite 자동 제공 환경 변수 true: 배포, false: 개발,
+  // npm run dev: import.meta.env.PROD -> false로 자동 설정
+  // npm run build: import.meta.env.PROD -> true로 자동 설정
+  // '': 같은 ip에 Backend 서버가 있다는 가정하에 상대경로로 요청을 보냄.
+  baseURL: import.meta.env.PROD ? '' : `http://${getIP()}:9102`
+  // baseURL: import.meta.env.PROD ? '' : 'http://10.1.205.120:9102'
 })
 
 
