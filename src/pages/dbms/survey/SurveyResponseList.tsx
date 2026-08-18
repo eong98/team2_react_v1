@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { AlertModal, DataTable, DbmsPagination, PageHeader } from '../../../components/ui';
 import type { DataTableColumn } from '../../../components/ui';
-import type { SurveyInfo, SurveyResponse } from '../../../components/ts/survey';
+import type { SurveyAnalysis, SurveyInfo, SurveyResponse } from '../../../components/ts/survey';
 import {
   SURVEY_RESPONSE_PAGE_SIZE,
   formatDate,
@@ -12,8 +12,10 @@ import {
   getQuestionTypeLabel,
 } from '../../../components/ts/survey';
 import {
+  analyzeSurvey,
   checkSurveyResponse,
   getSurvey,
+  getSurveyAnalysis,
   getSurveyResponse,
   getSurveyResponses,
 } from '../../../components/ts/surveyApi';
@@ -25,15 +27,16 @@ export default function SurveyResponseList() {
   const [survey, setSurvey] = useState<SurveyInfo | null>(null);
   const [responses, setResponses] = useState<SurveyResponse[]>([]);
   const [selectedResponse, setSelectedResponse] = useState<SurveyResponse | null>(null);
+  const [analysis, setAnalysis] = useState<SurveyAnalysis | null>(null);
 
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [checking, setChecking] = useState(false);
-  // 공통 알림 모달 상태
+  const [analyzing, setAnalyzing] = useState(false);
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error' } | null>(null);
 
-  /* 설문 정보 + 응답 목록 조회 */
+  /* 설문 정보, 응답 목록, 기존 AI 분석 결과 조회 */
   const loadData = async () => {
     if (!no) return;
 
@@ -46,12 +49,22 @@ export default function SurveyResponseList() {
       ]);
 
       setSurvey(surveyData);
-
       setResponses([...list].sort((a, b) => b.no - a.no));
       setPage(1);
+
+      // 기존 분석 결과가 없을 수도 있으므로 별도 조회
+      try {
+        const analysisData = await getSurveyAnalysis(no);
+        setAnalysis(analysisData);
+      } catch {
+        setAnalysis(null);
+      }
     } catch (error: any) {
       console.error(error);
-      setAlert({ message: error.response?.data?.message ?? '설문 응답 목록을 불러오지 못했습니다.', variant: 'error' });
+      setAlert({
+        message: error.response?.data?.message ?? '설문 응답 목록을 불러오지 못했습니다.',
+        variant: 'error',
+      });
     } finally {
       setLoading(false);
     }
@@ -69,7 +82,10 @@ export default function SurveyResponseList() {
       setSelectedResponse(response);
     } catch (error: any) {
       console.error(error);
-      setAlert({ message: error.response?.data?.message ?? '응답 상세정보를 불러오지 못했습니다.', variant: 'error' });
+      setAlert({
+        message: error.response?.data?.message ?? '응답 상세정보를 불러오지 못했습니다.',
+        variant: 'error',
+      });
     } finally {
       setDetailLoading(false);
     }
@@ -86,10 +102,9 @@ export default function SurveyResponseList() {
 
     try {
       setChecking(true);
-
       const updated = await checkSurveyResponse(selectedResponse.no);
-      setSelectedResponse(updated);
 
+      setSelectedResponse(updated);
       setResponses((prev) =>
         prev.map((item) =>
           item.no === updated.no
@@ -101,22 +116,60 @@ export default function SurveyResponseList() {
       setAlert({ message: '응답을 확인 처리했습니다.', variant: 'success' });
     } catch (error: any) {
       console.error(error);
-      setAlert({ message: error.response?.data?.message ?? '응답 확인 처리 중 오류가 발생했습니다.', variant: 'error' });
+      setAlert({
+        message: error.response?.data?.message ?? '응답 확인 처리 중 오류가 발생했습니다.',
+        variant: 'error',
+      });
     } finally {
       setChecking(false);
     }
   };
 
-  /* 전체 기준 가상번호 */
+  /* FastAPI 설문 전체 AI 분석 */
+  const handleAnalyze = async () => {
+    if (!no) return;
+
+    if (responses.length === 0) {
+      setAlert({ message: '분석할 설문 응답이 없습니다.', variant: 'error' });
+      return;
+    }
+
+    try {
+      setAnalyzing(true);
+
+      // FastAPI가 Oracle에서 전체 응답 조회 → AI 분석 → SURVEYANALYSIS 저장
+      const result = await analyzeSurvey(no);
+      setAnalysis(result);
+
+      setAlert({ message: 'AI 설문 분석이 완료되었습니다.', variant: 'success' });
+    } catch (error: any) {
+      console.error(error);
+
+      setAlert({
+        message:
+          error.response?.data?.detail ??
+          error.response?.data?.message ??
+          'AI 설문 분석 중 오류가 발생했습니다.',
+        variant: 'error',
+      });
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  /* 전체 응답 기준 가상번호 */
   const virtualNoMap = useMemo(() => {
     const map = new Map<number, number>();
     responses.forEach((response, index) => map.set(response.no, responses.length - index));
     return map;
   }, [responses]);
 
-  /* 페이징 */
+  /* 응답 목록 페이징 */
   const totalPages = Math.max(1, Math.ceil(responses.length / SURVEY_RESPONSE_PAGE_SIZE));
-  const pagedResponses = responses.slice((page - 1) * SURVEY_RESPONSE_PAGE_SIZE, page * SURVEY_RESPONSE_PAGE_SIZE);
+  const pagedResponses = responses.slice(
+    (page - 1) * SURVEY_RESPONSE_PAGE_SIZE,
+    page * SURVEY_RESPONSE_PAGE_SIZE
+  );
 
   const columns: DataTableColumn<SurveyResponse>[] = [
     {
@@ -168,8 +221,100 @@ export default function SurveyResponseList() {
         }
       />
 
-      {/* 응답 목록 */}
+      {/* 설문 전체 AI 분석 */}
       <div className="card card_pad_lg">
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 12,
+            marginBottom: analysis ? 20 : 0,
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 700, marginBottom: 4 }}>AI 설문 분석</div>
+            <div className="field_hint">
+              전체 설문 응답을 AI가 종합하여 점수, 감정 비율, 주요 의견을 분석합니다.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="btn btn_md btn_primary"
+            onClick={handleAnalyze}
+            disabled={analyzing || responses.length === 0}
+          >
+            {analyzing ? '분석 중...' : analysis ? '다시 분석' : 'AI 분석'}
+          </button>
+        </div>
+
+        {analysis ? (
+          <div>
+            {/* AI 점수 및 감정 비율 */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+                gap: 12,
+                marginBottom: 18,
+              }}
+            >
+              <div style={{ padding: 16, border: '1px solid var(--border)', borderRadius: 8 }}>
+                <div className="field_hint" style={{ marginBottom: 6 }}>AI 종합점수</div>
+                <strong style={{ fontSize: 22 }}>{analysis.aiScore.toFixed(1)} / 5.0</strong>
+              </div>
+
+              <div style={{ padding: 16, border: '1px solid var(--border)', borderRadius: 8 }}>
+                <div className="field_hint" style={{ marginBottom: 6 }}>긍정</div>
+                <strong style={{ fontSize: 22 }}>{analysis.positiveRate.toFixed(2)}%</strong>
+              </div>
+
+              <div style={{ padding: 16, border: '1px solid var(--border)', borderRadius: 8 }}>
+                <div className="field_hint" style={{ marginBottom: 6 }}>중립</div>
+                <strong style={{ fontSize: 22 }}>{analysis.neutralRate.toFixed(2)}%</strong>
+              </div>
+
+              <div style={{ padding: 16, border: '1px solid var(--border)', borderRadius: 8 }}>
+                <div className="field_hint" style={{ marginBottom: 6 }}>부정</div>
+                <strong style={{ fontSize: 22 }}>{analysis.negativeRate.toFixed(2)}%</strong>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ padding: 16, border: '1px solid var(--border)', borderRadius: 8 }}>
+                <div style={{ fontWeight: 700, marginBottom: 8 }}>전체 요약</div>
+                <div style={{ lineHeight: 1.7 }}>{analysis.summary}</div>
+              </div>
+
+              <div style={{ padding: 16, border: '1px solid var(--border)', borderRadius: 8 }}>
+                <div style={{ fontWeight: 700, marginBottom: 8 }}>긍정 의견</div>
+                <div style={{ lineHeight: 1.7 }}>{analysis.positiveSummary}</div>
+              </div>
+
+              <div style={{ padding: 16, border: '1px solid var(--border)', borderRadius: 8 }}>
+                <div style={{ fontWeight: 700, marginBottom: 8 }}>부정 및 개선 의견</div>
+                <div style={{ lineHeight: 1.7 }}>{analysis.negativeSummary}</div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div
+            className="field_hint"
+            style={{
+              padding: '30px 0',
+              textAlign: 'center',
+            }}
+          >
+            {responses.length === 0
+              ? '등록된 설문 응답이 없어 분석할 내용이 없습니다.'
+              : '아직 AI 분석 내용이 없습니다. AI 분석 버튼을 눌러주세요.'}
+          </div>
+        )}
+      </div>
+
+      {/* 응답 목록 */}
+      <div className="card card_pad_lg" style={{ marginTop: 18 }}>
         <div style={{ marginBottom: 14, fontWeight: 700 }}>응답 목록</div>
 
         <DataTable
@@ -189,9 +334,17 @@ export default function SurveyResponseList() {
         />
       </div>
 
-      {/* 응답 상세 */}
+      {/* 개별 응답 상세 */}
       <div className="card card_pad_lg" style={{ marginTop: 18 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 12,
+            marginBottom: 18,
+          }}
+        >
           <div>
             <div style={{ fontWeight: 700, marginBottom: 4 }}>응답 상세</div>
             {selectedResponse && (
@@ -250,17 +403,10 @@ export default function SurveyResponseList() {
                     <span className="badge">{getQuestionTypeLabel(answer.qtype)}</span>
                   </div>
 
-                  <div style={{ paddingLeft: 24, marginBottom: answer.evalScore !== null ? 12 : 0 }}>
+                  <div style={{ paddingLeft: 24 }}>
                     <span style={{ color: 'var(--text-dim)', marginRight: 8 }}>답변</span>
                     <strong>{getAnswerText(answer)}</strong>
                   </div>
-
-                  {answer.evalScore !== null && (
-                    <div style={{ paddingLeft: 24 }}>
-                      <span style={{ color: 'var(--text-dim)', marginRight: 8 }}>AI 평가점수</span>
-                      <span className="badge badge_success">{answer.evalScore}</span>
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
@@ -268,7 +414,7 @@ export default function SurveyResponseList() {
         )}
       </div>
 
-      {/* 응답 조회/확인 처리 공통 알림 */}
+      {/* 공통 알림 */}
       <AlertModal
         open={alert !== null}
         onClose={() => setAlert(null)}

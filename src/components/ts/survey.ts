@@ -40,6 +40,7 @@ export interface SurveyInfo {
   endDate: string;
 }
 
+/** 문항별 실제 답변 */
 export interface SurveyAnswer {
   no: number;
   responseNo: number;
@@ -47,10 +48,10 @@ export interface SurveyAnswer {
   qtext: string;
   qtype: QuestionType;
   atext: string | null;
-  evalScore: number | null;
   cdate: string;
 }
 
+/** 회원 한 명의 설문 제출 결과 */
 export interface SurveyResponse {
   no: number;
   surveyNo: number;
@@ -59,6 +60,20 @@ export interface SurveyResponse {
   checkDate: string | null;
   cdate: string;
   answers: SurveyAnswer[];
+}
+
+/** 설문 전체 AI 분석 결과 */
+export interface SurveyAnalysis {
+  no?: number;
+  surveyNo: number;
+  aiScore: number;
+  positiveRate: number;
+  neutralRate: number;
+  negativeRate: number;
+  summary: string;
+  positiveSummary: string;
+  negativeSummary: string;
+  cdate?: string;
 }
 
 export type AnswerValue = string | string[];

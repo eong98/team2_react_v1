@@ -20,3 +20,13 @@
 
 /* 위아래 배치 (폼 구조처럼 폭이 넓은 것) */
 .guide_stack{display:flex;flex-direction:column;gap:16px;}
+
+
+
+/* ---- Color swatches ---- */
+.swatch_group{margin-bottom:28px;}
+.swatch_row{display:grid;grid-template-columns:repeat(10,1fr);gap:0;border-radius:var(--radius-md);overflow:hidden;border:1px solid var(--border);}
+.swatch{aspect-ratio:1/1;display:flex;align-items:flex-end;padding:8px;font-family:var(--font-mono);font-size:9.5px;color:rgba(0,0,0,.55);position:relative;}
+.swatch b{display:block;font-size:10.5px;}
+.swatch.on_dark{color:rgba(255,255,255,.92);}
+.swatch.on_light{color:rgba(0,0,0,.82);}

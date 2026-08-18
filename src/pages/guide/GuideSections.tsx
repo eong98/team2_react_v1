@@ -12,8 +12,10 @@ import {
 } from '../../components/ui';
 import type { DataTableColumn } from '../../components/ui';
 import type { DataCardColumn } from '../../components/ui/common/DataCard';
-import type { AccordionCardColumn } from '../../components/ui/common/DataAcc';
+import type { DataAccColumn } from '../../components/ui/common/DataAcc';
 import { GuideBlock, GuideCompare, GuideSection, GuideStack } from './GuideBlock';
+import { useRef } from 'react'; // 이미 useState만 import 중이면 이 줄 추가
+import { AttachUploader, AttachViewer, type AttachUploaderHandle } from '../../components/ui';
 
 /* =========================================================================
    1. 컬러 팔레트
@@ -26,12 +28,94 @@ const COLOR_TOKENS = [
   { name: '--danger', ko: '위험(레드) — 삭제/오류', value: 'var(--danger)' },
 ];
 
+const COLOR_SCALES: { key: string; label: string; role: string; hex: string[] }[] = [
+  {
+    key: 'green',
+    label: 'PRIMARY · GREEN',
+    role: '브랜드 기본(관제 정상/시스템) 상태',
+    hex: ['#EAFBF3', '#C9F5E1', '#9EEBC9', '#6FE0AF', '#4CDA9C', '#33D68A', '#22B975', '#189761', '#12734B', '#0B4E34'],
+  },
+  {
+    key: 'teal',
+    label: 'SECONDARY · TEAL',
+    role: '보조 색상',
+    hex: ['#EAFBF9', '#C7F4EE', '#98E9DF', '#67DCCE', '#42D3C0', '#22C4AF', '#17A997', '#128678', '#0D655C', '#08423D'],
+  },
+  {
+    key: 'orange',
+    label: 'ACCENT · ORANGE',
+    role: 'CTA / 긴급 강조',
+    hex: ['#FFF2ED', '#FFDCCC', '#FFB99A', '#FF9670', '#FF7D50', '#FF6A3D', '#E14E24', '#B53A18', '#872A13', '#591B0C'],
+  },
+  {
+    key: 'amber',
+    label: 'WARNING · AMBER',
+    role: '주의 상태',
+    hex: ['#FFF8E8', '#FFEBB8', '#FFDC85', '#FFCB53', '#FFBD30', '#FFB020', '#DB8E0E', '#AD6E09', '#7F5006', '#523203'],
+  },
+  {
+    key: 'red',
+    label: 'DANGER · RED',
+    role: '위험 / 에러 상태',
+    hex: ['#FFF0F1', '#FFD1D5', '#FFA4AC', '#FF7783', '#FF5D6B', '#FF4D5E', '#E01C30', '#B01424', '#7F0F1A', '#4F0910'],
+  },
+  {
+    key: 'violet',
+    label: 'DATA · VIOLET',
+    role: '통계·차트 5번째 계열 (그 외엔 사용 지양)',
+    hex: ['#F3F0FF', '#DED4FF', '#BDA8FF', '#9C7CFF', '#8A66FF', '#7C5CFF', '#5F3FE0', '#492FB0', '#352180', '#211450'],
+  },
+  {
+    key: 'n',
+    label: 'NEUTRAL',
+    role: '배경/서페이스/테두리/텍스트 (n-900이 기본 배경)',
+    hex: ['#E8EDF2', '#DDE3E9', '#B7C0CA', '#8A96A3', '#576372', '#2E3A47', '#232C37', '#1A222C', '#141B24', '#0F151C', '#0A0E13', '#05070A'],
+  },
+];
+const SCALE_STEPS_10 = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+const SCALE_STEPS_N = [50, 100, 200, 300, 400, 500, 600, 700, 800, 850, 900, 950];
+
+function ColorScaleRow({ family }: { family: (typeof COLOR_SCALES)[number] }) {
+  const steps = family.key === 'n' ? SCALE_STEPS_N : SCALE_STEPS_10;
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div className="b_caption" style={{ marginBottom: 8 }}>
+        {family.label} — {family.role} · var(--{family.key}-{steps[0]} ~ --{family.key}-{steps[steps.length - 1]})
+      </div>
+      <div style={{ display: 'flex' }}>
+        {family.hex.map((hex, i) => (
+          <div key={hex} style={{ flex: 1, background: hex, padding: '14px 10px', minWidth: 0 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: i < steps.length / 2 ? '#111' : '#fff' }}>
+              {steps[i]}
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: i < steps.length / 2 ? '#333' : 'rgba(255,255,255,.75)' }}>
+              --{family.key}-{steps[i]}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+ 
 export function ColorSection() {
   return (
     <GuideSection
       title="컬러 팔레트"
       description="버튼·배지·상태 표시에 쓰이는 시맨틱 컬러 토큰입니다. 실제 hex 코드를 직접 쓰지 말고 항상 이 변수명으로 참조하세요 — 나중에 브랜드 컬러가 바뀌어도 index.css의 토큰 값만 고치면 전체 화면에 한 번에 반영됩니다."
     >
+      <GuideBlock
+        title="전체 컬러 스케일 (50~900)"
+        description="계열별 10단계(neutral은 12단계) 원색 스케일입니다. 대부분의 화면에서는 아래 '시맨틱 컬러 토큰'만 쓰면 되고, 배지·차트처럼 진하기 단계가 여러 개 필요할 때만 이 스케일에서 직접 골라 씁니다."
+        code={`<div style={{ background: 'var(--amber-500)' }}>...</div>`}
+      >
+        <div style={{ width: '100%' }}>
+          {COLOR_SCALES.map((family) => (
+            <ColorScaleRow key={family.key} family={family} />
+          ))}
+        </div>
+      </GuideBlock>
+
       <GuideBlock
         title="시맨틱 컬러 토큰"
         description="index.css의 :root에 정의된 색상 변수. 배경/글자색 어디든 var(--토큰명)으로 씁니다."
@@ -50,22 +134,6 @@ export function ColorSection() {
         </div>
       </GuideBlock>
 
-      <GuideBlock
-        title="WCAG 색상 대비 (참고 이력)"
-        description="처음엔 AA(4.5:1) 기준으로 맞췄다가 AAA(7:1) 기준으로 재검수하면서 두 곳을 교체했습니다 — 지금 index.css/common.css에 이미 반영되어 있는 값입니다. 새 색상을 추가할 땐 이 기준(본문 텍스트 7:1, 버튼 텍스트도 가능하면 7:1)으로 검토하세요."
-        code={`/* index.css */
---text-dim: #ADB7C0;   /* 7.9~9.5:1 (AAA) */
---text-faint: #A4AEB7; /* 7.1~8.6:1 (AAA) */
-
-/* common.css */
-.btn_danger{ background: var(--red-800); color:#fff; } /* 10.58:1 — 원래 red-500 배경(3.24:1)은 AA도 미달이었음 */`}
-      >
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <button className="btn btn_md btn_danger" type="button">btn_danger (10.58:1)</button>
-          <span className="b_title" style={{ color: 'var(--text-dim)' }}>--text-dim 예시 문장 (7.9~9.5:1)</span>
-          <span className="b_title" style={{ color: 'var(--text-faint)' }}>--text-faint 예시 문장 (7.1~8.6:1)</span>
-        </div>
-      </GuideBlock>
     </GuideSection>
   );
 }
@@ -116,13 +184,19 @@ export function TypographySection() {
         code={`<p className="b_title">기본 본문 설명 텍스트</p>
 <p className="b_title lg">조금 더 큰 본문(16px)</p>
 <span className="b_caption">SECTION LABEL</span>
-<span className="b_num mono">128,402</span>`}
+<span className="b_num mono">128,402</span>
+<p className="cell_title">.cell_title — 카드나 표 내부에 들어가는 타이틀 (13px)</p>
+<p className="cell_sub">.cell_sub — 카드나 표 내부에 들어가는 텍스트 (11px)</p>`}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <p className="b_title">.b_title — 기본 본문 설명 텍스트 (13px)</p>
           <p className="b_title lg">.b_title.lg — 조금 더 큰 본문 (16px)</p>
           <span className="b_caption">.b_caption — SECTION LABEL</span>
           <span className="b_num mono">.b_num .mono — 128,402</span>
+
+          
+          <p className="cell_title">.cell_title — 카드나 표 내부에 들어가는 타이틀 (13px)</p>
+          <p className="cell_sub">.cell_sub — 카드나 표 내부에 들어가는 텍스트 (11px)</p>
         </div>
       </GuideBlock>
     </GuideSection>
@@ -177,9 +251,15 @@ export function LayoutSection() {
 <div className="stack_md">
   <div>위 항목</div>
   <div>아래 항목 (자동으로 16px 간격)</div>
+</div>
+
+
+<div className="card card_pad_md danger">
+  <div>빨간 보더라인 적용</div>
+  <div>아래 항목 (자동으로 16px 간격)</div>
 </div>`}
       >
-        <div className="grid_3" style={{ width: '100%' }}>
+        <div className="grid_4">
           <div className="card card_pad_md">
             <div className="title sm">.card_pad_md</div>
             <div className="b_title">기본 카드, radius-md(10px)</div>
@@ -191,6 +271,11 @@ export function LayoutSection() {
           <div className="card card_pad_md">
             <div className="title sm">.stack_md</div>
             <div className="b_title">세로 간격 16px 자동 적용</div>
+          </div>
+          
+          <div className="card card_pad_md danger">
+            <div className='title sm'>.card .danger</div>
+            <div className="b_title">빨간 보더라인 적용</div>
           </div>
         </div>
       </GuideBlock>
@@ -206,17 +291,19 @@ export function ButtonSection() {
     <GuideSection title="버튼" description="모든 버튼은 기본 .btn 클래스 + 색상 클래스 + (선택) 크기 클래스 조합으로 만듭니다.">
       <GuideBlock
         title="색상"
-        description="btn_primary(강조/제출), btn_ghost(보조/취소), btn_danger(위험 액션 실행), btn_outline_primary·btn_danger_outline(테두리만 있는 약한 강조), btn_disabled(비활성 표시용 — 실제 비활성화는 disabled 속성으로)."
+        description="btn_primary(강조/제출), btn_ghost(보조/취소), btn_danger(위험 액션 실행), btn_outline_primary·btn_danger_outline(테두리만 있는 약한 강조), btn[disabled](비활성 표시용 — 실제 비활성화는 disabled 속성으로)."
         code={`<button className="btn btn_md btn_primary">저장</button>
 <button className="btn btn_md btn_ghost">취소</button>
 <button className="btn btn_md btn_danger">삭제</button>`}
       >
         <button className="btn btn_md btn_primary" type="button">btn_primary</button>
+        <button className="btn btn_md btn_secondary" type="button">btn_secondary</button>
+        <button className="btn btn_md btn_cta" type="button">btn_cta</button>
         <button className="btn btn_md btn_ghost" type="button">btn_ghost</button>
         <button className="btn btn_md btn_danger" type="button">btn_danger</button>
         <button className="btn btn_md btn_outline_primary" type="button">btn_outline_primary</button>
         <button className="btn btn_md btn_danger_outline" type="button">btn_danger_outline</button>
-        <button className="btn btn_md btn_disabled" type="button" disabled>btn_disabled</button>
+        <button className="btn btn_md" type="button" disabled>disabled</button>
       </GuideBlock>
 
       <GuideBlock
@@ -256,14 +343,45 @@ export function ButtonSection() {
 <div className="form_page_footer">
   <button className="btn btn_md btn_ghost">취소</button>
   <button className="btn btn_md btn_primary">저장</button>
+</div>
+
+{/* 폼 하단 취소/저장 (form_page 전용, + 오른쪽 정렬) */}
+<div className="form_row_inline">
+  <button className="btn btn_ghost">취소</button>
+  <button className="btn btn_primary">저장</button>
 </div>`}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%' }}>
           <div>
             <div className="cell_sub" style={{ marginBottom: 4 }}>
-              .actions (gap 6px) — 표/카드/아코디언 행 안
+              .actions (gap 6px) — 표/카드/아코디언 행 안 (좌측정렬)
             </div>
             <div className="actions">
+              <button className="btn btn_sm btn_ghost" type="button">
+                수정
+              </button>
+              <button className="btn btn_sm btn_danger_outline" type="button">
+                삭제
+              </button>
+            </div>
+
+            
+            <div className="cell_sub" style={{ marginBottom: 4 }}>
+              .actions.both (gap 6px) — 좌우정렬
+            </div>
+            <div className="actions both">
+              <button className="btn btn_sm btn_ghost" type="button">
+                수정
+              </button>
+              <button className="btn btn_sm btn_danger_outline" type="button">
+                삭제
+              </button>
+            </div>
+            
+            <div className="cell_sub" style={{ marginBottom: 4 }}>
+              .actions.right (gap 6px) — 우측정렬
+            </div>
+            <div className="actions right">
               <button className="btn btn_sm btn_ghost" type="button">
                 수정
               </button>
@@ -274,14 +392,27 @@ export function ButtonSection() {
           </div>
           <div>
             <div className="cell_sub" style={{ marginBottom: 4 }}>
-              .form_row_inline (gap 8px, 오른쪽 정렬) — 검색바 옆
+              .form_row_inline (gap 8px, 오른쪽 정렬) — 입력 서식구조 하단 버튼 영역 (선 없는거)
             </div>
             <div className="form_row_inline">
               <button className="btn btn_ghost" type="button">
-                초기화
+                취소
               </button>
               <button className="btn btn_primary" type="button">
-                검색
+                저장
+              </button>
+            </div>
+          </div>
+          <div>
+            <div className="cell_sub" style={{ marginBottom: 4 }}>
+              .form_row_inline (gap 8px, 오른쪽 정렬) — 입력 서식구조 하단 버튼 영역 (선 있는거)
+            </div>
+            <div className="form_page_footer">
+              <button className="btn btn_ghost" type="button">
+                취소
+              </button>
+              <button className="btn btn_primary" type="button">
+                저장
               </button>
             </div>
           </div>
@@ -314,8 +445,44 @@ export function BadgeSection() {
       description="이 프로젝트엔 배지를 만드는 방식이 두 가지 공존합니다. 새 화면을 만들 땐 방식 A를 우선 쓰고, QA/게시판처럼 이미 방식 B로 짜여진 데이터 맵(QA_TYPE_MAP 등)을 그대로 이어 쓸 때만 방식 B를 씁니다."
     >
       <GuideBlock
-        title="방식 A — badge_색상 (권장)"
-        description="badge 클래스에 언더바로 결합된 색상 클래스 하나를 더합니다. 신규 화면은 이 방식을 쓰세요."
+        title="배지 그룹"
+        description="badge_area : gap(8px)"
+        code={`
+<div className='badge_area'>
+  <span className="badge danger">danger</span>
+  <span className="badge danger">danger</span>
+  <span className="badge danger">danger</span>
+</div>`}
+      >
+        <div className='badge_area'>
+          <span className="badge danger">danger</span>
+          <span className="badge danger">danger</span>
+          <span className="badge danger">danger</span>
+        </div>
+      </GuideBlock>
+
+      <GuideBlock
+        title="방식 A — className='badge 색상' (권장)"
+        description="badge와 색상 클래스를 공백으로 띄워 씁니다. QaType.ts의 QA_TYPE_MAP/QA_STATUS_MAP이 이 방식으로 되어 있어서, 그 맵을 그대로 쓰는 화면에서는 이 조합을 계속 씁니다."
+        code={`<span className="badge orange">장비장애</span>
+<span className="badge wait">답변대기</span>
+<span className="badge done">답변완료</span>`}
+      >
+        <span className="badge danger">danger</span>
+        <span className="badge warning">warning</span>
+        <span className="badge ok">ok</span>
+        <span className="badge neutral">neutral</span>
+        <span className="badge neutral_30">neutral_30</span>
+        <span className="badge check">check</span>
+        <span className="badge orange">orange</span>
+        <span className="badge wait">wait</span>
+        <span className="badge progress">progress</span>
+        <span className="badge done">done</span>
+      </GuideBlock>
+
+      <GuideBlock
+        title="방식 B — badge_색상이름 (기존 화면 유지용)"
+        description="badge 클래스에 언더바가 결합된 색상 클래스 하나를 더합니다. 신규 화면은 이 방식을 쓰세요."
         code={`<span className="badge badge_success">완료</span>
 <span className="badge badge_warning">대기</span>
 <span className="badge badge_danger">오류</span>`}
@@ -325,20 +492,6 @@ export function BadgeSection() {
         <span className="badge badge_danger">badge_danger</span>
         <span className="badge badge_info">badge_info</span>
         <span className="badge badge_neutral">badge_neutral</span>
-      </GuideBlock>
-
-      <GuideBlock
-        title="방식 B — badge 색상이름 (기존 화면 유지용)"
-        description="badge와 색상 클래스를 공백으로 띄워 씁니다. QaType.ts의 QA_TYPE_MAP/QA_STATUS_MAP이 이 방식으로 되어 있어서, 그 맵을 그대로 쓰는 화면에서는 이 조합을 계속 씁니다."
-        code={`<span className="badge orange">장비장애</span>
-<span className="badge wait">답변대기</span>
-<span className="badge done">답변완료</span>`}
-      >
-        <span className="badge neutral_30">neutral_30</span>
-        <span className="badge orange">orange</span>
-        <span className="badge wait">wait</span>
-        <span className="badge progress">progress</span>
-        <span className="badge done">done</span>
       </GuideBlock>
     </GuideSection>
   );
@@ -508,41 +661,44 @@ const [useYn, setUseYn] = useState<'Y' | 'N'>('Y');
 </div>
 
 {/* 라디오 (같은 name으로 그룹핑) */}
-<div className="form_check">
-  <input type="radio" id="use_y" name="useYn" value="Y" checked={useYn === 'Y'} onChange={() => setUseYn('Y')} />
-  <label htmlFor="use_y" className="b_title">사용</label>
+<div className='check_row'>
+  <div className="form_check">
+    <input type="radio" id="use_y" name="useYn" value="Y" checked={useYn === 'Y'} onChange={() => setUseYn('Y')} />
+    <label htmlFor="use_y" className="b_title">사용</label>
+  </div>
+  <div className="form_check">
+    <input type="radio" id="use_n" name="useYn" value="N" checked={useYn === 'N'} onChange={() => setUseYn('N')} />
+    <label htmlFor="use_n" className="b_title">미사용</label>
+  </div>
 </div>
-<div className="form_check">
-  <input type="radio" id="use_n" name="useYn" value="N" checked={useYn === 'N'} onChange={() => setUseYn('N')} />
-  <label htmlFor="use_n" className="b_title">미사용</label>
-</div>`}
+`}
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="form_check">
+            <input type="checkbox" id="guide_secret" defaultChecked />
+            <label htmlFor="guide_secret" className="b_title">
+              체크박스 — 비밀글 설정
+            </label>
+          </div>
+
+<br />
+          <div className='check_row'>
             <div className="form_check">
-              <input type="checkbox" id="guide_secret" defaultChecked />
-              <label htmlFor="guide_secret" className="b_title">
-                체크박스 — 비밀글 설정
+              <input type="radio" id="guide_use_y" name="guide_useYn" defaultChecked />
+              <label htmlFor="guide_use_y" className="b_title">
+                라디오 — 사용
               </label>
             </div>
-            <div style={{ display: 'flex', gap: 16 }}>
-              <div className="form_check">
-                <input type="radio" id="guide_use_y" name="guide_useYn" defaultChecked />
-                <label htmlFor="guide_use_y" className="b_title">
-                  라디오 — 사용
-                </label>
-              </div>
-              <div className="form_check">
-                <input type="radio" id="guide_use_n" name="guide_useYn" />
-                <label htmlFor="guide_use_n" className="b_title">
-                  라디오 — 미사용
-                </label>
-              </div>
+            <div className="form_check">
+              <input type="radio" id="guide_use_n" name="guide_useYn" />
+              <label htmlFor="guide_use_n" className="b_title">
+                라디오 — 미사용
+              </label>
             </div>
           </div>
         </GuideBlock>
 
         <GuideBlock
-          title="체크박스 대안 — .check_row / .switch (토글)"
+          title="체크박스 그룹/ 토글 스위치 — .check_row / .switch (토글)"
           description="CSS는 이미 완성돼 있지만 지금은 예시 화면(Test1~5)에서만 쓰이고, 실제 서비스 화면은 아직 이 스타일을 쓰지 않고 있습니다. 여러 개를 세로로 쭉 나열하는 체크리스트엔 check_row, on/off 하나만 표시하는 설정값(알림 켜기/끄기 등)엔 switch가 더 어울립니다."
           code={`{/* check_row — 체크리스트형 */}
 <div className="check_row">
@@ -558,8 +714,28 @@ const [useYn, setUseYn] = useState<'Y' | 'N'>('Y');
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div className="check_row">
-              <input type="checkbox" id="guide_push" defaultChecked />
-              <label htmlFor="guide_push">check_row — 앱 푸시 알림</label>
+              <div className="form_check">
+                <input
+                  type="checkbox"
+                  id="label_08"
+                  name="vmode"
+                />
+                <label htmlFor="label_08" className="b_title">
+                  고정
+                </label>
+              </div>
+
+              <div className="form_check">
+                <input
+                  type="checkbox"
+                  id="label_08"
+                  name="vmode"
+                />
+                <label htmlFor="label_08" className="b_title">
+                  고정
+                </label>
+              </div>
+              
             </div>
           </div>
           <label className="switch">
@@ -585,36 +761,33 @@ export function HooksSection() {
     >
       <GuideBlock
         title="useTab — 탭 상태 (URL 쿼리 기반)"
-        description="tab을 URL 쿼리(?tab=qa)로 관리해서, 새로고침하거나 뒤로가기해도 탭이 유지됩니다. changeTab은 탭이 바뀌면 page 쿼리도 같이 지워서(=1페이지로) usePaging과 자동으로 맞물립니다."
+        description="tab을 URL 쿼리(?tab=qa)로 관리해서, 새로고침하거나 뒤로가기해도 탭이 유지됩니다. changeTab은 탭이 바뀌면 page 쿼리도 같이 지워서(=1페이지로) usePaging과 자동으로 맞물립니다. tab UI가 없는 화면(상세/작성 페이지 등)은 이 훅 자체를 안 씁니다."
         code={`import { useTab } from 'hooks/useTab';
 
-const { tab, changeTab, navigateWithTab, goToList } = useTab<'qa' | 'faq'>({
-  defaultTab: 'qa',
-  basePath: '/user/qa',
-});
+const { tab, changeTab } = useTab<'qa' | 'faq'>({ defaultTab: 'qa' });
 
-changeTab('faq');           // 탭 전환 + page 쿼리 초기화
-navigateWithTab(\`\${no}\`);   // 지금 쿼리(tab, page)를 유지한 채 상세로 이동
-goToList();                 // 지금 쿼리를 유지한 채 목록으로 복귀`}
+changeTab('faq'); // 탭 전환 + page 쿼리 초기화 (콜백으로 필터 초기화 등도 같이 처리 가능)`}
       >
         <p className="cell_sub">
-          hooks/useTab.ts · <code className="mono">tab</code>/<code className="mono">changeTab</code>/
-          <code className="mono">navigateWithTab</code>/<code className="mono">goToList</code> 반환
+          hooks/useTab.ts · <code className="mono">tab</code>/<code className="mono">changeTab</code> 반환
         </p>
       </GuideBlock>
 
       <GuideBlock
-        title="usePaging — 페이지 번호 (URL 쿼리 기반, useTab과 독립)"
-        description="page를 URL 쿼리(?page=2)로 관리합니다. useTab과 완전히 분리된 훅이라 각자 따로 setSearchParams를 부르지 않고, changeTab이 page 쿼리를 지우는 방식으로만 서로 연동됩니다 (동시에 여러 번 URL을 바꾸다가 서로 덮어쓰는 문제를 피하기 위함)."
+        title="usePaging — 페이지 번호 + 쿼리유지 이동 (URL 쿼리 기반, useTab과 독립)"
+        description="page를 URL 쿼리(?page=2)로 관리합니다. navigateWithQuery/goToList는 원래 useTab에 있었는데, 실제로는 tab 값을 참조하지 않고 '지금 URL의 쿼리스트링을 통째로 들고 이동'할 뿐이라 여기로 옮겼습니다 — 탭이 없는 화면(QaDetail/QaForm 등)도 useTab 없이 이 훅만으로 그대로 씁니다."
         code={`import { usePaging } from 'hooks/usePaging';
 
-const { page, setPage, resetPage } = usePaging();
+const { page, setPage, navigateWithQuery, goToList } = usePaging({ basePath: '/user/qa' });
 
-<UserPagination page={page} totalPages={5} totalCount={42} pageSize={10} onChange={setPage} />`}
+<UserPagination page={page} totalPages={5} totalCount={42} pageSize={10} onChange={setPage} />
+navigateWithQuery(\`\${no}\`); // 지금 쿼리(예: ?tab=faq&page=2)를 유지한 채 상세로 이동
+goToList();                  // 지금 쿼리를 유지한 채 목록으로 복귀`}
       >
         <p className="cell_sub">
           hooks/usePaging.ts · <code className="mono">page</code>/<code className="mono">setPage</code>/
-          <code className="mono">resetPage</code> 반환
+          <code className="mono">resetPage</code>/<code className="mono">navigateWithQuery</code>/
+          <code className="mono">goToList</code> 반환
         </p>
       </GuideBlock>
 
@@ -714,18 +887,6 @@ if (byteLen > 100) {
         </div>
       </GuideBlock>
 
-      <GuideBlock
-        title="GlobalStoreSession — 로그인/세션 전역 상태 (zustand)"
-        description="로그인 여부(login)·회원번호(no)·아이디(id)·등급(grade, 1~5 관리자/6~10 사용자/99 손님)을 전역으로 보관합니다. sessionStorage에 저장되어 새로고침해도 유지되고, 탭/창을 닫으면 사라집니다. 인자 없이 부르면 전체 상태, 셀렉터를 넘기면 그 값만 가져옵니다."
-        code={`import { GlobalStoreSession } from 'store/LoginStore';
-
-const { no, id } = GlobalStoreSession();               // 전체 상태에서 구조분해
-const grade = GlobalStoreSession((state) => state.grade); // 셀렉터로 값 하나만
-
-axiosInstance.get(\`/qa/\${no}\`, { headers: { accessNo: String(no), grade: String(grade) } });`}
-      >
-        <p className="cell_sub">store/LoginStore.ts · zustand + persist(sessionStorage)</p>
-      </GuideBlock>
     </GuideSection>
   );
 }
@@ -774,7 +935,7 @@ export function TableSection() {
     },
   ];
 
-  const accColumns: AccordionCardColumn<DemoRow>[] = [{ header: '작성자', render: (r) => <div className="lt">{r.writer}</div> }];
+  const accColumns: DataAccColumn<DemoRow>[] = [{ header: '작성자', render: (r) => <div className="lt">{r.writer}</div> }];
 
   return (
     <GuideSection
@@ -916,24 +1077,29 @@ setAlert({ message: '저장되었습니다.', variant: 'success', onConfirm: goB
 export function TabSection() {
   const [active, setActive] = useState('all');
   return (
-    <GuideSection title="탭 (.tabs / .tab)" description="QaList.tsx에서 이미 쓰고 있는 패턴입니다. role/aria 속성을 꼭 같이 넣어주세요 — 스크린리더가 '탭 목록'으로 인식합니다.">
+    <GuideSection title="탭 (.tabs / .tab)" description="QaList.tsx에서 이미 쓰고 있는 패턴입니다. role/aria 속성을 꼭 같이 넣어주세요 — 스크린리더가 '탭 목록'으로 인식합니다. 예시 코드이니 파일 참고하여 사용해주세요">
       <GuideBlock
         title="기본 탭"
         description="tabs가 감싸고, 각 버튼에 tab(선택된 것엔 on 추가). role=tablist/tab, aria-selected는 필수입니다."
         code={`const [active, setActive] = useState('all');
 
 <div className="tabs" role="tablist" aria-label="문의 보기 전환">
-  <button
-    type="button"
-    role="tab"
-    className={\`tab\${active === 'all' ? ' on' : ''}\`}
-    aria-selected={active === 'all'}
-    onClick={() => setActive('all')}
-  >
-    전체
-  </button>
-  {/* ... */}
-</div>`}
+  {(['qa', 'faq'] as TabKey[]).map((tKey) => {
+    const labels: Partial<Record<TabKey, string>> = { qa: '전체 문의', faq: '자주 묻는 질문' };
+    return (
+      <button
+        key={tKey}
+        type="button"
+        role="tab"
+        className={\`tab\${tab === tKey ? ' on' : ''}\`}
+        aria-selected={tab === tKey}
+        onClick={() => handleTabChange(tKey)}
+      >
+        {labels[tKey]}
+      </button>
+    );
+  })}
+`}
       >
         <div className="tabs" role="tablist" aria-label="예시 탭">
           {[
@@ -959,39 +1125,16 @@ export function TabSection() {
 }
 
 /* =========================================================================
-   10. 아코디언 원형(.acc_item) & 툴팁(.tooltip_wrap)
-   DataAcc는 이 .acc_item/.acc_trigger/.acc_panel을 감싼 컴포넌트입니다 — 목록이 아니라
-   설정 화면처럼 항목 하나짜리 접고펴기가 필요할 땐 이 원형 클래스를 직접 씁니다.
+   10.  툴팁(.tooltip_wrap)
 ========================================================================= */
 export function AccordionPrimitiveSection() {
   const [open, setOpen] = useState(true);
 
   return (
     <GuideSection
-      title="아코디언 원형 & 툴팁"
-      description="DataAcc(목록용)와 달리, 설정 화면의 '자주 묻는 질문 1개' 같은 단일 접고펴기엔 이 클래스를 직접 씁니다. 툴팁은 설정값 옆에 '이게 뭔지' 짧은 설명을 붙일 때 씁니다."
+      title="툴팁"
+      description="툴팁은 설정값 옆에 '이게 뭔지' 짧은 설명을 붙일 때 씁니다."
     >
-      <GuideBlock
-        title="아코디언 원형 — .acc_item"
-        description="acc_trigger는 버튼(aria-expanded 필수), acc_panel은 open 클래스가 있을 때만 펼쳐집니다."
-        code={`const [open, setOpen] = useState(true);
-
-<div className="acc_item">
-  <button className="acc_trigger" aria-expanded={open} onClick={() => setOpen(!open)}>
-    질문 제목
-  </button>
-  <div className={\`acc_panel\${open ? ' open' : ''}\`}>답변 내용</div>
-</div>`}
-      >
-        <div style={{ width: '100%' }}>
-          <div className="acc_item">
-            <button className="acc_trigger" aria-expanded={open} onClick={() => setOpen(!open)} type="button">
-              CCTV는 몇 대까지 연동할 수 있나요?
-            </button>
-            <div className={`acc_panel${open ? ' open' : ''}`}>구독 플랜에 따라 최대 연동 대수가 다릅니다.</div>
-          </div>
-        </div>
-      </GuideBlock>
 
       <GuideBlock
         title="툴팁 — .tooltip_wrap"
@@ -1026,33 +1169,74 @@ export function ToolbarCompareSection() {
   const [userKeyword, setUserKeyword] = useState('');
   const [dbmsKeyword, setDbmsKeyword] = useState('');
 
+    // [검색 버튼 클릭] 현재 작성 중인 draft 값을 applied로 확정짓고 1페이지로 이동
+  const onSearch = () => {
+    // setPage(1);
+    // setApplied(draft);
+  };
+
   return (
     <GuideSection
       title="검색/필터 바 — user vs dbms"
       description="같은 역할(검색창 + 필터 셀렉트)이지만 컴포넌트가 분리되어 있습니다. user는 Filterbar, dbms는 AdminToolbar. page/pageSize/totalCount를 넘기면 Filterbar는 '전체 N건 중...' 안내문구를 자동 계산해서 왼쪽에 보여줍니다 (AdminToolbar는 이 기능이 없음)."
     >
-      <GuideCompare
-        left={
           <GuideBlock
             title="user — Filterbar"
             description="components/ui/user/Filterbar.tsx"
-            code={`const [keyword, setKeyword] = useState('');
-const { page } = usePaging(); // 또는 useState(1)
+            code={`  /* 필터바 설정 */
+// draft: 입력 중인 값 (타이핑만으로는 검색 안 됨) / applied: "검색" 눌렀을 때 실제 조회에 쓰이는 값
+const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS);
+const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
+  
+/* 페이징 설정 */
+const [totalPages, setTotalPages] = useState<number>(1);
+const [totalElements, setTotalElements] = useState(0);
+
+// [검색 버튼 클릭] 현재 작성 중인 draft 값을 applied로 확정짓고 1페이지로 이동
+const onSearch = () => {
+  setPage(1);
+  setApplied(draft);
+};
+
+// 필터 입력값(draft)/적용값(applied) 초기화. page는 여기서 안 건드림 — 필요한 곳에서 따로 처리
+const resetFilters = () => {
+  const empty = { ...EMPTY_FILTERS };
+  setDraft(empty);
+  setApplied(empty);
+};
+
+// [초기화 버튼 클릭] 모든 필터 조건을 초기화하고 1페이지로 이동
+const onReset = () => {
+  resetFilters();
+  setPage(1);
+};
 
 <Filterbar
-  searchValue={keyword}
-  onSearchChange={setKeyword}
-  searchPlaceholder="검색어를 입력하세요"
   page={page}
-  pageSize={10}
-  totalCount={42}
+  pageSize={PAGE_SIZE}
+  totalCount={totalElements}
+  searchValue={draft.keyword}
+  onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
+  searchPlaceholder={isFaq ? 'FAQ 제목·답변으로 검색' : '제목으로 검색'}
+  onSearchEnter={onSearch}
   filters={<select className="form_select">...</select>}
+  extra={
+    <>
+      <button type="button" className="btn btn_ghost" onClick={onReset}>
+        초기화
+      </button>
+      <button type="button" className="btn btn_primary" onClick={onSearch}>
+        검색
+      </button>
+    </>
+  }
 />`}
           >
             <div style={{ width: '100%' }}>
               <Filterbar
                 searchValue={userKeyword}
                 onSearchChange={setUserKeyword}
+                onSearchEnter={onSearch}
                 searchPlaceholder="검색어를 입력하세요"
                 page={2}
                 pageSize={10}
@@ -1062,38 +1246,76 @@ const { page } = usePaging(); // 또는 useState(1)
                     <option value="">전체 유형</option>
                   </select>
                 }
+                extra={
+                  <>
+                    <button type="button" className="btn btn_ghost">
+                      초기화
+                    </button>
+                    <button type="button" className="btn btn_primary">
+                      검색
+                    </button>
+                  </>
+                }
               />
             </div>
           </GuideBlock>
-        }
-        right={
+
           <GuideBlock
             title="dbms — AdminToolbar"
             description="components/ui/dbms/AdminToolbar.tsx (건수 안내문구 자동계산 기능 없음)"
-            code={`const [keyword, setKeyword] = useState('');
+            code={`
+/* 필터바 설정 */
+// draft: 입력 중인 값 (타이핑만으로는 검색 안 됨) / applied: "검색" 눌렀을 때 실제 조회에 쓰이는 값
+const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS);
+const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
+  
+/* 페이징 설정 */
+const [totalPages, setTotalPages] = useState<number>(1);
+const [totalElements, setTotalElements] = useState(0);
+
 
 <AdminToolbar
-  searchValue={keyword}
-  onSearchChange={setKeyword}
-  searchPlaceholder="검색어를 입력하세요"
+  searchValue={draft.keyword}
+  onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
+  searchPlaceholder={tab === 'qa' ? '제목으로 검색' : 'FAQ 제목·답변으로 검색'}
+  onSearchEnter={onSearch}
   filters={<select className="form_select">...</select>}
+  extra={
+    <>
+      <button type="button" className="btn btn_ghost" onClick={onReset}>
+        초기화
+      </button>
+      <button type="button" className="btn btn_primary" onClick={onSearch}>
+        검색
+      </button>
+    </>
+  }
 />`}
           >
             <div style={{ width: '100%' }}>
               <AdminToolbar
                 searchValue={dbmsKeyword}
                 onSearchChange={setDbmsKeyword}
+                onSearchEnter={onSearch}
                 searchPlaceholder="검색어를 입력하세요"
                 filters={
                   <select className="form_select" defaultValue="">
                     <option value="">전체 유형</option>
                   </select>
                 }
+                extra={
+                  <>
+                    <button type="button" className="btn btn_ghost">
+                      초기화
+                    </button>
+                    <button type="button" className="btn btn_primary">
+                      검색
+                    </button>
+                  </>
+                }
               />
             </div>
           </GuideBlock>
-        }
-      />
     </GuideSection>
   );
 }
@@ -1115,15 +1337,19 @@ export function PaginationCompareSection() {
           <GuideBlock
             title="user — UserPagination"
             description="justify-content: center — 버튼이 가운데 정렬됩니다."
-            code={`const [page, setPage] = useState(1);
+            code={`const { page, setPage } = usePaging();
+/* 페이징 설정 */
+const [totalPages, setTotalPages] = useState<number>(1);
+const [totalElements, setTotalElements] = useState(0);
 
 <UserPagination
   page={page}
-  totalPages={5}
-  totalCount={42}
-  pageSize={10}
+  totalPages={totalPages}
+  totalCount={totalElements}
+  pageSize={PAGE_SIZE}
   onChange={setPage}
-/>`}
+/>
+`}
           >
             <div style={{ width: '100%' }}>
               <UserPagination page={userPage} totalPages={5} totalCount={42} pageSize={10} onChange={setUserPage} />
@@ -1134,13 +1360,16 @@ export function PaginationCompareSection() {
           <GuideBlock
             title="dbms — DbmsPagination"
             description="justify-content: space-between — 안내문구 왼쪽, 버튼 오른쪽 끝."
-            code={`const [page, setPage] = useState(1);
+            code={`const { page, setPage } = usePaging();
+/* 페이징 설정 */
+const [totalPages, setTotalPages] = useState<number>(1);
+const [totalElements, setTotalElements] = useState(0);
 
 <DbmsPagination
   page={page}
-  totalPages={5}
-  totalCount={42}
-  pageSize={10}
+  totalPages={totalPages}
+  totalCount={totalElements}
+  pageSize={PAGE_SIZE}
   onChange={setPage}
 />`}
           >
@@ -1150,6 +1379,176 @@ export function PaginationCompareSection() {
           </GuideBlock>
         }
       />
+    </GuideSection>
+  );
+}
+/* =========================================================================
+   12. 첨부파일 (Attach) — 등록 2종 + 조회 2종 + 전체 CRUD 흐름
+========================================================================= */
+export function AttachSection() {
+  const dragRef = useRef<AttachUploaderHandle>(null);
+  const clickRef = useRef<AttachUploaderHandle>(null);
+
+  return (
+    <GuideSection
+      title="첨부파일 (Attach)"
+      description="업로드는 AttachUploader, 조회 전용은 AttachViewer로 분리되어 있습니다. 선택/삭제는 로컬에만 쌓이고 ref.current.commit(bno)를 호출해야 실제 서버에 반영됩니다."
+    >
+      {/* 등록 디자인 2종 */}
+      <GuideCompare
+        left={
+          <GuideBlock
+            title="등록 — 드래그 앤 드롭형 (dtype='drag', 기본값)"
+            description="파일을 끌어다 놓거나 영역을 클릭해서 선택합니다. dtype을 안 주면 이게 기본값입니다."
+            code={`<AttachUploader
+  ref={attachRef}
+  tname={ATTACH_BOARD_LABEL[1].table}
+  bno={isEdit ? Number(no) : undefined}
+  dtype="drag"
+  description="사업자등록증 · PDF, JPG (최대 10MB)"
+  onCountChange={(count) =>
+    setInput((prev) => ({ ...prev, fileyn: count > 0 ? 'Y' : 'N' }))
+  }
+/>`}
+          >
+            <AttachUploader ref={dragRef} tname="guide_demo" dtype="drag" description="가이드 데모 · 실제 저장 안 됨" />
+          </GuideBlock>
+        }
+        right={
+          <GuideBlock
+            title="등록 — 라벨 클릭형 (dtype='button')"
+            description="드롭존 없이 '+ 파일 선택' 버튼(라벨)만 노출합니다. 폼 안에 입력이 많아 드롭존이 부담스러울 때 씁니다."
+            code={`<AttachUploader
+  ref={attachRef}
+  tname={ATTACH_BOARD_LABEL[0].table}
+  bno={isEdit ? Number(no) : undefined}
+  dtype="button"
+  onCountChange={(count) =>
+    setInput((prev) => ({ ...prev, fileyn: count > 0 ? 'Y' : 'N' }))
+  }
+/>`}
+          >
+            <AttachUploader ref={clickRef} tname="guide_demo" dtype="button" description="가이드 데모 · 실제 저장 안 됨" />
+          </GuideBlock>
+        }
+      />
+
+      {/* 조회 디자인 2종 — 실제 bno 데이터가 없어 시각 구조만 정적으로 재현 */}
+      <GuideCompare
+        left={
+          <GuideBlock
+            title="조회 — 콘텐츠에 이미지 포함 (onlyList 기본값 true)"
+            description="상세페이지 콘텐츠에 이미지를 직접 뿌리고, AttachViewer는 다운로드 목록만 노출(이미지는 목록에 다시 노출 안 함)."
+            code={`{/* 상세페이지 콘텐츠 영역 */}
+{attach
+  .filter((a) => a.type === 0)
+  .map((a) => (
+    <div className='img_area' key={a.no}>
+      <img src={getAttachUrl(a.purl, a.sname)} alt={a.name} />
+    </div>
+  ))}
+
+{/* 다운로드 목록 영역 — onlyList 기본값 true */}
+{notice.fileyn === 'Y' && <AttachViewer bno={notice.no} />}`}
+          >
+            <div className="img_area" style={{ marginBottom: 10 }}>
+              <div style={{ height: 140, borderRadius: 8, background: '#f1f1f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span className="cell_sub">콘텐츠 안에 뿌려진 이미지</span>
+              </div>
+            </div>
+            <div className="attach_list">
+              <ul>
+                <li className="attach_item">
+                  <div className="icon_row" aria-hidden="true"><div className="icon img"><span className="hidden">이미지 파일</span></div></div>
+                  <span className="attach_name">매장전경.jpg</span>
+                  <span className="attach_size">1.2MB</span>
+                  <span className="attach_info">JPG · 2026-08-10</span>
+                  <button type="button" className="attach_btn download" aria-label="다운로드" />
+                </li>
+                <li className="attach_item">
+                  <div className="icon_row" aria-hidden="true"><div className="icon file"><span className="hidden">첨부파일</span></div></div>
+                  <span className="attach_name">사업자등록증.pdf</span>
+                  <span className="attach_size">340KB</span>
+                  <span className="attach_info">PDF · 2026-08-10</span>
+                  <button type="button" className="attach_btn download" aria-label="다운로드" />
+                </li>
+              </ul>
+            </div>
+          </GuideBlock>
+        }
+        right={
+          <GuideBlock
+            title="조회 — 콘텐츠엔 이미지 없음, 썸네일+목록 노출 (onlyList={false})"
+            description="콘텐츠엔 이미지를 안 뿌리고, AttachViewer 하나가 이미지 썸네일 그리드 + 일반 파일 다운로드 목록을 같이 보여줍니다."
+            code={`{/* 콘텐츠 영역엔 이미지 없이 텍스트만 */}
+<div className='qa_content'>{qa.content}</div>
+
+{/* 이미지 썸네일 + 다운로드 목록 같이 노출 — onlyList={false} */}
+{qa.fileyn === 'Y' && <AttachViewer bno={qa.no} onlyList={false} />}`}
+          >
+            <div className="img_thumb_grid" style={{ marginBottom: 10 }}>
+              <div className="img_thumb_card">
+                <div className="img_thumb_preview" style={{ height: 90, borderRadius: 8, background: '#f1f1f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span className="cell_sub">썸네일</span>
+                </div>
+                <div className="img_thumb_meta">
+                  <span className="img_thumb_name">영수증.jpg</span>
+                </div>
+              </div>
+            </div>
+            <div className="attach_list">
+              <ul>
+                <li className="attach_item">
+                  <div className="icon_row" aria-hidden="true"><div className="icon file"><span className="hidden">첨부파일</span></div></div>
+                  <span className="attach_name">문의내역.hwp</span>
+                  <span className="attach_size">88KB</span>
+                  <span className="attach_info">HWP · 2026-08-11</span>
+                  <button type="button" className="attach_btn download" aria-label="다운로드" />
+                </li>
+              </ul>
+            </div>
+          </GuideBlock>
+        }
+      />
+
+      {/* 전체 CRUD 흐름 */}
+      <GuideBlock
+        title="첨부파일 CRUD 전체 흐름 (등록 폼 → 저장 → 상세조회)"
+        description="선택/삭제는 로컬 예정 상태로만 쌓이다가, 글 저장(등록/수정) 성공 직후 commit()을 호출해야 실제 서버(/attach/create, /attach/delete)에 반영됩니다. 신규 등록은 방금 발급된 bno를, 수정은 인자 없이 그대로 호출합니다."
+        code={`// 1) 등록/수정 폼
+const attachRef = useRef<AttachUploaderHandle>(null);
+
+<AttachUploader
+  ref={attachRef}
+  tname={ATTACH_BOARD_LABEL[1].table}   // 'NOTICE' | 'QA' 등 — 코드에 고정된 문자열만 사용
+  bno={isEdit ? Number(no) : undefined} // 수정: 실제 bno / 신규: undefined
+  dtype="drag"                          // 또는 "button"
+  onCountChange={(count) =>
+    setInput((prev) => ({ ...prev, fileyn: count > 0 ? 'Y' : 'N' }))
+  }
+/>
+
+// 2) 저장 버튼 클릭 시
+const handleSave = async () => {
+  if (isEdit) {
+    await axiosInstance.put(\`/notice/\${no}\`, payload);
+    if (attachRef.current?.hasPendingChanges()) {
+      await attachRef.current.commit(); // 수정: bno 그대로
+    }
+  } else {
+    const res = await axiosInstance.post<number>('/notice', payload);
+    const newNo = res.data;
+    if (newNo && attachRef.current?.hasPendingChanges()) {
+      await attachRef.current.commit(Number(newNo)); // 신규: 방금 발급된 bno 전달
+    }
+  }
+};
+
+// 3) 상세페이지(조회 전용) — 삭제 기능 없음, 목록/다운로드만
+{notice.fileyn === 'Y' && <AttachViewer bno={notice.no} onlyList={false} />}`}
+      >
+        <p className="b_title">실제 API 호출(POST/DELETE)이 들어가는 흐름이라 여기선 데모 없이 코드만 제공합니다.</p>
+      </GuideBlock>
     </GuideSection>
   );
 }

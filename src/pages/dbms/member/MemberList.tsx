@@ -15,406 +15,264 @@ import {
   type TotalMemberUser,
 } from '../../../store/DbmsStore';
 
-/**
- * 회원 목록 상단의 계정 구분 필터
- *
- * ALL   : 회원 + 관리자 전체
- * USER  : 일반 회원만
- * ADMIN : 관리자만
- */
+/** 회원 목록 상단의 계정 구분 필터 */
 const ROLE_OPTIONS = [
-  {
-    value: 'ALL',
-    label: '전체 계정 조회',
-  },
-  {
-    value: 'USER',
-    label: '일반 회원만 보기',
-  },
-  {
-    value: 'ADMIN',
-    label: '관리자 계정만 보기',
-  },
+  { value: 'ALL', label: '전체 계정 조회' },
+  { value: 'USER', label: '일반 회원만 보기' },
+  { value: 'ADMIN', label: '관리자 계정만 보기' },
 ];
 
-/**
- * 한 페이지에 표시할 회원 수
- */
+/** 검색 대상 필드 선택 옵션 — 선택한 필드에서만 키워드를 매칭합니다. */
+type SearchField = 'no' | 'id' | 'mname' | 'phone' | 'email';
+
+const SEARCH_FIELD_OPTIONS: { value: SearchField; label: string }[] = [
+  { value: 'no', label: '번호' },
+  { value: 'id', label: '아이디' },
+  { value: 'mname', label: '이름' },
+  { value: 'phone', label: '연락처' },
+  { value: 'email', label: '이메일' },
+];
+
+interface Filters {
+  keyword: string;
+  searchField: SearchField;
+  roleFilter: string; // 'ALL' | 'USER' | 'ADMIN'
+  dateFrom: string; // 등록일 시작 (yyyy-MM-dd)
+  dateTo: string; // 등록일 종료 (yyyy-MM-dd)
+}
+
+const EMPTY_FILTERS: Filters = {
+  keyword: '',
+  searchField: 'id',
+  roleFilter: 'ALL',
+  dateFrom: '',
+  dateTo: '',
+};
+
 const PAGE_SIZE = 10;
+
+const parseDate = (val?: string | null) => {
+  if (!val) return NaN;
+  return new Date(val.includes(' ') && !val.includes('T') ? val.replace(' ', 'T') : val).getTime();
+};
 
 export default function MemberList() {
   const navigate = useNavigate();
 
-  /**
-   * DbmsStore에서 회원 목록 및 조회 상태 가져오기
-   */
-  const memberList = useDbmsStore(
-    (state) => state.memberList,
-  );
+  const memberList = useDbmsStore((state) => state.memberList);
+  const isLoading = useDbmsStore((state) => state.isLoading);
+  const fetchMemberList = useDbmsStore((state) => state.fetchMemberList);
 
-  const isLoading = useDbmsStore(
-    (state) => state.isLoading,
-  );
-
-  const fetchMemberList = useDbmsStore(
-    (state) => state.fetchMemberList,
-  );
-
-  /**
-   * 검색어
-   */
-  const [keyword, setKeyword] = useState('');
-
-  /**
-   * 현재 페이지
-   */
   const [page, setPage] = useState(1);
 
-  /**
-   * 회원 / 관리자 필터
-   */
-  const [roleFilter, setRoleFilter] =
-    useState('ALL');
+  // draft: 입력 중인 값(타이핑만으로는 검색 안 됨) / applied: Enter·검색버튼 눌렀을 때 실제 필터링에 쓰이는 값
+  const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS);
+  const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
 
-  /**
-   * 페이지 진입 시 회원 목록 조회
-   */
   useEffect(() => {
     fetchMemberList();
   }, [fetchMemberList]);
 
   /**
-   * 검색 + 회원 구분 필터
-   *
-   * 검색 대상:
-   * - 아이디
-   * - 이름
+   * 계정 구분 + 검색항목별 키워드 + 등록일 범위 필터 (전부 applied 기준으로만 계산)
    */
   const filtered = useMemo(() => {
-    const kw = keyword.trim().toLowerCase();
+    const kw = applied.keyword.trim().toLowerCase();
+    const fromTime = applied.dateFrom ? new Date(`${applied.dateFrom}T00:00:00`).getTime() : null;
+    const toTime = applied.dateTo ? new Date(`${applied.dateTo}T23:59:59`).getTime() : null;
 
     return memberList.filter((user) => {
-      const matchKeyword =
-        kw === '' ||
-        user.id
-          .toLowerCase()
-          .includes(kw) ||
-        user.mname
-          .toLowerCase()
-          .includes(kw);
+      const matchRole = applied.roleFilter === 'ALL' || user.role === applied.roleFilter;
+      if (!matchRole) return false;
 
-      const matchRole =
-        roleFilter === 'ALL' ||
-        user.role === roleFilter;
+      if (fromTime !== null || toTime !== null) {
+        const t = parseDate(user.cdate);
+        if (Number.isNaN(t)) return false;
+        if (fromTime !== null && t < fromTime) return false;
+        if (toTime !== null && t > toTime) return false;
+      }
 
-      return (
-        matchKeyword &&
-        matchRole
-      );
+      if (!kw) return true;
+
+      switch (applied.searchField) {
+        case 'no':
+          return String(user.no).includes(kw);
+        case 'id':
+          return user.id.toLowerCase().includes(kw);
+        case 'mname':
+          return user.mname.toLowerCase().includes(kw);
+        case 'phone':
+          return (user.phone ?? '').toLowerCase().includes(kw);
+        case 'email':
+          return (user.email ?? '').toLowerCase().includes(kw);
+        default:
+          return true;
+      }
     });
-  }, [
-    memberList,
-    keyword,
-    roleFilter,
-  ]);
+  }, [memberList, applied]);
 
   /**
-   * 현재 필터 상태에 따라
-   * 테이블 컬럼을 동적으로 구성한다.
-   *
-   * ALL
-   *  → 이메일 표시
-   *
-   * USER
-   *  → 주소 / 국가 표시
-   *
-   * ADMIN
-   *  → 관리 등급 / 최근 수정일 표시
+   * 현재 필터 상태에 따라 테이블 컬럼을 동적으로 구성합니다.
+   * 순서: 번호 → 구분 → 아이디 → 이름 → 연락처 → (역할별 추가 컬럼) → 등록일
    */
-  const columns = useMemo(
-    (): DataTableColumn<TotalMemberUser>[] => {
-      const baseColumns: DataTableColumn<TotalMemberUser>[] = [
+  const columns = useMemo((): DataTableColumn<TotalMemberUser>[] => {
+    const baseColumns: DataTableColumn<TotalMemberUser>[] = [
+      { header: '번호', accessor: 'no', width: '8%', mono: true },
+      {
+        header: '구분',
+        width: '9%',
+        render: (user) => (
+          <span style={{ whiteSpace: 'nowrap' }}>{user.role === 'ADMIN' ? '관리자' : '회원'}</span>
+        ),
+      },
+      { header: '아이디', accessor: 'id', width: '16%', mono: true },
+      { header: '이름', accessor: 'mname', width: '13%' },
+      { header: '연락처', accessor: 'phone', width: '14%', mono: true },
+    ];
+
+    if (applied.roleFilter === 'USER') {
+      baseColumns.push(
         {
-          header: '번호',
-          accessor: 'no',
-          width: '8%',
-          mono: true,
+          header: '주소',
+          width: '26%',
+          render: (user) => (user.addr ? `[${user.zipcode ?? '-'}] ${user.addr} ${user.addrDetail ?? ''}` : '-'),
         },
+        { header: '국가', accessor: 'nation', width: '8%' },
+      );
+    }
 
-        {
-          header: '아이디',
-          accessor: 'id',
-          width: '18%',
-          mono: true,
-        },
+    if (applied.roleFilter === 'ADMIN') {
+      baseColumns.push(
+        { header: '관리 등급', width: '10%', render: (user) => `Level ${user.grade}` },
+        { header: '최근 수정일', accessor: 'udate', width: '13%', mono: true },
+      );
+    }
 
-        {
-          header: '이름',
-          accessor: 'mname',
-          width: '15%',
-        },
+    if (applied.roleFilter === 'ALL') {
+      baseColumns.push({ header: '이메일', accessor: 'email', width: '20%' });
+    }
 
-        {
-          header: '연락처',
-          accessor: 'phone',
-          width: '15%',
-          mono: true,
-        },
+    baseColumns.push({ header: '등록일', accessor: 'cdate', width: '13%', mono: true });
 
-        {
-          header: '구분',
-          width: '10%',
-          render: (user) => (
-            <span
-              style={{
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {user.role === 'ADMIN'
-                ? '관리자'
-                : '회원'}
-            </span>
-          ),
-        },
-      ];
+    return baseColumns;
+  }, [applied.roleFilter]);
 
-      /**
-       * 일반 회원만 조회할 때
-       */
-      if (roleFilter === 'USER') {
-        baseColumns.push(
-          {
-            header: '주소',
-            width: '30%',
-            render: (user) =>
-              user.addr
-                ? `[${user.zipcode ?? '-'}] ${user.addr} ${
-                    user.addrDetail ?? ''
-                  }`
-                : '-',
-          },
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const from = filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const to = Math.min(page * PAGE_SIZE, filtered.length);
 
-          {
-            header: '국가',
-            accessor: 'nation',
-            width: '10%',
-          },
-        );
-      }
-
-      /**
-       * 관리자 계정만 조회할 때
-       */
-      if (roleFilter === 'ADMIN') {
-        baseColumns.push(
-          {
-            header: '관리 등급',
-            width: '12%',
-            render: (user) =>
-              `Level ${user.grade}`,
-          },
-
-          {
-            header: '최근 수정일',
-            accessor: 'udate',
-            width: '15%',
-            mono: true,
-          },
-        );
-      }
-
-      /**
-       * 전체 계정 조회에서는
-       * 회원/관리자 모두에게 공통으로 의미가 있는
-       * 이메일을 표시한다.
-       */
-      if (roleFilter === 'ALL') {
-        baseColumns.push({
-          header: '이메일',
-          accessor: 'email',
-          width: '25%',
-        });
-      }
-
-      /**
-       * 마지막에는 등록일을 공통으로 표시
-       */
-      baseColumns.push({
-        header: '등록일',
-        accessor: 'cdate',
-        width: '15%',
-        mono: true,
-      });
-
-      return baseColumns;
-    },
-    [roleFilter],
-  );
-
-  /**
-   * 전체 페이지 수 계산
-   */
-  const totalPages = Math.max(
-    1,
-    Math.ceil(
-      filtered.length / PAGE_SIZE,
-    ),
-  );
-
-  /**
-   * 현재 페이지에 실제로 보여줄 데이터
-   */
-  const paged = filtered.slice(
-    (page - 1) * PAGE_SIZE,
-    page * PAGE_SIZE,
-  );
-
-  /**
-   * Filterbar 왼쪽의 표시 범위
-   */
-  const from =
-    filtered.length === 0
-      ? 0
-      : (page - 1) *
-          PAGE_SIZE +
-        1;
-
-  const to = Math.min(
-    page * PAGE_SIZE,
-    filtered.length,
-  );
-
-  /**
-   * 회원 상세 화면 이동
-   *
-   * USER / ADMIN 여부와 회원 번호를
-   * URL 파라미터로 전달한다.
-   */
-  const handleViewDetail = (
-    user: TotalMemberUser,
-  ) => {
-    navigate(
-      `/dbms/memberlist/${user.role}/${user.no}`,
-    );
+  const handleViewDetail = (user: TotalMemberUser) => {
+    navigate(`/dbms/memberlist/${user.role}/${user.no}`);
   };
 
-  /**
-   * 검색 변경
-   *
-   * 검색 조건이 바뀌면 1페이지부터 다시 표시
-   */
-  const handleSearchChange = (
-    value: string,
-  ) => {
-    setKeyword(value);
+  // [검색 버튼 클릭 / Enter] draft를 applied로 확정하고 1페이지로 이동
+  const onSearch = () => {
     setPage(1);
+    setApplied(draft);
   };
 
-  /**
-   * 계정 구분 필터 변경
-   */
-  const handleRoleChange = (
-    value: string,
-  ) => {
-    setRoleFilter(value);
+  // [초기화 버튼 클릭] 모든 필터 조건 초기화
+  const onReset = () => {
+    const empty = { ...EMPTY_FILTERS };
+    setDraft(empty);
     setPage(1);
-  };
-
-  /**
-   * 검색 / 필터 초기화
-   */
-  const handleReset = () => {
-    setKeyword('');
-    setRoleFilter('ALL');
-    setPage(1);
+    setApplied(empty);
   };
 
   return (
     <section className="view active">
-      {/* 페이지 제목 영역 */}
       <PageHeader
         title="통합 회원 계정 관리"
         description="가입된 일반 회원과 관제 시스템 관리자 데이터를 통합 조회합니다."
       />
 
-      {/* 검색 및 필터 영역 */}
       <Filterbar
         left={
           <span className="pagination_info">
-            조회 결과{' '}
-            <em className="b_num">
-              {filtered.length}
-            </em>
-            건 중 {from}–{to}건 표시
+            조회 결과 <em className="b_num">{filtered.length}</em>건 중 {from}–{to}건 표시
           </span>
         }
-
-        searchValue={keyword}
-        onSearchChange={
-          handleSearchChange
-        }
-        searchPlaceholder="아이디·이름으로 검색"
-
+        searchValue={draft.keyword}
+        onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
+        onSearchEnter={onSearch}
+        searchPlaceholder="검색어를 입력하세요"
         filters={
-          <select
-            className="form_select"
-            value={roleFilter}
-            onChange={(e) =>
-              handleRoleChange(
-                e.target.value,
-              )
-            }
-            aria-label="계정 구분 필터"
-          >
-            {ROLE_OPTIONS.map(
-              (option) => (
-                <option
-                  key={option.value}
-                  value={option.value}
-                >
+          <>
+            <select
+              className="form_select"
+              value={draft.roleFilter}
+              onChange={(e) => setDraft((prev) => ({ ...prev, roleFilter: e.target.value }))}
+              aria-label="계정 구분 필터"
+            >
+              {ROLE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
-              ),
-            )}
-          </select>
-        }
+              ))}
+            </select>
 
+            <select
+              className="form_select"
+              value={draft.searchField}
+              onChange={(e) => setDraft((prev) => ({ ...prev, searchField: e.target.value as SearchField }))}
+              aria-label="검색 항목 선택"
+            >
+              {SEARCH_FIELD_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+
+            <input
+              type="date"
+              className="form_input"
+              value={draft.dateFrom}
+              onChange={(e) => setDraft((prev) => ({ ...prev, dateFrom: e.target.value }))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onSearch();
+              }}
+              aria-label="등록일 시작"
+            />
+            <span style={{ alignSelf: 'center' }}>~</span>
+            <input
+              type="date"
+              className="form_input"
+              value={draft.dateTo}
+              onChange={(e) => setDraft((prev) => ({ ...prev, dateTo: e.target.value }))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onSearch();
+              }}
+              aria-label="등록일 종료"
+            />
+          </>
+        }
         extra={
-          <button
-            type="button"
-            className="btn btn_outline_primary"
-            onClick={handleReset}
-          >
-            초기화
-          </button>
+          <>
+            <button type="button" className="btn btn_outline_primary" onClick={onReset}>
+              초기화
+            </button>
+            <button type="button" className="btn btn_primary" onClick={onSearch}>
+              검색
+            </button>
+          </>
         }
       />
 
-      {/* 회원 데이터 테이블 */}
       {isLoading ? (
-        <div className="loading_box">
-          서버에서 계정 목록을 불러오는 중입니다...
-        </div>
+        <div className="loading_box">서버에서 계정 목록을 불러오는 중입니다...</div>
       ) : (
         <DataTable<TotalMemberUser>
           columns={columns}
           data={paged}
-          rowKey={(user) =>
-            `${user.role}-${user.no}`
-          }
-
-          /**
-           * 기존 MemberList와 동일하게
-           * 행 우측에 "상세보기" 버튼을 표시
-           */
+          rowKey={(user) => `${user.role}-${user.no}`}
           onEdit={handleViewDetail}
           editLabel="상세보기"
-
           emptyMessage="조건에 일치하는 회원 데이터가 존재하지 않습니다."
         />
       )}
 
-      {/* 페이지네이션 */}
       <UserPagination
         page={page}
         totalPages={totalPages}

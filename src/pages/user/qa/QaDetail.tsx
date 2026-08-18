@@ -1,25 +1,33 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
-import { AlertModal, ConfirmDeleteModal, PageHeader } from '../../../components/ui';
-import { axiosInstance } from '../../../utils/Tool';
-import { QA_STATUS_MAP, QA_TYPE_MAP, type QaTypes, type TabKey } from '../../../components/ts/QaType';
 import { GlobalStoreSession } from '../../../store/LoginStore';
-import { useTab } from '../../../hooks/useTab';
+import axios from 'axios';
+import { axiosInstance, getAttachUrl } from '../../../utils/Tool';
+import { usePaging } from '../../../hooks/usePaging';
+import { AlertModal, AttachViewer, ConfirmDeleteModal, PageHeader, PrevNextNav } from '../../../components/ui';
+import { QA_STATUS_MAP, QA_TYPE_MAP, type QaTypes } from '../../../components/ts/QaType';
+import type { AttachType } from '../../../components/ts/Attach';
 
 export default function QaDetail() {
   const { no } = useParams<{ no: string }>(); // URL에서 no 추출
   const { no: mno, grade } = GlobalStoreSession(); // 현재 로그인한 회원 번호
 
-  // 범용 useTab 훅 사용
-  const { goToList, navigateWithTab } = useTab<TabKey>({
-    defaultTab: 'qa',
-    basePath: '/user/qa',
-  });
+  const { goToList, navigateWithQuery } = usePaging({ basePath: '/user/qa' });
 
   const [qa, setQa] = useState<QaTypes | null>(null);
+  const [attach, setAttach] = useState<AttachType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // 이전글 다음글
+  const [navPosts, setNavPosts] = useState({
+    prev: null,
+    next: null
+  });
+
+  const [deleteTarget, setDeleteTarget] = useState<QaTypes | null>(null);
+  const [deleting, setDeleting] = useState<boolean>(false);
+  const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
 
   
   /* 문의내용 상세 데이터 */
@@ -31,10 +39,20 @@ export default function QaDetail() {
           grade: String(grade),
         },
       })
-      .then((res) => setQa(res.data))
+      .then(res => res.data)
+      .then((data) => {
+        setQa(data);
+        setNavPosts({
+          prev : data.prev ?? null,
+          next: data.next ?? null,
+        })
+        console.log(navPosts)
+
+        loadAttachList()
+      })
       .catch((err) => {
-        console.error('문의 상세 조회 실패:', err);
-        setError('문의 내용을 불러오지 못했습니다.');
+        console.error('문의사항 상세 조회 실패:', err);
+        setError('문의사항 내용을 불러오지 못했습니다.');
       })
       .finally(() => setLoading(false));
   }
@@ -49,9 +67,24 @@ export default function QaDetail() {
 
   }, [no, mno, grade]);
 
-  const [deleteTarget, setDeleteTarget] = useState<QaTypes | null>(null);
-  const [deleting, setDeleting] = useState<boolean>(false);
-  const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
+  
+
+  /* 첨부파일 목록 조회 */
+  const loadAttachList = () => {
+    setLoading(true);
+    axiosInstance.get<AttachType[]>(`/attach/list/${no}`)
+      .then((result) => result.data)
+      .then((data) => {
+        setAttach(data);
+
+      })
+      .catch((err) => {
+        console.error('첨부파일 목록 조회 실패:', err);
+        setError('첨부파일을 불러오지 못했습니다.');
+      })
+      .finally(() => setLoading(false));
+  };
+
 
   // 비밀번호 입력 후 삭제 실행
   const handleDeleteWithPw = async (inputPw: string = '') => {
@@ -95,7 +128,7 @@ export default function QaDetail() {
   if (loading) {
     return (
       <section className="view active">
-        <PageHeader title="문의 상세" description="내용을 불러오는 중입니다." />
+        <PageHeader title="문의사항 상세" description="내용을 불러오는 중입니다." />
       </section>
     );
   }
@@ -104,7 +137,7 @@ export default function QaDetail() {
     return (
       <section className="view active">
         <PageHeader
-          title="문의 상세"
+          title="문의사항 상세"
           description={error ?? '등록한 문의와 답변 내용을 확인할 수 있습니다.'}
           actions={
             <button type="button" className="btn btn_md btn_ghost" onClick={() => goToList()}>
@@ -112,7 +145,7 @@ export default function QaDetail() {
             </button>
           }
         />
-        <div className="qa_area">
+        <div className="detail_area">
           <div className="card card_pad_lg">
             <div className="empty_row">해당 문의를 찾을 수 없거나 권한이 없습니다.</div>
           </div>
@@ -128,7 +161,7 @@ export default function QaDetail() {
   return (
     <section className="view active">
       <PageHeader
-        title="문의 상세"
+        title="문의사항 상세"
         description="등록한 문의와 답변 내용을 확인할 수 있습니다."
         actions={
           <button type="button" className="btn btn_md btn_ghost" onClick={() => goToList()}>
@@ -137,7 +170,7 @@ export default function QaDetail() {
         }
       />
 
-      <div className="qa_area">
+      <div className="detail_area">
         {/* 질문 영역 */}
         <div className="card card_pad_lg">
           <div className="card_header">
@@ -155,27 +188,38 @@ export default function QaDetail() {
           </div>
 
           <div className="title_area">
-            <h3 className="title md">{qa.title}</h3>
+            <h3 className="title md">
+              {qa.title} 
+              {qa.fileyn === 'Y' && (
+                <span className='icon file'>
+                  <span className='hidden'>첨부파일 포함</span>
+                </span>
+              )}
+            </h3>
             <p className="b_title">
               <span>작성자 No.{qa.mno}</span>
               <span className="right">{qa.cdate}</span>
             </p>
           </div>
 
-          <p className="card_contents">{qa.content}</p>
+          <div className="card_contents">
+            {qa.content}
+          </div>
+          
+          {qa.fileyn === 'Y' && <AttachViewer bno={qa.no} onlyList={false} />}
 
           {/* 본인 글인 경우에만 수정/삭제 노출 */}
           {mno === qa.mno && (
             <div className="form_page_footer">
-              <button type="button" className="btn btn_sm btn_danger" onClick={() => setDeleteTarget(qa)}>
+              <button type="button" className="btn btn_danger" onClick={() => setDeleteTarget(qa)}>
                 삭제
               </button>
               {/* 답변대기인 경우에만 수정 버튼 노출 */}
               {!isWait && (
                 <button
                   type="button"
-                  className="btn btn_sm btn_outline_primary"
-                  onClick={() => navigateWithTab('edit')}
+                  className="btn btn_outline_primary"
+                  onClick={() => navigateWithQuery('edit')}
                 >
                   수정
                 </button>
@@ -200,6 +244,16 @@ export default function QaDetail() {
         </div>
       </div>
 
+      
+      {/* 🔑 이전글 / 다음글 컴포넌트 연동 */}
+      <PrevNextNav
+        prev={navPosts.prev}
+        next={navPosts.next}
+        basePath="../qa"
+      />
+
+
+
       {/* 비밀번호 입력 삭제 모달 */}
       <ConfirmDeleteModal
         open={deleteTarget !== null}
@@ -208,6 +262,7 @@ export default function QaDetail() {
         loading={deleting}
         targetLabel={deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.title}` : undefined}
         requirePassword={true}
+        deleteWithAttach={deleteTarget?.no}
       />
 
       {/* 안내 알림 모달 */}

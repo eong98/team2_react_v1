@@ -1,8 +1,6 @@
 
 
 import { Navigate, Route, Routes } from 'react-router-dom';
-import NoticeList from '../pages/dbms/qa/NoticeList';
-import NoticeForm from '../pages/dbms/qa/NoticeForm';
 import ShopList from '../pages/dbms/shop/ShopList';
 import ShopForm from '../pages/dbms/shop/ShopForm';
 import InMenuList from '../pages/dbms/menu/InMenuList';
@@ -21,10 +19,17 @@ import MemberList from '../pages/dbms/member/MemberList';
 import DbmsLogin from '../pages/main/DbmsLogin'
 import MemberDetail from '../pages/dbms/member/MemberDetail';
 import UpdateHistory from '../pages/dbms/member/UpdateHistoryList';
+import LoginHistory from '../pages/dbms/member/LoginHistoryList';
+import MyPage from '../pages/main/mypage/MyPage';
+import ChangePassword from '../pages/main/mypage/ChangePassword';
 
 import QaForm from '../pages/dbms/qa/QaForm';
 import QaList from '../pages/dbms/qa/QaList';
 import QaDetail from '../pages/dbms/qa/QaDetail';
+import NoticeList from '../pages/dbms/notice/NoticeList';
+import NoticeDetail from '../pages/dbms/notice/NoticeDetail';
+import NoticeForm from '../pages/dbms/notice/NoticeForm';
+import AttachList from '../pages/dbms/attach/AttachList';
 
 
 export default function DbmsRoutes() {
@@ -33,6 +38,7 @@ export default function DbmsRoutes() {
 
       {/* 참고해서 추가하시면 됩니다 / 페이지 추가 */}
       <Route path="notice" element={<NoticeList />} />
+      <Route path="notice/:no" element={<NoticeDetail />} />
       <Route path="notice/new" element={<NoticeForm />} />
       <Route path="notice/:no/edit" element={<NoticeForm />} />
 
@@ -40,6 +46,8 @@ export default function DbmsRoutes() {
       <Route path="qa/new" element={<QaForm />} />
       <Route path="qa/:no/edit" element={<QaForm />} />
       <Route path="qa/:no" element={<QaDetail />} />
+
+      <Route path="attach" element={<AttachList />} />
 
 
       <Route path="inmenu" element={<InMenuList />} />
@@ -71,7 +79,11 @@ export default function DbmsRoutes() {
       <Route path="login" element={<DbmsLogin />} />{/* 관리자 로그인 */}
       <Route path="memberlist" element={<MemberList />} />
       <Route path="memberlist/:role/:no" element = {<MemberDetail />} />
-      <Route path="updatehistory" element = {<UpdateHistory />} />
+      <Route path="history/update" element = {<UpdateHistory />} />
+      <Route path="history/login" element = {<LoginHistory />} />
+      
+      <Route path="mypage" element={<MyPage />} />
+      <Route path="mypage/change-password" element={<ChangePassword />} />
     </Routes>
   );
 }

@@ -14,8 +14,6 @@
 // ISDEL       CHAR(1)     DEFAULT 'N'         NULL, -- 삭제여부(Y/N)
 // DDATE       VARCHAR2(30)                    NULL, -- 삭제일시
 
-import { useLocation } from "react-router-dom";
-
 export interface QaTypes {
   no: number;
   mno: number;
@@ -37,6 +35,7 @@ export interface QaTypes {
   ddate?: string;
 
   isfaq: string;
+  fileyn: string;
 }
 
 
@@ -102,6 +101,7 @@ export interface FaqCRequest {
   cdate: string;
   pw: string;
   vseq?: number;
+  fileyn?: string;
 }
 
 /* 문의사항 등록 */
@@ -113,6 +113,7 @@ export interface QCRequest {
   cdate: string;
   pw: string;
   vmode: string;
+  fileyn?: string;
 }
 
 /* 문의사항 댓글 등록 */

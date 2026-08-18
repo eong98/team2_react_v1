@@ -335,8 +335,6 @@ body.alert_mode .sim_toggle .dot{background:var(--red-500);animation:blink 1s in
 .stat_mini .val{font-family:var(--font-mono);font-size:19px;font-weight:700;}
 
 /* ===== 04 · 매장 · CCTV 관리 (store-cctv-v2) ===== */
-.btn_danger_outline{background:none;border-color:rgba(255,77,94,.5);color:var(--red-200);}
-
 
 .modal_foot{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;}
 
@@ -433,15 +431,16 @@ body.alert_mode .sim_toggle .dot{background:var(--red-500);animation:blink 1s in
 
 
 
-/* 문의상세 */
-.qa_area .card_header {display:flex; justify-content: space-between; align-items: center; margin-bottom:8px;}
-.qa_area .card_header .b_title {margin:0;}
-.qa_area .badge_area {margin-bottom:8px;}
-.qa_area .title_area {border-bottom:1px solid var(--border);}
-.qa_area .title_area .b_title {display:flex; justify-content: space-between; align-items: center; margin:8px 0 12px;}
-.qa_area .card {margin-top:20px;}
-.qa_area .card:first-child {margin-top:0;}
-.qa_area .card .card_contents {margin:32px 0;}
+/* 게시글 상세 */
+.detail_area .card_header {display:flex; justify-content: space-between; align-items: center; margin-bottom:8px;}
+.detail_area .card_header .b_title {margin:0;}
+.detail_area .badge_area {margin-bottom:8px;}
+.detail_area .title_area {border-bottom:1px solid var(--border);}
+.detail_area .title_area .b_title {display:flex; justify-content: space-between; align-items: center; margin:8px 0 12px;}
+.detail_area .title_area .icon {width:18px; height:18px; vertical-align:text-top; margin:1px 4px;}
+.detail_area .card {margin-top:20px;}
+.detail_area > .card:first-child {margin-top:0;}
+.detail_area .card .card_contents {margin:32px 0;}
 
 /* 문의 답변 */
 .answer_area .cell_title {color:var(--text-faint); font-size:14px; font-weight:400; line-height:1.7; white-space:pre-wrap;}

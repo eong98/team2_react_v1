@@ -1,11 +1,12 @@
-import { useEffect, useState, type ChangeEvent } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { AlertModal, PageHeader } from '../../../components/ui';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useParams } from 'react-router-dom';
+import { AlertModal, AttachUploader, PageHeader, type AttachUploaderHandle } from '../../../components/ui';
 import { axiosInstance, cutByByte, getByteLength, getNowDate, set_focus } from '../../../utils/Tool';
-import { QA_TYPE_MAP, type FaqCRequest, type TabKey } from '../../../components/ts/QaType';
+import { QA_TYPE_MAP, type FaqCRequest } from '../../../components/ts/QaType';
 import axios from 'axios';
 import { GlobalStoreSession } from '../../../store/LoginStore';
-import { useTab } from '../../../hooks/useTab';
+import { usePaging } from '../../../hooks/usePaging';
+import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 
 /**
  * 
@@ -13,7 +14,6 @@ import { useTab } from '../../../hooks/useTab';
  * 
  */
 export default function QaForm() {
-  const navigate = useNavigate();
   const { no } = useParams<{ no: string }>();
   const { no:ano, id, grade } = GlobalStoreSession();
   const isEdit = Boolean(no);
@@ -21,16 +21,14 @@ export default function QaForm() {
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
   
   
+  /* 첨부파일 변경확인 */
+  const attachRef = useRef<AttachUploaderHandle>(null);
+  
   /* 에러타입 정의 */
   type FormErrors = Partial<Record<keyof FaqCRequest, string>>;
   const [errors, setErrors] = useState<FormErrors>({});
 
-  // 범용 useTab 훅 사용
-  const { goToList, navigateWithTab } = useTab<TabKey>({
-    defaultTab: 'qa',
-    basePath: '/dbms/qa',
-  });
-
+  const { goToList } = usePaging({ basePath: '/dbms/qa' });
 
   const [input, setInput] = useState<FaqCRequest>({
     ano: ano,
@@ -40,11 +38,12 @@ export default function QaForm() {
     answer: '',
     cdate: '',
     pw: '',
-    vseq: 1
+    vseq: 1,
+    fileyn : 'N'
   });
 
   /** 수정 진입 시 기존 데이터를 불러와 폼에 채워 넣는다 */
-  const loadQa = () => {
+  const loadQaList = () => {
     axiosInstance.get(`/qa/${no}`, {
         headers: {
           accessNo: String(ano),
@@ -61,6 +60,7 @@ export default function QaForm() {
           content: data.content,
           answer: data.answer ?? '',
           vseq: data.vseq != null ? Number(data.vseq) : 1,
+          fileyn: data.fileyn === 'Y' || data.fileyn === true ? 'Y' : 'N'
         }))
       })
       .catch((err) => console.error('게시물 상세 조회 실패:', err));
@@ -68,7 +68,7 @@ export default function QaForm() {
 
   useEffect(() => {
     if (!isEdit) return;
-    loadQa();
+    loadQaList();
   }, [isEdit, no]);
 
   const onChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -127,7 +127,8 @@ export default function QaForm() {
   // ==========================================
   // 3. API 저장 처리 (POST /qa/faq)
   // ==========================================
-  const handleSave = async () => {
+  const send = async (e: React.SyntheticEvent) => {
+    e.preventDefault();
     if (!validate() || submitting) return;
 
     setSubmitting(true);
@@ -140,7 +141,8 @@ export default function QaForm() {
         answer: input.answer,
         cdate: getNowDate(),
         pw: input.pw,
-        vseq: input.vseq
+        vseq: input.vseq,
+        fileyn: input.fileyn
       };
       
 
@@ -148,9 +150,27 @@ export default function QaForm() {
       if (isEdit) {
         // FAQ 작성 (수정) API 호출
         await axiosInstance.put(`/qa/faq/${no}`, payload);
+        // 수정: 이미 있는 bno로, 그동안 담아둔 업로드/삭제 예정 파일들을 실제로 반영
+        if (attachRef.current?.hasPendingChanges()) {
+          try {
+            await attachRef.current.commit();
+          } catch (attachErr) {
+            console.error('첨부파일 반영 실패 (글은 정상 저장됨):', attachErr);
+          }
+        }
       } else {
         // FAQ 작성 (등록) API 호출
-        await axiosInstance.post('/qa/faq', payload);
+        const res = await axiosInstance.post('/qa/faq', payload);
+        
+        const newNo = res.data;
+
+        if (newNo && attachRef.current?.hasPendingChanges()) {
+          try {
+            await attachRef.current.commit(Number(newNo));
+          } catch (attachErr) {
+            console.error('첨부파일 반영 실패 (글은 정상 저장됨):', attachErr);
+          }
+        }
       }
 
       setAlert({ message: isEdit ? 'FAQ가 수정되었습니다.' : 'FAQ가 등록되었습니다.', variant: 'success', onConfirm: goToList });
@@ -213,165 +233,182 @@ export default function QaForm() {
         }
       />
 
-      <div className="card card_pad_lg form_page">
-        {/* 태그 (접수 유형) */}
-        <div className="form_group">
-          <label className="form_label" htmlFor="qa_type">
-            문의 유형<span className="req" title="필수 입력 요소">*</span>
-          </label>
+      <form onSubmit={send}  encType="multipart/form-data">
+        <div className="card card_pad_lg form_page">
+          {/* 태그 (접수 유형) */}
+          <div className="form_group">
+            <label className="form_label" htmlFor="qa_type">
+              문의 유형<span className="req" title="필수 입력 요소">*</span>
+            </label>
 
-          <div className="form_control">
-            <select
-              id="qa_type"
-              name='type'
-              className="form_select"
-              value={input.type}
-              onChange={onChange}
-              style={{ maxWidth: 200 }}
+            <div className="form_control">
+              <select
+                id="qa_type"
+                name='type'
+                className="form_select"
+                value={input.type}
+                onChange={onChange}
+                style={{ maxWidth: 200 }}
+              >
+                {Object.entries(QA_TYPE_MAP).map(([status, {label}]) => (
+                  <option key={status} value={status}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <div className="form_hint">유형을 선택하지 않을 경우 기타유형으로 등록됩니다.</div>
+            </div>
+          </div>
+
+          {/* 작성자 (readOnly) */}
+          <div className="form_group">
+            <label className="form_label" htmlFor="user_id">
+              작성자 ID
+            </label>
+            <div className="form_control">
+              <input
+                type='text'
+                id="user_id"
+                name='ano'
+                className="form_input"
+                value={`${isEdit ? id : '등록할때 저장된 아이디 수정예정'} (No.${ano})`}
+                readOnly
+                style={{ maxWidth: 200 }}
+              />
+            </div>
+          </div>
+
+          {/* 제목 */}
+          <div className="form_group">
+            <label className="form_label" htmlFor="qa_title">
+              문의 제목<span className="req" title="필수 입력 요소">*</span>
+            </label>
+            <div className="form_control">
+              <input
+                type='text'
+                id="qa_title"
+                className={`form_input ${errors.title ? 'is_error' : ''}`}
+                placeholder="FAQ 제목을 입력하세요"
+                name='title'
+                value={input.title}
+                onChange={onChange}
+              />
+                {errors.title ? (
+                  <div className="form_hint error">{errors.title}</div>
+                ) : (
+                  <div className="form_hint">제목은 200자 이내만 가능합니다. </div>
+                )}
+            </div>
+          </div>
+
+          {/* 내용 */}
+          <div className="form_group">
+            <label className="form_label" htmlFor="qa_content">
+              문의 내용<span className="req" title="필수 입력 요소">*</span>
+            </label>
+            <div className="form_control">
+              <textarea
+                id="qa_content"
+                className={`form_textarea ${errors.content ? 'is_error' : ''}`}
+                placeholder="FAQ 상세 내용을 입력하세요"
+                value={input.content}
+                name='content'
+                onChange={onChange}
+                style={{ minHeight: 220 }}
+              />
+              {errors.content ? (
+                <div className="form_hint error">{errors.content}</div>
+              ) : (
+                <div className="form_hint">등록 후에도 관리자 목록에서 수정할 수 있습니다.</div>
+              )}
+            </div>
+          </div>
+
+          {/* 답변내용 */}
+          <div className="form_group">
+            <label className="form_label" htmlFor="qa_answer">
+              답변 내용<span className="req" title="필수 입력 요소">*</span>
+            </label>
+            <div className="form_control">
+              <textarea
+                id="qa_answer"
+                className={`form_textarea ${errors.answer ? 'is_error' : ''}`}
+                placeholder="FAQ 답변 내용을 입력하세요"
+                name='answer'
+                value={input.answer}
+                onChange={onChange}
+                style={{ minHeight: 220 }}
+              />
+              {errors.answer && <div className="form_hint error">{errors.answer}</div>}
+            </div>
+          </div>
+
+          
+          {/* 파일영역 */}
+          <AttachUploader 
+              ref={attachRef} 
+              tname={ATTACH_BOARD_LABEL[0].table} 
+              bno={isEdit ? Number(no) : undefined}
+              onCountChange={(count) => {
+                setInput((prev) => ({ ...prev, fileyn: count > 0 ? 'Y' : 'N' }))
+              }}
+          />
+
+          {/* 게시글 출력순서 */}
+          <div className="form_group">
+            <label className="form_label" htmlFor="seq">
+              출력순서
+            </label>
+            <div className="form_control">
+              <input
+                type='number'
+                min='1'
+                id="seq"
+                name='vseq'
+                className="form_input"
+                value={input.vseq}
+                onChange={onChange}
+                style={{ maxWidth: 200 }}
+              />
+              <div className="form_hint">출력순서 미지정시 등록일 순으로 노출됩니다.</div>
+            </div>
+          </div>
+
+          {/* 게시글 비밀번호 */}
+          <div className="form_group">
+            <label className="form_label" htmlFor="password">
+              게시글 비밀번호<span className="req" title="필수 입력 요소">*</span>
+            </label>
+            <div className="form_control">
+              <input
+                type='password'
+                id="password"
+                name='pw'
+                className={`form_input ${errors.pw ? 'is_error' : ''}`}
+                value={input.pw}
+                onChange={onChange}
+                style={{ maxWidth: 200 }}
+              />
+              {errors.pw && <div className="form_hint error">{errors.pw}</div>}
+            </div>
+          </div>
+
+
+          {/* 하단 버튼 영역 */}
+          <div className="form_page_footer">
+            <button type="button" className="btn btn_md btn_ghost" onClick={() => goToList()}>
+              취소
+            </button>
+            <button
+              type="submit"
+              className="btn btn_md btn_primary"
+              disabled={submitting}
             >
-              {Object.entries(QA_TYPE_MAP).map(([status, {label}]) => (
-                <option key={status} value={status}>
-                  {label}
-                </option>
-              ))}
-            </select>
-            <div className="form_hint">유형을 선택하지 않을 경우 기타유형으로 등록됩니다.</div>
+              {submitting ? '저장 중...' : '저장'}
+            </button>
           </div>
         </div>
-
-        {/* 작성자 (readOnly) */}
-        <div className="form_group">
-          <label className="form_label" htmlFor="user_id">
-            작성자 ID
-          </label>
-          <div className="form_control">
-            <input
-              type='text'
-              id="user_id"
-              name='ano'
-              className="form_input"
-              value={`${isEdit ? id : '등록할때 저장된 아이디 수정예정'} (No.${ano})`}
-              readOnly
-              style={{ maxWidth: 200 }}
-            />
-          </div>
-        </div>
-
-        {/* 제목 */}
-        <div className="form_group">
-          <label className="form_label" htmlFor="qa_title">
-            문의 제목<span className="req" title="필수 입력 요소">*</span>
-          </label>
-          <div className="form_control">
-            <input
-              type='text'
-              id="qa_title"
-              className={`form_input ${errors.title ? 'is_error' : ''}`}
-              placeholder="FAQ 제목을 입력하세요"
-              name='title'
-              value={input.title}
-              onChange={onChange}
-            />
-            {errors.title && <div className="form_hint error">{errors.title}</div>}
-          </div>
-        </div>
-
-        {/* 내용 */}
-        <div className="form_group">
-          <label className="form_label" htmlFor="qa_content">
-            문의 내용<span className="req" title="필수 입력 요소">*</span>
-          </label>
-          <div className="form_control">
-            <textarea
-              id="qa_content"
-              className={`form_textarea ${errors.content ? 'is_error' : ''}`}
-              placeholder="FAQ 상세 내용을 입력하세요"
-              value={input.content}
-              name='content'
-              onChange={onChange}
-              style={{ minHeight: 220 }}
-            />
-            {errors.content ? (
-              <div className="form_hint error">{errors.content}</div>
-            ) : (
-              <div className="form_hint">등록 후에도 관리자 목록에서 수정할 수 있습니다.</div>
-            )}
-          </div>
-        </div>
-
-        {/* 답변내용 */}
-        <div className="form_group">
-          <label className="form_label" htmlFor="qa_answer">
-            답변 내용<span className="req" title="필수 입력 요소">*</span>
-          </label>
-          <div className="form_control">
-            <textarea
-              id="qa_answer"
-              className={`form_textarea ${errors.answer ? 'is_error' : ''}`}
-              placeholder="FAQ 답변 내용을 입력하세요"
-              name='answer'
-              value={input.answer}
-              onChange={onChange}
-              style={{ minHeight: 220 }}
-            />
-            {errors.answer && <div className="form_hint error">{errors.answer}</div>}
-          </div>
-        </div>
-
-        {/* 게시글 비밀번호 */}
-        <div className="form_group">
-          <label className="form_label" htmlFor="password">
-            게시글 비밀번호<span className="req" title="필수 입력 요소">*</span>
-          </label>
-          <div className="form_control">
-            <input
-              type='password'
-              id="password"
-              name='pw'
-              className={`form_input ${errors.pw ? 'is_error' : ''}`}
-              value={input.pw}
-              onChange={onChange}
-              style={{ maxWidth: 200 }}
-            />
-            {errors.pw && <div className="form_hint error">{errors.pw}</div>}
-          </div>
-        </div>
-
-        {/* 게시글 출력순서 */}
-        <div className="form_group">
-          <label className="form_label" htmlFor="seq">
-            출력순서
-          </label>
-          <div className="form_control">
-            <input
-              type='number'
-              min='1'
-              id="seq"
-              name='vseq'
-              className="form_input"
-              value={input.vseq}
-              onChange={onChange}
-              style={{ maxWidth: 200 }}
-            />
-            <div className="form_hint">출력순서 미지정시 등록일 순으로 노출됩니다.</div>
-          </div>
-        </div>
-
-        {/* 하단 버튼 영역 */}
-        <div className="form_page_footer">
-          <button type="button" className="btn btn_md btn_ghost" onClick={() => goToList()}>
-            취소
-          </button>
-          <button
-            type="button"
-            className="btn btn_md btn_primary"
-            onClick={handleSave}
-            disabled={submitting}
-          >
-            {submitting ? '저장 중...' : '저장'}
-          </button>
-        </div>
-      </div>
+      </form>
 
 
       <AlertModal

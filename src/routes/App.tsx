@@ -20,8 +20,12 @@ import RequireUserAuth from './RequireUserAuth';
 import Sidebar from '../components/layout/Sidebar';
 import Topbar from '../components/ui/common/Topbar';
 import ChatWidget from '../components/ui/user/ChatWidget';
-import DbmsDesignGuide from '../pages/guide/DBDesignGuide';
-import UserDesignGuide from '../pages/guide/UserDesignGuide';
+
+
+
+
+
+import DesignGuide from '../pages/guide/DesignGuide';
 
 
 function App() {
@@ -59,8 +63,7 @@ function App() {
 
           {/* 가이드 */}
           <Route element={<BaseLayout Sidebar={Sidebar} Topbar={Topbar} />}>
-            <Route path="/dbms/guide" element={<DbmsDesignGuide />} />
-            <Route path="/user/guide" element={<UserDesignGuide />} />
+            <Route path="/guide" element={<DesignGuide />} />
           </Route>
           
         </Routes>

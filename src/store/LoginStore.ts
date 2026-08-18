@@ -31,6 +31,8 @@ interface SessionStore {
   // 1~5 관리자, 6~10 사용자
   grade: number;
   setGrade: (value: number) => void;
+  mname: string;
+  setMname: (value: string) => void;
 }
 
 export const GlobalStoreSession = create<SessionStore>()(
@@ -45,7 +47,9 @@ export const GlobalStoreSession = create<SessionStore>()(
       setId: (value) => set({ id: value }), 
       // 1: 최상위 관리자, 2~5: 일반 관리자, 6~10 사용자, 99: 손님
       grade: 99,  
-      setGrade: (value) => set({ grade: value})
+      setGrade: (value) => set({ grade: value}),
+      mname: '',
+      setMname: (value) => set({ mname: value})
     }),
     {
       name: 'auth-cookie-store',
