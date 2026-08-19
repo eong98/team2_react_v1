@@ -64,6 +64,7 @@ export const ATTACH_TYPE_LABEL: Record<0 | 1, string> = {
 export const ATTACH_BOARD_LABEL: Record<number, { name: string; table: string }> = {
   0: { name: '문의사항', table: 'QA'},
   1: { name: '공지사항', table: 'NOTICE'},
+  2: { name: 'CCTV 이슈', table: 'CCTV_ISSUE'},
 };
 
 /** 파일 크기(byte)를 KB/MB 단위 문자열로 변환 */

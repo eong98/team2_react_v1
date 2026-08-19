@@ -2,14 +2,9 @@ import axios from 'axios';
 import type { KeyboardEvent } from 'react';
 
 const getIP = () => {
-<<<<<<< HEAD
-  // return "10.1.205.119"; // 학원
-  return "1.201.122.5"; // 장우원 가비아
-=======
-  return "10.1.205.118"; // 학원
->>>>>>> f6fe374f9858bbf72e328d85808cb569f51b5494
-  // return "1.201.122.5"; // 학원
-
+  return "10.1.205.119"; // 학원
+  // return "1.201.122.5"; // 장우원 가비아
+  // return "10.1.205.118"; // 학원
 }
 
 const getCopyright = () => {

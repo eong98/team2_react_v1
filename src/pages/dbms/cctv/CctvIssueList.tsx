@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AdminToolbar, DataTable, PageHeader, DbmsPagination, type DataTableColumn } from '../../../components/ui';
+import { AdminToolbar, AttachViewer, DataTable, PageHeader, DbmsPagination, type DataTableColumn } from '../../../components/ui';
 import { axiosInstance } from '../../../utils/Tool.ts';
 import {
   PAGE_SIZE,
@@ -40,6 +40,10 @@ export default function CctvIssueListView() {
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+
+  // "보기" 클릭 시 열리는 상세 패널 대상 (닫힘 트랜지션 중에도 내용 유지) - 매장에서 등록한 증빙 첨부파일 확인용
+  const [detail, setDetail] = useState<RowType | null>(null);
+  const [renderDetail, setRenderDetail] = useState<RowType | null>(null);
 
   const loadList = async () => {
     setLoading(true);
@@ -82,6 +86,10 @@ export default function CctvIssueListView() {
     loadList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [applied, page]);
+
+  useEffect(() => {
+    if (detail) setRenderDetail(detail);
+  }, [detail]);
 
   const onSearch = () => {
     setPage(1);
@@ -242,10 +250,100 @@ export default function CctvIssueListView() {
         data={rows}
         rowKey={(r) => r.no}
         loading={loading}
+        onEdit={(r) => setDetail(r)}
+        editLabel="보기"
         emptyMessage="검색 결과가 없습니다."
       />
 
       <DbmsPagination page={page} totalPages={totalPages} totalCount={totalElements} pageSize={PAGE_SIZE} onChange={setPage} />
+
+      {/* ---- 이슈 상세 패널 (조회 전용) - 매장에서 등록한 증빙 첨부파일(사진/영수증) 확인 ---- */}
+      <div className={`overlay_bg${detail ? ' open' : ''}`} onClick={() => setDetail(null)} />
+      <div
+        className={`detail_panel${detail ? ' open' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cctvIssueAdminDetailTitle"
+      >
+        {renderDetail && (
+          <>
+            <div className="detail_head">
+              <h2 id="cctvIssueAdminDetailTitle">CCTV 이슈 상세</h2>
+              <button className="close_btn" onClick={() => setDetail(null)} aria-label="이슈 상세 닫기">
+                ✕
+              </button>
+            </div>
+            <div className="detail_body">
+              <div className="conf_box">
+                <div
+                  className="conf_ring"
+                  style={{
+                    background: 'var(--surface-2)',
+                    border: '2px solid var(--border-strong)',
+                    color: 'var(--text)',
+                  }}
+                >
+                  {renderDetail.reliability ? `${renderDetail.reliability}%` : '-'}
+                </div>
+                <div>
+                  <div className="clabel">AI 감지 신뢰도</div>
+                  <div className="ctype">{CODE_LABELS[renderDetail.code] ?? renderDetail.code}</div>
+                </div>
+              </div>
+
+              <div className="detail_info_grid">
+                <div className="info_cell">
+                  <div className="k">발생 일시</div>
+                  <div className="v">{renderDetail.cdate}</div>
+                </div>
+                <div className="info_cell">
+                  <div className="k">CCTV 번호</div>
+                  <div className="v">#{renderDetail.cno}</div>
+                </div>
+                <div className="info_cell">
+                  <div className="k">오탐여부</div>
+                  <div className="v">
+                    <span className={`badge ${STATE_BADGE[renderDetail.state] ?? 'badge_neutral'}`}>
+                      {STATE_LABELS[renderDetail.state] ?? renderDetail.state}
+                    </span>
+                  </div>
+                </div>
+                <div className="info_cell">
+                  <div className="k">발송여부</div>
+                  <div className="v">
+                    <span className={`badge ${renderDetail.noticeyn === 'Y' ? 'badge_success' : 'badge_neutral'}`}>
+                      {renderDetail.noticeyn === 'Y' ? '발송완료' : '미발송'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 18, lineHeight: 1.6 }}>
+                {renderDetail.comnet || '등록된 상황설명이 없습니다.'}
+              </p>
+
+              <div className="detail_info_grid">
+                <div className="info_cell">
+                  <div className="k">처리담당자</div>
+                  <div className="v">{renderDetail.mno ? `#${renderDetail.mno}` : '미배정'}</div>
+                </div>
+                <div className="info_cell">
+                  <div className="k">처리일시</div>
+                  <div className="v">{renderDetail.pdate || '미처리'}</div>
+                </div>
+              </div>
+
+              {/* 매장(사용자)에서 등록한 증빙 첨부파일(현장 사진/영수증 등) - 조회 전용 */}
+              <div className="form_group">
+                <div className="form_label">증빙 첨부파일</div>
+                <div className="form_control">
+                  <AttachViewer bno={renderDetail.no} onlyList={false} />
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     </section>
   );
 }

@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { PageHeader, DataTable, UserPagination, AlertModal, type DataTableColumn } from '../../../components/ui/index.ts';
+import { PageHeader, DataTable, UserPagination, AlertModal, AttachUploader, type AttachUploaderHandle, type DataTableColumn } from '../../../components/ui/index.ts';
 import Filterbar from '../../../components/ui/user/Filterbar.tsx';
 import { axiosInstance, getNowDate } from '../../../utils/Tool.ts';
 import {
@@ -14,6 +14,7 @@ import {
   type RowType,
   type Filters,
 } from '../../../components/ts/CctvIssue.ts';
+import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach.ts';
 import { GlobalStoreSession } from '../../../store/LoginStore.ts';
 import { GlobalCurrentShop } from '../../../store/UserStore.ts';
 
@@ -67,6 +68,10 @@ export default function CctvIssueListView() {
   const [detail, setDetail] = useState<RowType | null>(null);
   const [renderDetail, setRenderDetail] = useState<RowType | null>(null);
   const [processing, setProcessing] = useState(false);
+
+  // 증빙 첨부파일(사진/영수증 등) - 이미 저장된 이슈(no)에 바로 업로드/삭제 반영
+  const attachRef = useRef<AttachUploaderHandle>(null);
+  const [attachSaving, setAttachSaving] = useState(false);
 
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error' } | null>(null);
 
@@ -161,6 +166,23 @@ export default function CctvIssueListView() {
       setAlert({ message: '처리에 실패했습니다.\n다시 시도해주세요.', variant: 'error' });
     } finally {
       setProcessing(false);
+    }
+  };
+
+  // 증빙 첨부파일 저장 (업로드/삭제 예정 파일들을 실제 서버에 반영)
+  const handleAttachSave = async () => {
+    if (!renderDetail || attachSaving) return;
+    if (!attachRef.current?.hasPendingChanges()) return;
+
+    setAttachSaving(true);
+    try {
+      await attachRef.current.commit(renderDetail.no);
+      setAlert({ message: '증빙 첨부파일이 저장되었습니다.', variant: 'success' });
+    } catch (err) {
+      console.error('증빙 첨부파일 저장 실패:', err);
+      setAlert({ message: '첨부파일 저장에 실패했습니다.\n다시 시도해주세요.', variant: 'error' });
+    } finally {
+      setAttachSaving(false);
     }
   };
 
@@ -430,6 +452,25 @@ export default function CctvIssueListView() {
               <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 18, lineHeight: 1.6 }}>
                 {renderDetail.comnet || '등록된 상황설명이 없습니다.'}
               </p>
+
+              {/* 증빙 첨부파일 - 현장 사진/영수증 등을 매장에서 직접 등록, 관리자는 dbms에서 확인 */}
+              <AttachUploader
+                key={renderDetail.no}
+                ref={attachRef}
+                tname={ATTACH_BOARD_LABEL[2].table}
+                bno={renderDetail.no}
+                description="현장 사진 · 영수증 등 증빙 파일 (최대 10MB)"
+              />
+              <div className="form_page_footer" style={{ marginTop: -8, marginBottom: 18 }}>
+                <button
+                  type="button"
+                  className="btn btn_sm btn_outline_primary"
+                  disabled={attachSaving}
+                  onClick={handleAttachSave}
+                >
+                  {attachSaving ? '첨부파일 저장 중...' : '첨부파일 저장'}
+                </button>
+              </div>
 
               <div className="detail_info_grid">
                 <div className="info_cell">
