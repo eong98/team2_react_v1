@@ -20,7 +20,7 @@ export default function SurveyForm() {
   const { no } = useParams<{ no: string }>();
   const isEdit = Boolean(no);
 
-  const memberNo = GlobalStoreSession(
+  const managerNo = GlobalStoreSession(
     (state) => state.no);
 
   const [title, setTitle] = useState('');
@@ -214,7 +214,7 @@ export default function SurveyForm() {
     if (!validateForm()) return;
 
     const serverData = {
-      memberNo,
+      managerNo,
       title: title.trim(),
       detail: detail.trim(),
       startDate: toServerStartDate(startDate),
@@ -285,7 +285,7 @@ export default function SurveyForm() {
         <div className="field_row">
           <div className="field_label">작성자</div>
           <div className="field_control">
-            <input type="text" className="form_input survey_writer_input" value={`관리자 ${memberNo}`} disabled />
+            <input type="text" className="form_input survey_writer_input" value={`관리자 ${managerNo}`} disabled />
             <div className="field_hint"> 현재 로그인한 관리자 회원번호입니다. </div>
           </div>
         </div>

@@ -20,6 +20,8 @@ export default function ShopPlan() {
       .catch(err => console.error(err));
   }, []);
 
+  // if ()
+
   
   return (
     <section className="view active">

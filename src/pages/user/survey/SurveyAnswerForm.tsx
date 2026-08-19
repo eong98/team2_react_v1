@@ -204,7 +204,7 @@ export default function SurveyAnswerForm() {
   ======================================================= */
 
   const answeredCount =
-    survey
+    survey && survey.questions
       ? survey.questions.filter(
         (question) =>
           hasAnswer(question.no)
