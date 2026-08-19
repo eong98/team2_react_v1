@@ -23,13 +23,13 @@ export interface SurveyQuestion {
 
 export interface Survey {
   no: number;
-  memberNo: number;
+  managerNo: number;
   title: string;
   detail: string | null;
   startDate: string;
   endDate: string;
   cdate?: string;
-  questions?: SurveyQuestion[];
+  questions: SurveyQuestion[];
 }
 
 export interface SurveyInfo {
@@ -80,7 +80,7 @@ export type AnswerValue = string | string[];
 export type AnswerState = Record<number, AnswerValue>;
 
 export interface SurveySaveRequest {
-  memberNo: number;
+  managerNo: number;
   title: string;
   detail: string;
   startDate: string;
