@@ -224,7 +224,7 @@ export default function ShopFormView() {
       />
 
       <form onSubmit={send}>
-        <div className="card card_pad_lg">
+        <div className="card card_pad_lg form_page">
 
           {/* 소유 회원번호 - 관리자 화면에서는 참고용으로만 표시, 수정 불가 */}
           <div className="form_group">
