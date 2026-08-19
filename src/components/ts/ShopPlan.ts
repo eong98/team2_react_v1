@@ -21,6 +21,9 @@ export interface ShopPlanTypes {
   maxcctv: number | '';
   description?: string;
   issell: 'Y' | 'N';
+  isreco: 'Y' | 'N';
+  orderCount?: number;  // 실제 주문 건수
+  popular?: boolean;    // 같은 기간 그룹 내 1위 여부 (자동 계산)
   cdate?: string;
 }
 

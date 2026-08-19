@@ -131,7 +131,7 @@ export default function ShopPlanList() {
   };
 
   const columns: DataTableColumn<RowType>[] = [
-    { header: '번호', mono: true, render: (r) => r.cnt },
+    { header: '번호', width: '100px', mono: true, render: (r) => r.cnt },
     {
       header: '구독권',
       render: (sp) => (
@@ -156,7 +156,7 @@ export default function ShopPlanList() {
     { header: '등록일', width: '15%', mono: true, render: (sp) => sp.cdate },
     {
       header: '미리보기',
-      width: '90px',
+      width: '110px',
       render: (sp) => (
         <button type="button" className="btn btn_xsm btn_ghost" onClick={() => setPreviewTarget(sp)}>
           사용자화면
@@ -241,20 +241,24 @@ export default function ShopPlanList() {
         }
       >
         {previewTarget && (
-          <div style={{ marginTop: 8 }}>
-            <p className="cell_sub" style={{ marginBottom: 10 }}>
-              /user/subscribe 결제 위저드 STEP2에서 이 구독권이 실제로 보이는 모습입니다.
+          <div>
+            <p className="b_title" style={{ marginBottom: 10 }}>
+              사용자가 구독권을 선택하는 화면에 아래처럼 보여집니다.
             </p>
-            <div className="plan_grid" style={{ maxWidth: 260 }}>
-              <div className="card plan_card">
-                {previewTarget.issell === 'Y' && <span className="current_tag" style={{ background: 'var(--surface-2)' }}>판매중</span>}
+            <div className="plan_grid">
+              <div className={`card plan_card${previewTarget.isreco === 'Y' ? ' plan_highlight' : ''}`}>
+                {previewTarget.isreco === 'Y' && <span className="plan_tag reco">추천</span>}
+
                 <h3>{previewTarget.pname}</h3>
+                
                 <div className="plan_range mono">
                   {previewTarget.mincctv} ~ {previewTarget.maxcctv}대
                 </div>
+
                 <div className="plan_unit mono">
-                  대당 <span className="unit_price">{previewTarget.bprice.toLocaleString('ko-KR')}</span>원 / {previewTarget.pmonth}개월
+                  대당 <span className="price">{previewTarget.bprice.toLocaleString('ko-KR')}</span>원 / {previewTarget.pmonth}개월
                 </div>
+
                 {previewTarget.description && (
                   <ul>
                     {previewTarget.description.split('|').map((f) => (
@@ -264,9 +268,10 @@ export default function ShopPlanList() {
                 )}
               </div>
             </div>
+
             {previewTarget.issell === 'N' && (
               <p className="form_hint error" style={{ marginTop: 10 }}>
-                판매중지 상태입니다 — 실제로는 사용자 화면(GET /shop_plan/list)에 노출되지 않을 수 있습니다. (백엔드 필터 조건 확인 필요)
+                판매중지 상태입니다 — 사용자 화면에 노출되지 않습니다.
               </p>
             )}
           </div>

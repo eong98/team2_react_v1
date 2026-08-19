@@ -1,6 +1,6 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
 import { useParams } from 'react-router-dom';
-import { AlertModal, PageHeader } from '../../../components/ui';
+import { AlertModal, Modal, PageHeader } from '../../../components/ui';
 import { axiosInstance, set_focus } from '../../../utils/Tool';
 import { usePaging } from '../../../hooks/usePaging';
 import type { ShopPlanTypes } from '../../../components/ts/ShopPlan';
@@ -16,6 +16,8 @@ import type { ShopPlanTypes } from '../../../components/ts/ShopPlan';
    maxcctv     Integer - CCTV 대수 구간 최대
    description String  - 상세 설명, '|'로 구분해서 저장 (프론트에서 split해 리스트로 노출)
    issell      String  - 'Y'/'N' (상품 마스터 판매 여부 — 매장별 "이용중"과는 다른 필드)
+   isreco:     String  - 'Y' | 'N' (이용자의 결제된 구독권이 없는 경우 관리자가 직접 추천하는 구독권에 추천표시)
+   
 
    API (ShopPlanCont, /shop_plan)
    POST /shop_plan       - Request(JSON) → 등록
@@ -28,6 +30,7 @@ export default function ShopPlanForm() {
   const isEdit = Boolean(no);
   const [submitting, setSubmitting] = useState(false);
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
+  const [previewTarget, setPreviewTarget] = useState<ShopPlanTypes  | null>(null);
 
   const { goToList } = usePaging({ basePath: '/dbms/shopplan' });
   
@@ -39,7 +42,8 @@ export default function ShopPlanForm() {
     maxcctv: '',
     bprice: '',
     description: '',
-    issell: 'Y'
+    issell: 'Y',
+    isreco: 'N'
   });
 
   /* 에러타입 정의 */
@@ -61,6 +65,7 @@ export default function ShopPlanForm() {
           maxcctv: data.maxcctv ?? '',
           description: data.description ?? '',
           issell: data.issell === 'Y' ? 'Y' : 'N',
+          isreco: data.isreco === 'Y' ? 'Y' : 'N',
         }));
       })
       .catch((err) => console.error('구독권 상세 조회 실패:', err));
@@ -78,8 +83,6 @@ export default function ShopPlanForm() {
       type === 'number' ? (value === '' ? '' : Number(value)) : value;
 
     setInput((prev) => ({ ...prev, [name]: newValue }));
-
-    console.log(value)
 
     if (name in errors) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
@@ -138,8 +141,8 @@ export default function ShopPlanForm() {
         pname: input.pname,
         pmonth: Number(input.pmonth),
         bprice: Number(input.bprice),
-        mincctv: Number(input.mincctv), // 백엔드 필드명은 minqty
-        maxcctv: Number(input.maxcctv), // 백엔드 필드명은 maxqty
+        mincctv: Number(input.mincctv),
+        maxcctv: Number(input.maxcctv),
         description: input.description,
         issell: input.issell,
       };
@@ -281,7 +284,7 @@ export default function ShopPlanForm() {
                 <div className="form_hint error">{errors.mincctv ?? errors.maxcctv}</div>
               )}
               <div className="form_hint">
-                결제 위저드 STEP3에서 사용자가 조정할 수 있는 대수 범위입니다. 다른 등급과 구간이 겹치지 않도록 주의하세요.
+                구독권 선택 STEP2 에서 사용자가 조정할 수 있는 대수 범위입니다. 다른 등급과 구간이 겹치지 않도록 주의하세요.
               </div>
             </div>
           </div>
@@ -325,17 +328,93 @@ export default function ShopPlanForm() {
             </div>
           </div>
 
+          <div className="form_group">
+            <div className="form_label">추천 여부</div>
+            <div className="form_control">
+              <div className="check_row">
+                <div className="form_check">
+                  <input type="radio" id="isreco_Y" name="isreco" value="Y" checked={input.isreco === 'Y'} onChange={onChange} />
+                  <label htmlFor="isreco_Y" className="b_title">추천</label>
+                </div>
+                <div className="form_check">
+                  <input type="radio" id="isreco_N" name="isreco" value="N" checked={input.isreco === 'N'} onChange={onChange} />
+                  <label htmlFor="isreco_N" className="b_title">일반</label>
+                </div>
+              </div>
+
+              <div className="form_hint">
+                같은 이용기간(6개월 / 12개월) 내에서 여러 구독권을 추천으로 설정하면 전부 배지가 붙습니다. 하나만 추천하고 싶으면 관리자가 직접 나머지를 일반으로 바꿔주세요.
+              </div>
+            </div>
+          </div>
+
           {/* 푸터 버튼 */}
           <div className="form_page_footer">
             <button type="button" className="btn btn_md btn_ghost" onClick={() => goToList()}>
               취소
             </button>
+
+            <button type="button" className="btn btn_outline_primary" onClick={() => setPreviewTarget(input)}>
+              미리보기
+            </button>
+            
             <button type="submit" className="btn btn_md btn_primary" disabled={submitting}>
               {submitting ? '저장 중...' : '저장'}
             </button>
           </div>
         </div>
       </form>
+
+      
+      {/* 사용자 결제화면 카드 미리보기 — /user/subscribe STEP2의 plan_card와 동일 마크업 */}
+      <Modal
+        open={previewTarget !== null}
+        onClose={() => setPreviewTarget(null)}
+        titleId="planPreviewTitle"
+        title="사용자 화면 미리보기"
+        footer={
+          <button type="button" className="btn btn_md btn_ghost" onClick={() => setPreviewTarget(null)}>
+            닫기
+          </button>
+        }
+      >
+        {previewTarget && (
+          <div>
+            <p className="b_title" style={{ marginBottom: 10 }}>
+              사용자가 구독권을 선택하는 화면에 아래처럼 보여집니다.
+            </p>
+            <div className="plan_grid">
+              <div className={`card plan_card${previewTarget.isreco === 'Y' ? ' plan_highlight' : ''}`}>
+                {previewTarget.isreco === 'Y' && <span className="plan_tag reco">추천</span>}
+
+                <h3>{previewTarget.pname}</h3>
+                
+                <div className="plan_range mono">
+                  {previewTarget.mincctv} ~ {previewTarget.maxcctv}대
+                </div>
+
+                <div className="plan_unit mono">
+                  대당 <span className="price">{previewTarget.bprice.toLocaleString('ko-KR')}</span>원 / {previewTarget.pmonth}개월
+                </div>
+
+                {previewTarget.description && (
+                  <ul>
+                    {previewTarget.description.split('|').map((f) => (
+                      <li key={f}>{f}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+
+            {previewTarget.issell === 'N' && (
+              <p className="form_hint error" style={{ marginTop: 10 }}>
+                판매중지 상태입니다 — 사용자 화면에 노출되지 않습니다.
+              </p>
+            )}
+          </div>
+        )}
+      </Modal>
 
       <AlertModal
         open={alert !== null}
