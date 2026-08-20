@@ -9,6 +9,7 @@ import {
   STATE_LABELS,
   STATE_BADGE,
   EMPTY_FILTERS,
+  formatReliability,
   type CctvIssueSearchResult,
   type CctvIssueType,
   type RowType,
@@ -158,8 +159,8 @@ export default function CctvIssueListView() {
       const res = await axiosInstance.put<CctvIssueType>('/cctv_issue/update', dto);
       const updated = res.data;
 
-      setRows((prev) => prev.map((r) => (r.no === updated.no ? { ...updated, cnt: r.cnt } : r)));
-      setDetail((prev) => (prev && prev.no === updated.no ? { ...updated, cnt: prev.cnt } : prev));
+      setRows((prev) => prev.map((r) => (r.no === updated.no ? { ...r, ...updated, cnt: r.cnt } : r)));
+      setDetail((prev) => (prev && prev.no === updated.no ? { ...prev, ...updated, cnt: prev.cnt } : prev));
       setAlert({ message: '처리 결과가 저장되었습니다.', variant: 'success' });
     } catch (err) {
       console.error('CCTV 이슈 처리 실패:', err);
@@ -217,7 +218,7 @@ export default function CctvIssueListView() {
     { header: '번호', width: '64px', mono: true, render: (r) => r.cnt },
     {
       header: '발생일시',
-      width: '22%',
+      width: '16%',
       mono: true,
       render: (r) => (
         <span style={{ cursor: 'pointer' }} onClick={() => setDetail(r)}>
@@ -225,23 +226,44 @@ export default function CctvIssueListView() {
         </span>
       ),
     },
-    { header: 'CCTV', width: '10%', mono: true, render: (r) => `#${r.cno}` },
+    { header: 'CCTV', width: '8%', mono: true, render: (r) => `#${r.cno}` },
     {
       header: '유형',
-      width: '16%',
+      width: '12%',
       render: (r) => <span className="badge badge_info">{CODE_LABELS[r.code] ?? r.code}</span>,
     },
     {
+      header: '상황설명',
+      width: '24%',
+      render: (r) => (
+        <span title={r.comnet ?? ''}>
+          {r.comnet ? (r.comnet.length > 30 ? `${r.comnet.slice(0, 30)}…` : r.comnet) : '-'}
+        </span>
+      ),
+    },
+    {
       header: '오탐여부',
-      width: '13%',
+      width: '10%',
       render: (r) => (
         <span className={`badge ${STATE_BADGE[r.state] ?? 'badge_neutral'}`}>{STATE_LABELS[r.state] ?? r.state}</span>
       ),
     },
-    { header: '신뢰도', width: '11%', mono: true, render: (r) => (r.reliability ? `${r.reliability}%` : '-') },
+    {
+      header: '첨부',
+      width: '7%',
+      render: (r) =>
+        r.hasAttach ? (
+          <span className="badge badge_info" title="증빙 첨부파일 있음">
+            📎
+          </span>
+        ) : (
+          <span className="cell_sub">-</span>
+        ),
+    },
+    { header: '신뢰도', width: '9%', mono: true, render: (r) => formatReliability(r.reliability) },
     {
       header: '발송여부',
-      width: '13%',
+      width: '10%',
       render: (r) => (
         <span className={`badge ${r.noticeyn === 'Y' ? 'badge_success' : 'badge_neutral'}`}>
           {r.noticeyn === 'Y' ? '발송완료' : '미발송'}
@@ -414,7 +436,7 @@ export default function CctvIssueListView() {
                     color: 'var(--text)',
                   }}
                 >
-                  {renderDetail.reliability ? `${renderDetail.reliability}%` : '-'}
+                  {formatReliability(renderDetail.reliability)}
                 </div>
                 <div>
                   <div className="clabel">AI 감지 신뢰도</div>

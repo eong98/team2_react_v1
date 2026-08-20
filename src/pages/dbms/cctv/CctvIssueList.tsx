@@ -7,6 +7,7 @@ import {
   STATE_LABELS,
   STATE_BADGE,
   EMPTY_FILTERS,
+  formatReliability,
   type CctvIssueSearchResult,
   type RowType,
   type Filters,
@@ -130,7 +131,19 @@ export default function CctvIssueListView() {
         </span>
       ),
     },
-    { header: '신뢰도', width: '80px', mono: true, render: (r) => r.reliability ?? '-' },
+    {
+      header: '첨부',
+      width: '60px',
+      render: (r) =>
+        r.hasAttach ? (
+          <span className="badge badge_info" title="첨부파일 있음">
+            📎
+          </span>
+        ) : (
+          <span className="cell_sub">-</span>
+        ),
+    },
+    { header: '신뢰도', width: '80px', mono: true, render: (r) => formatReliability(r.reliability) },
     {
       header: '발송여부',
       width: '90px',
@@ -283,7 +296,7 @@ export default function CctvIssueListView() {
                     color: 'var(--text)',
                   }}
                 >
-                  {renderDetail.reliability ? `${renderDetail.reliability}%` : '-'}
+                  {formatReliability(renderDetail.reliability)}
                 </div>
                 <div>
                   <div className="clabel">AI 감지 신뢰도</div>
