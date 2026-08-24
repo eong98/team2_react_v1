@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import PageHeader from '../../../components/ui/common/PageHeader';
 import { ConfirmDeleteModal, AlertModal } from '../../../components/ui';
 import { axiosInstance, enter_chk, set_focus } from '../../../utils/Tool.ts';
@@ -76,6 +76,12 @@ export default function ShopFormView() {
   const { no: mno } = GlobalStoreSession(); 
   const { no } = useParams<{ no: string }>();
   const isEdit = Boolean(no);
+
+  // 구독권 연결 흐름으로 들어온 경우에만 값이 있음 (ShopSelect.tsx의 "새 매장 등록"에서 넘어옴)
+  const [searchParams] = useSearchParams();
+  const orderno = searchParams.get('orderno');
+  console.log(orderno)
+
 
   const [input, setInput] = useState<ShopType>({ ...EMPTY_SHOP, mno });
   const [loading, setLoading] = useState(isEdit);
@@ -190,6 +196,30 @@ export default function ShopFormView() {
         setFormAlert({ message: '저장에 실패했습니다.\n다시 시도해주세요.', variant: 'error' });
         return;
       }
+      
+
+      // 구독권 연결 흐름(orderno 있음)이면서, 신규 매장 등록인 경우에만 자동 연결
+      if (!isEdit && orderno) {
+        const newShopNo = response.data?.no;
+        if (newShopNo) {
+          try {
+            await axiosInstance.put(`/shop_order/${orderno}/link-shop`, { sno: newShopNo });
+            setFormAlert({
+              message: '매장이 등록되고 구독권이 연결되었습니다.',
+              variant: 'success',
+              onConfirm: () => navigate('/user/shoporder'),
+            });
+          } catch (linkErr) {
+            console.error('구독권 연결 실패:', linkErr);
+            setFormAlert({
+              message: '매장은 등록됐지만 구독권 연결에 실패했습니다.\n등록된 CCTV 대수가 결제하신 대수와 다를 수 있습니다.',
+              variant: 'error',
+            });
+          }
+          return;
+        }
+      }
+
 
       setFormAlert({
         message: isEdit ? '매장 정보가 수정되었습니다.' : '매장이 등록되었습니다.',

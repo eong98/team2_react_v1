@@ -32,7 +32,8 @@ import ShopMapUserList from '../pages/user/shopmap/ShopMapUserList';
 import MyPage from '../pages/main/mypage/MyPage';
 import ChangePassword from '../pages/main/mypage/ChangePassword';
 
-import ShopPlan from '../pages/main/shopplan/ShopPlan';
+import ShopMatch from '../pages/user/shoporder/ShopMatch';
+import ShopOrderList from '../pages/user/shoporder/ShopOrderList';
 
 
 export default function UserRoutes() {
@@ -49,7 +50,10 @@ export default function UserRoutes() {
       <Route path="notice" element={<NoticeList />} />
       <Route path="notice/:no" element={<NoticeDetail />} />
 
-      <Route path="shopplan" element={<ShopPlan />} />
+      <Route path="shoporder" element={<ShopOrderList />} />
+      {/* <Route path="shoporder/:no/edit" element={<ShopPlanForm />} /> */}
+
+      {/* <Route path="shopmatch/:orderno" element={<ShopMatch />} /> */}
 
       <Route path="shop" element={<ShopList />} />
       <Route path="shop/new" element={<ShopForm />} />

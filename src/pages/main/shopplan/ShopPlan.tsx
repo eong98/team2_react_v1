@@ -6,6 +6,7 @@ import { GlobalStoreSession } from '../../../store/LoginStore';
 import { GlobalCurrentShop } from '../../../store/UserStore';
 import type { ShopPlanTypes } from '../../../components/ts/ShopPlan';
 import './shoPlan.css'
+import type { ORRequest, ShopOrderTypes } from '../../../components/ts/ShopOrder';
 
 /* ---------------------------------------------------------------------
    구독권 안내 · 결제 (/user/subscribe) — 3단계 위저드
@@ -23,13 +24,8 @@ import './shoPlan.css'
    POST /shop_payment       → PRequest → 결제 등록
 --------------------------------------------------------------------- */
 
-const PMETHOD_ICON: Record<number, string> = {
-  0: '💳',
-  1: '🏦',
-  2: '📱',
-};
 
-export default function SubscriptionPlan() {
+export default function ShopPlan() {
   const navigate = useNavigate();
   const { no: mno, login } = GlobalStoreSession();
   const shopNo = GlobalCurrentShop((state) => state.no);
@@ -44,7 +40,7 @@ export default function SubscriptionPlan() {
   const [pmethod, setPmethod] = useState<0 | 1 | 2>(0);
 
   const [paying, setPaying] = useState(false);
-  const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error' } | null>(null);
+  const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error', onConfirm?: () => void } | null>(null);
 
   useEffect(() => {
     axiosInstance
@@ -85,10 +81,40 @@ export default function SubscriptionPlan() {
 
   const handlePay = async () => {
     if (!mno && !login) {
-      setAlert({ message: '구독권을 구매하시려면 로그인하거나 회원가입 후 결제해주세요.', variant: 'error' });
+      setAlert({ 
+        message: '구독권을 구매하시려면 로그인하거나 회원가입 후 결제해주세요.', 
+        variant: 'error', 
+        onConfirm: () => navigate('/login')
+      });
       return;
     }
     if (!plan || !month) return;
+
+    const today = getNowDate().slice(0, 10);
+    const edateObj = new Date();
+    edateObj.setMonth(edateObj.getMonth() + month);
+
+    const orderPayload: ORRequest = {
+      pno: plan.no,
+      mno,
+      pmonth: month,
+      ccnt: qty,
+      bprice: Number(plan.bprice),
+      totalprice: totalPrice,
+      sdate: today,
+      edate: edateObj.toISOString().slice(0, 10),
+    };
+
+    setPaying(true);
+    try {
+      const orderRes = await axiosInstance.post<ShopOrderTypes>('/shop_order', orderPayload);
+      navigate(`/user/shopmatch/${orderRes.data.orderno}`);
+    } catch (err) {
+      console.error('결제 실패:', err);
+      setAlert({ message: '결제 처리 중 오류가 발생했습니다.', variant: 'error' });
+    } finally {
+      setPaying(false);
+    }
 
   };
 
@@ -298,7 +324,7 @@ export default function SubscriptionPlan() {
             <p className="b_title lg">결제 후 CCTV 대수 변경은 가능하나 구독권 종류는 변경할 수 없습니다.</p>
           </div>
 
-          {step === 3 && plan && month !== null && (
+          {plan && month !== null && (
             <div className="panel flex">
               <div className="order_summary">
                 <div className="gd_label">
