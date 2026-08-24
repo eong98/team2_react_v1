@@ -80,19 +80,11 @@ export default function ShopPlan() {
 
 
   const handlePay = async () => {
-    if (!mno && !login) {
-      setAlert({ 
-        message: '구독권을 구매하시려면 로그인하거나 회원가입 후 결제해주세요.', 
-        variant: 'error', 
-        onConfirm: () => navigate('/login')
-      });
+    if (!mno) {
+      setAlert({ message: '로그인이 필요합니다.', variant: 'error' });
       return;
     }
     if (!plan || !month) return;
-
-    const today = getNowDate().slice(0, 10);
-    const edateObj = new Date();
-    edateObj.setMonth(edateObj.getMonth() + month);
 
     const orderPayload: ORRequest = {
       pno: plan.no,
@@ -101,21 +93,18 @@ export default function ShopPlan() {
       ccnt: qty,
       bprice: Number(plan.bprice),
       totalprice: totalPrice,
-      sdate: today,
-      edate: edateObj.toISOString().slice(0, 10),
     };
 
     setPaying(true);
     try {
       const orderRes = await axiosInstance.post<ShopOrderTypes>('/shop_order', orderPayload);
-      navigate(`/user/shopmatch/${orderRes.data.orderno}`);
+      navigate(`/user/subscribe/${orderRes.data.orderno}/shop-select`);
     } catch (err) {
       console.error('결제 실패:', err);
       setAlert({ message: '결제 처리 중 오류가 발생했습니다.', variant: 'error' });
     } finally {
       setPaying(false);
     }
-
   };
 
   if (loading) {

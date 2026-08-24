@@ -285,8 +285,9 @@ select::-ms-expand {display:none;}
 /* table
 ========================================================================== */
 /* table reset */
-table {width:100%; margin:0; border:0; table-layout:fixed; border-collapse:collapse; empty-cells:show;}
+table {width:100%; min-width:940px; margin:0; border:0; table-layout:fixed; border-collapse:collapse; empty-cells:show;}
 table caption {overflow:hidden; width:0; height:0; font-size:0; line-height:0;}
+table tr, th, td {width:100%;}
 table th,
 table td {padding:0; word-break:break-all;}
 

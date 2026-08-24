@@ -6,7 +6,6 @@ import {
   UserPagination,
   DataTable,
   Modal,
-  ConfirmDeleteModal,
   AlertModal,
   type DataTableColumn,
 } from '../../../components/ui';
@@ -14,11 +13,19 @@ import { axiosInstance } from '../../../utils/Tool';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import {
   ORDER_STATUS_MAP,
-  type ShopOrderTypes,
+  PAGE_SIZE,
+  EMPTY_FILTERS,
+  EMPTY_ACCOUNT,
+  estimateCancelRefund,
+  estimateRenewAmount,
+  type RowType,
+  type Filters,
   type OrderSearchResult,
   type CancelResult,
+  type CancelRequest,
   type RenewRequest,
   type RenewResult,
+  type RefundAccount,
 } from '../../../components/ts/ShopOrder';
 import type { ShopPlanTypes } from '../../../components/ts/ShopPlan';
 import type { ShopType } from '../../../components/ts/ShopUser';
@@ -26,73 +33,48 @@ import type { ShopType } from '../../../components/ts/ShopUser';
 /* ---------------------------------------------------------------------
    내가 결제한 구독권 목록 (/user/subscribe/orders)
 
-   ⚠️ 알려진 미해결 이슈 — 다음 백엔드 수정 시 같이 처리 예정:
-   "갱신"(만료 임박/만료 시)과 "변경"(대수만, 기간 연장 없음)을 버튼/문구로는
-   분리했지만, 실제로는 둘 다 동일한 PUT /shop_order/{orderno}/renew를 호출하고
-   있고 백엔드 renew()가 호출될 때마다 무조건 EDATE를 연장하는 구조라, "변경"을
-   눌러도 실제로는 종료일이 늘어납니다. 백엔드에 기간 연장 여부를 분리하는
-   플래그(예: ccntOnly)를 추가해서 renewMode에 따라 다르게 호출해야 정확해집니다.
-
    서버 검색+페이징 API(GET /shop_order/mno/{mno}/search)를 씁니다.
    테이블은 ShopPlanList.tsx와 동일하게 DataTable + 전체 건수 기준 내림차순
-   번호(RowType.cnt) 사용. 취소 확인은 ConfirmDeleteModal, 취소 후 환불 결과·
-   갱신/변경 후 결과 안내는 Modal로 보여줍니다.
+   번호(RowType.cnt) 사용. 취소/대수감소 시 환불계좌 입력 모달을 거치며,
+   이때 보여주는 예상 환불액은 estimateCancelRefund/estimateRenewAmount로
+   프론트에서 대략 계산한 값입니다 — 실제 확정 금액은 API 응답(CancelResult/
+   RenewResult)이 기준이고, 처리 완료 후 결과 안내(AlertModal)에 정확한
+   금액이 다시 표시됩니다.
 
    구독권 "종류"(pname)와 "이용 기간"(pmonth)을 별도 필터로 분리했습니다.
    둘 다 지정되면(등급+기간이 1개 pno로 특정됨) 서버에 pno로 바로 전달하고,
    하나만 지정되면 서버 검색 후 프론트에서 한 번 더 필터링합니다
    (SHOP_ORDER엔 pno만 있어서 서버가 pname/pmonth 단독으로는 못 거르기 때문).
-   이 클라이언트 필터링이 발생하는 페이지는 totalElements도 필터링된 개수
-   기준으로 재계산합니다.
 
    날짜 검색은 "구독시작일/구독종료일/구매일" 중 기준 하나를 고르고 기간 하나만
    입력하는 통합 방식입니다(dateType + dateFrom~dateTo).
 
-   매장 연결 버튼: 매장 미연결(sno 없음) + 취소되지 않은(status!=2) 주문에만 노출.
-   매장 연결됐다가 취소된 주문은 sno가 있어서 버튼이 자동으로 안 뜨고, 그 매장은
-   백엔드 findLinkableShops에서 "만료/취소된 구독이 걸린 매장"으로 다시 노출됩니다.
+   SDATE/EDATE는 결제 시점이 아니라 매장 연결(linkShop) 확정 시점에 서버가 채웁니다
+   — 매장 미연결 주문은 sdate/edate가 null이라 "매장 연결 대기중"으로 표시합니다.
 
-   갱신/변경 버튼 노출 조건 (isExpiringOrExpired 기준):
-   - 만료(status=1) 또는 정상(status=0)이면서 종료일까지 7일 이하 남음 → "갱신" 노출
-   - 정상(status=0)이면서 종료일까지 7일 넘게 남음 → "변경"(대수만) 노출
-   - 취소(status=2) → 둘 다 없음
+   갱신/변경 버튼 노출 (isExpiringOrExpired 기준):
+   - edate 없으면(매장 미연결) 버튼 자체 없음
+   - 만료(1) 또는 정상(0)이면서 7일 이하 남음 → "갱신"(extendPeriod=true)
+   - 정상(0)이면서 7일 넘게 남음 → "변경"(extendPeriod=false, 남은기간 일할계산)
+   - 취소(2) → 둘 다 없음
 
    API
-   GET /shop_order/mno/{mno}/search   → OrderSearchResult (word/status/pno/sno/
-                                          dateType/dateFrom/dateTo/page/size)
+   GET /shop_order/mno/{mno}/search   → OrderSearchResult
    GET /shop_plan/list                → ShopPlanTypes[] (구독권 필터/이름 매핑용)
    GET /shop/search                   → 마이 매장 목록 (매장 필터용)
-   PUT /shop_order/{orderno}/cancel   → CancelResult
+   PUT /shop_order/{orderno}/cancel   → CancelRequest → CancelResult
    PUT /shop_order/{orderno}/renew    → RenewRequest → RenewResult
 --------------------------------------------------------------------- */
 
-const PAGE_SIZE = 10;
+type RefundErrors = Partial<Record<keyof RefundAccount, string>>;
 
-type RowType = ShopOrderTypes & { cnt: number };
+const REFUND_REQUIRED_FIELDS: { field: keyof RefundAccount; label: string }[] = [
+  { field: 'bankName', label: '은행명' },
+  { field: 'accountNo', label: '계좌번호' },
+  { field: 'accountHolder', label: '예금주명' },
+];
 
-interface Filters {
-  word: string;
-  status: string;
-  pname: string;
-  pmonth: string;
-  sno: string;
-  dateType: string; // '' | 'sdate' | 'edate' | 'cdate'
-  dateFrom: string;
-  dateTo: string;
-}
-
-const EMPTY_FILTERS: Filters = {
-  word: '',
-  status: '',
-  pname: '',
-  pmonth: '',
-  sno: '',
-  dateType: '',
-  dateFrom: '',
-  dateTo: '',
-};
-
-export default function OrderList() {
+export default function ShopOrderList() {
   const navigate = useNavigate();
   const { no: mno } = GlobalStoreSession();
 
@@ -110,13 +92,16 @@ export default function OrderList() {
 
   const [cancelTarget, setCancelTarget] = useState<RowType | null>(null);
   const [cancelling, setCancelling] = useState(false);
-  const [cancelResult, setCancelResult] = useState<CancelResult | null>(null);
 
   const [renewTarget, setRenewTarget] = useState<RowType | null>(null);
   const [renewMode, setRenewMode] = useState<'same' | 'change'>('same');
   const [renewCcnt, setRenewCcnt] = useState(1);
   const [renewSubmitting, setRenewSubmitting] = useState(false);
-  const [renewResult, setRenewResult] = useState<RenewResult | null>(null);
+
+  // 취소 / 대수감소 환불 공통 계좌 입력 모달
+  const [refundModalType, setRefundModalType] = useState<'cancel' | 'renew' | null>(null);
+  const [refundAccount, setRefundAccount] = useState<RefundAccount>({ ...EMPTY_ACCOUNT });
+  const [refundErrors, setRefundErrors] = useState<RefundErrors>({});
 
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error' } | null>(null);
 
@@ -180,7 +165,6 @@ export default function OrderList() {
         const clientFiltered = !matchedPno && (applied.pname || applied.pmonth);
         const total = clientFiltered ? content.length : res.data.totalElements;
 
-        // 전체 건수 기준 내림차순 순번 (ShopPlanList.tsx와 동일 패턴)
         const withCnt: RowType[] = content.map((item, idx) => ({
           ...item,
           cnt: total - ((page - 1) * PAGE_SIZE + idx),
@@ -202,11 +186,11 @@ export default function OrderList() {
   const planName = (pno: number) => plans.find((p) => p.no === pno)?.pname ?? `구독권 #${pno}`;
   const shopName = (sno: number | null) => (sno ? shops.find((s) => s.no === sno)?.title ?? `매장 #${sno}` : null);
 
-  // 만료됐거나(status=1), 정상(status=0)이면서 종료일까지 7일 이하 남은 경우만 "갱신" 노출 대상
   const isExpiringOrExpired = (order: RowType) => {
+    if (!order.edate) return false;
     if (order.status === 1) return true;
     if (order.status !== 0) return false;
-    const daysLeft = Math.ceil((new Date(order.edate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    const daysLeft = Math.ceil((new Date(order.edate).getTime() - Date.now()) / 86400000);
     return daysLeft <= 7;
   };
 
@@ -221,22 +205,38 @@ export default function OrderList() {
     setApplied(EMPTY_FILTERS);
   };
 
-  const handleCancel = async () => {
+  // ── 취소 ──────────────────────────────────────────────
+  const openCancelModal = (order: RowType) => {
+    setCancelTarget(order);
+    setRefundAccount({ ...EMPTY_ACCOUNT });
+    setRefundErrors({});
+    setRefundModalType('cancel');
+  };
+
+  const submitCancel = async (account: RefundAccount) => {
     if (!cancelTarget) return;
     setCancelling(true);
     try {
-      const res = await axiosInstance.put<CancelResult>(`/shop_order/${cancelTarget.orderno}/cancel`);
+      const payload: CancelRequest = { refundAccount: account };
+      const res = await axiosInstance.put<CancelResult>(`/shop_order/${cancelTarget.orderno}/cancel`, payload);
+      const { usedMonths, refundMonths, refundAmount } = res.data;
+
       setCancelTarget(null);
-      setCancelResult(res.data);
+      setRefundModalType(null);
+      setAlert({
+        message: `구독이 취소되었습니다.\n사용 개월수 ${usedMonths}개월 · 환불 대상 ${refundMonths}개월\n환불 금액: ${refundAmount.toLocaleString('ko-KR')}원`,
+        variant: 'success',
+      });
       loadList();
     } catch (err) {
       console.error('구독 취소 실패:', err);
-      setAlert({ message: '취소 처리 중 오류가 발생했습니다.\n다시 시도해주세요.', variant: 'error' });
+      setAlert({ message: '취소 처리 중 오류가 발생했습니다. 환불계좌 정보를 확인해주세요.', variant: 'error' });
     } finally {
       setCancelling(false);
     }
   };
 
+  // ── 갱신/변경 ──────────────────────────────────────────
   const openRenewModal = (order: RowType) => {
     setRenewTarget(order);
     setRenewMode('same');
@@ -248,67 +248,124 @@ export default function OrderList() {
     setRenewMode('same');
   };
 
-  // renewTarget이 "갱신"(기간 연장) 대상인지 "변경"(대수만) 대상인지
   const renewIsExtend = renewTarget ? isExpiringOrExpired(renewTarget) : false;
 
-  const handleRenewConfirm = async () => {
+  const handleRenewConfirm = () => {
+    if (!renewTarget) return;
+
+    const isReducing = renewMode === 'change' && renewCcnt < renewTarget.ccnt;
+    if (isReducing) {
+      setRefundAccount({ ...EMPTY_ACCOUNT });
+      setRefundErrors({});
+      setRefundModalType('renew');
+      return;
+    }
+
+    submitRenew();
+  };
+
+  const submitRenew = async (account?: RefundAccount) => {
     if (!renewTarget) return;
 
     setRenewSubmitting(true);
     try {
-      const payload: RenewRequest = renewMode === 'change' ? { newCcnt: renewCcnt } : {};
+      const payload: RenewRequest = {
+        ...(renewMode === 'change' ? { newCcnt: renewCcnt } : {}),
+        extendPeriod: renewIsExtend,
+        ...(account ? { refundAccount: account } : {}),
+      };
       const res = await axiosInstance.put<RenewResult>(`/shop_order/${renewTarget.orderno}/renew`, payload);
+      const { ccnt, edate, extraCharge, refundAmount, totalprice } = res.data;
+
       closeRenewModal();
-      setRenewResult(res.data);
+      setRefundModalType(null);
+
+      const lines = [`변경된 CCTV 대수: ${ccnt}대`, `구독 종료일: ${edate ?? '매장 연결 대기중'}`];
+      if (extraCharge > 0) lines.push(`추가 결제 금액: ${extraCharge.toLocaleString('ko-KR')}원`);
+      if (refundAmount > 0) lines.push(`환불 금액: ${refundAmount.toLocaleString('ko-KR')}원`);
+      lines.push(`총 결제 금액(누적): ${totalprice.toLocaleString('ko-KR')}원`);
+
+      setAlert({ message: lines.join('\n'), variant: 'success' });
       loadList();
     } catch (err) {
       console.error('갱신/변경 실패:', err);
-      setAlert({ message: '처리 중 오류가 발생했습니다.\n다시 시도해주세요.', variant: 'error' });
+      setAlert({ message: '처리 중 오류가 발생했습니다. 환불계좌 정보를 확인해주세요.', variant: 'error' });
     } finally {
       setRenewSubmitting(false);
     }
   };
 
+  // ── 환불계좌 공통 입력 ─────────────────────────────────
+  const onRefundAccountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setRefundAccount((prev) => ({ ...prev, [id]: value }));
+    if (id in refundErrors) {
+      setRefundErrors((prev) => ({ ...prev, [id]: undefined }));
+    }
+  };
+
+  const validateRefundAccount = () => {
+    const newErrors: RefundErrors = {};
+    for (const { field, label } of REFUND_REQUIRED_FIELDS) {
+      if (!refundAccount[field].trim()) newErrors[field] = `${label}을(를) 입력해주세요.`;
+    }
+    setRefundErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleRefundConfirm = () => {
+    if (!validateRefundAccount()) return;
+    if (refundModalType === 'cancel') {
+      submitCancel(refundAccount);
+    } else {
+      submitRenew(refundAccount);
+    }
+  };
+
+  // ── 테이블 컬럼 ────────────────────────────────────────
   const columns: DataTableColumn<RowType>[] = [
     { header: '번호', width: '64px', mono: true, render: (o) => o.cnt },
-    { header: '구독권', render: (o) => planName(o.pno) },
-    { header: '기간', mono: true, render: (o) => `${o.pmonth}개월` },
-    { header: '대수', mono: true, render: (o) => `${o.ccnt}대` },
+    { header: '구독권', width: '80px', render: (o) => planName(o.pno) },
+    { header: '기간', width: '80px', mono: true, render: (o) => `${o.pmonth}개월` },
+    { header: '대수', width: '60px', mono: true, render: (o) => `${o.ccnt}대` },
     { header: '결제금액', mono: true, render: (o) => `${o.totalprice.toLocaleString('ko-KR')}원` },
-    { header: '구매일', mono: true, render: (o) => o.cdate.split(' ')[0] },
-    { header: '구독기간', mono: true, render: (o) => `${o.sdate} ~ ${o.edate}` },
+    { header: '구매일', width: '100px', mono: true, render: (o) => o.cdate.split(' ')[0] },
+    {
+      header: '구독기간',
+      mono: true,
+      render: (o) => (o.sdate && o.edate ? `${o.sdate} ~ ${o.edate}` : '매장 연결 대기중'),
+    },
     {
       header: '매장',
+      width: '80px',
       render: (o) =>
         shopName(o.sno) ? (
           <span className="badge success">{shopName(o.sno)}</span>
         ) : (
-          <span className="badge info">미연결</span>
+          <button
+            type="button"
+            className="btn btn_xsm btn_outline_primary"
+            onClick={() => navigate(`/user/shoporder/${o.orderno}/match`)}
+          >
+            매장 연결
+          </button>
         ),
     },
     {
       header: '상태',
+      width: '70px',
       render: (o) => (
         <span className={`badge ${ORDER_STATUS_MAP[o.status].className}`}>{ORDER_STATUS_MAP[o.status].label}</span>
       ),
     },
     {
       header: '관리',
+      width: '110px',
       render: (o) => (
-        <div style={{ display: 'flex', gap: 6 }}>
-          {!o.sno && o.status !== 2 && (
-            <button
-              type="button"
-              className="btn btn_xsm btn_ghost"
-              onClick={() => navigate(`/user/subscribe/${o.orderno}/shop-select`)}
-            >
-              매장 연결
-            </button>
-          )}
-
+        <div className="actions">
           {(o.status === 0 || o.status === 1) &&
             (isExpiringOrExpired(o) ? (
-              <button type="button" className="btn btn_xsm btn_ghost" onClick={() => openRenewModal(o)}>
+              <button type="button" className="btn btn_xsm btn_outline_primary" onClick={() => openRenewModal(o)}>
                 갱신
               </button>
             ) : (
@@ -316,9 +373,8 @@ export default function OrderList() {
                 변경
               </button>
             ))}
-
           {o.status === 0 && (
-            <button type="button" className="btn btn_xsm btn_ghost" onClick={() => setCancelTarget(o)}>
+            <button type="button" className="btn btn_xsm btn_danger_outline" onClick={() => openCancelModal(o)}>
               취소
             </button>
           )}
@@ -445,36 +501,6 @@ export default function OrderList() {
 
       <UserPagination page={page} totalPages={totalPages} totalCount={totalElements} pageSize={PAGE_SIZE} onChange={setPage} />
 
-      {/* 취소 확인 */}
-      <ConfirmDeleteModal
-        open={cancelTarget !== null}
-        onClose={() => setCancelTarget(null)}
-        onConfirm={handleCancel}
-        targetLabel={cancelTarget ? `${planName(cancelTarget.pno)} · ${cancelTarget.orderno}` : undefined}
-        loading={cancelling}
-      />
-
-      {/* 취소 후 환불 결과 안내 */}
-      <Modal
-        open={cancelResult !== null}
-        onClose={() => setCancelResult(null)}
-        titleId="cancelResultTitle"
-        title="구독이 취소되었습니다"
-        footer={
-          <button type="button" className="btn btn_md btn_primary" onClick={() => setCancelResult(null)}>
-            확인
-          </button>
-        }
-      >
-        {cancelResult && (
-          <div className="order_lines" style={{ marginTop: 8 }}>
-            <div className="order_line"><span>사용 개월수</span><span>{cancelResult.usedMonths}개월</span></div>
-            <div className="order_line"><span>환불 대상 개월수</span><span>{cancelResult.refundMonths}개월</span></div>
-            <div className="order_line"><span>환불 예정 금액</span><span>{cancelResult.refundAmount.toLocaleString('ko-KR')}원</span></div>
-          </div>
-        )}
-      </Modal>
-
       {/* 갱신/변경 옵션 선택 */}
       <Modal
         open={renewTarget !== null}
@@ -486,31 +512,20 @@ export default function OrderList() {
             <button type="button" className="btn btn_md btn_ghost" onClick={closeRenewModal}>
               취소
             </button>
-            <button
-              type="button"
-              className="btn btn_md btn_primary"
-              disabled={renewSubmitting}
-              onClick={handleRenewConfirm}
-            >
+            <button type="button" className="btn btn_md btn_primary" disabled={renewSubmitting} onClick={handleRenewConfirm}>
               {renewSubmitting ? '처리 중...' : renewIsExtend ? '갱신하기' : '변경하기'}
             </button>
           </>
         }
       >
         {renewTarget && (
-          <div style={{ marginTop: 8 }}>
-            <p className="cell_sub" style={{ marginBottom: 14 }}>
+          <div>
+            <p className="cell_sub">
               {planName(renewTarget.pno)} · {renewTarget.pmonth}개월 · 현재 {renewTarget.ccnt}대
-              {!renewIsExtend && (
-                <>
-                  <br />
-                  종료일까지 아직 여유가 있어 이번엔 대수만 변경 대상입니다. (⚠️ 지금은 백엔드가 호출 시
-                  항상 기간도 같이 연장하므로, 실제로는 종료일도 함께 늘어납니다 — 수정 예정)
-                </>
-              )}
+              {!renewIsExtend && ' (종료일까지 여유가 있어 대수만 변경되고 구독 종료일은 유지됩니다)'}
             </p>
 
-            <div className="check_row" style={{ marginBottom: 16 }}>
+            <div className="check_row">
               <div className="form_check">
                 <input
                   type="radio"
@@ -538,76 +553,137 @@ export default function OrderList() {
             </div>
 
             {renewMode === 'change' && (
-              <div className="cctv_stepper">
-                <label htmlFor="renewQty">변경할 CCTV 대수</label>
-                <div className="stepper">
-                  <button
-                    type="button"
-                    className="stepper_btn"
-                    disabled={renewCcnt <= 1}
-                    onClick={() => setRenewCcnt((v) => Math.max(1, v - 1))}
-                    aria-label="대수 1대 줄이기"
-                  >
-                    –
-                  </button>
-                  <input
-                    id="renewQty"
-                    type="number"
-                    className="stepper_input"
-                    value={renewCcnt}
-                    onChange={(e) => {
-                      const v = Number(e.target.value) || 1;
-                      setRenewCcnt(Math.max(1, v));
-                    }}
-                  />
-                  <button
-                    type="button"
-                    className="stepper_btn"
-                    onClick={() => setRenewCcnt((v) => v + 1)}
-                    aria-label="대수 1대 늘리기"
-                  >
-                    +
-                  </button>
+              <>
+                <div className="cctv_stepper">
+                  <label htmlFor="renewQty">변경할 CCTV 대수</label>
+                  <div className="stepper">
+                    <button
+                      type="button"
+                      className="stepper_btn"
+                      disabled={renewCcnt <= 1}
+                      onClick={() => setRenewCcnt((v) => Math.max(1, v - 1))}
+                      aria-label="대수 1대 줄이기"
+                    >
+                      –
+                    </button>
+                    <input
+                      id="renewQty"
+                      type="number"
+                      className="stepper_input"
+                      value={renewCcnt}
+                      onChange={(e) => setRenewCcnt(Math.max(1, Number(e.target.value) || 1))}
+                    />
+                    <button
+                      type="button"
+                      className="stepper_btn"
+                      onClick={() => setRenewCcnt((v) => v + 1)}
+                      aria-label="대수 1대 늘리기"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
 
-            {renewMode === 'change' && renewCcnt !== renewTarget.ccnt && (
-              <p className="form_hint" style={{ marginTop: 10 }}>
-                {renewCcnt > renewTarget.ccnt
-                  ? `추가 ${renewCcnt - renewTarget.ccnt}대 × ${renewTarget.pmonth}개월분이 이번 결제에 추가로 청구됩니다.`
-                  : `감소 ${renewTarget.ccnt - renewCcnt}대 × ${renewTarget.pmonth}개월분이 환불 처리됩니다.`}
-              </p>
+                {renewCcnt !== renewTarget.ccnt && (() => {
+                  const { extraCharge, refundAmount } = estimateRenewAmount(renewTarget, renewCcnt, renewIsExtend);
+                  return (
+                    <div className="order_lines">
+                      {extraCharge > 0 && (
+                        <div className="order_line"><span>예상 추가 결제</span><span>{extraCharge.toLocaleString('ko-KR')}원</span></div>
+                      )}
+                      {refundAmount > 0 && (
+                        <div className="order_line"><span>예상 환불액</span><span>{refundAmount.toLocaleString('ko-KR')}원</span></div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </>
             )}
           </div>
         )}
       </Modal>
 
-      {/* 갱신/변경 결과 안내 */}
+      {/* 환불계좌 입력 (취소 / 대수감소 공통) */}
       <Modal
-        open={renewResult !== null}
-        onClose={() => setRenewResult(null)}
-        titleId="renewResultTitle"
-        title="처리가 완료되었습니다"
+        open={refundModalType !== null}
+        onClose={() => setRefundModalType(null)}
+        titleId="refundAccountTitle"
+        title={refundModalType === 'cancel' ? '구독을 취소하시겠습니까?' : '대수 감소 · 환불계좌 입력'}
         footer={
-          <button type="button" className="btn btn_md btn_primary" onClick={() => setRenewResult(null)}>
-            확인
-          </button>
+          <>
+            <button type="button" className="btn btn_md btn_ghost" onClick={() => setRefundModalType(null)}>
+              취소
+            </button>
+            <button type="button" className="btn btn_md btn_primary" disabled={cancelling || renewSubmitting} onClick={handleRefundConfirm}>
+              {cancelling || renewSubmitting ? '처리 중...' : '환불 진행'}
+            </button>
+          </>
         }
       >
-        {renewResult && (
-          <div className="order_lines" style={{ marginTop: 8 }}>
-            <div className="order_line"><span>변경된 CCTV 대수</span><span>{renewResult.ccnt}대</span></div>
-            <div className="order_line"><span>구독 종료일</span><span>{renewResult.edate}</span></div>
-            {renewResult.extraCharge > 0 && (
-              <div className="order_line"><span>추가 결제 금액</span><span>{renewResult.extraCharge.toLocaleString('ko-KR')}원</span></div>
-            )}
-            {renewResult.refundAmount > 0 && (
-              <div className="order_line"><span>환불 금액</span><span>{renewResult.refundAmount.toLocaleString('ko-KR')}원</span></div>
-            )}
-            <div className="order_line"><span>총 결제 금액(누적)</span><span>{renewResult.totalprice.toLocaleString('ko-KR')}원</span></div>
+        <div>
+          <p className="b_title">
+            {refundModalType === 'cancel'
+              ? '구독 취소 시 해당 구독권은 재사용할 수 없습니다. 아래 내용을 확인하고 환불받으실 계좌 정보를 입력해주세요.'
+              : '대수 감소로 환불이 발생합니다. 환불받으실 계좌 정보를 입력해주세요.'}
+          </p>
+
+          {refundModalType === 'cancel' && cancelTarget && (() => {
+            const { usedMonths, refundMonths, refundAmount } = estimateCancelRefund(cancelTarget);
+            return (
+              <div className="order_lines">
+                <div className="order_line"><span>구독권</span><span>{planName(cancelTarget.pno)} · {cancelTarget.pmonth}개월 · {cancelTarget.ccnt}대</span></div>
+                <div className="order_line"><span>사용 개월수</span><span>{usedMonths}개월</span></div>
+                <div className="order_line"><span>환불 대상 개월수</span><span>{refundMonths}개월</span></div>
+                <div className="order_line"><span>예상 환불액</span><span>{refundAmount.toLocaleString('ko-KR')}원</span></div>
+              </div>
+            );
+          })()}
+
+          <div className="form_group">
+            <label className="form_label" htmlFor="bankName">은행명</label>
+            <div className="form_control">
+              <input
+                id="bankName"
+                type="text"
+                className={`form_input ${refundErrors.bankName ? 'is_error' : ''}`}
+                placeholder="예: 국민은행"
+                value={refundAccount.bankName}
+                onChange={onRefundAccountChange}
+              />
+              {refundErrors.bankName && <div className="form_hint error">{refundErrors.bankName}</div>}
+            </div>
           </div>
-        )}
+
+          <div className="form_group">
+            <label className="form_label" htmlFor="accountNo">계좌번호</label>
+            <div className="form_control">
+              <input
+                id="accountNo"
+                type="text"
+                className={`form_input mono ${refundErrors.accountNo ? 'is_error' : ''}`}
+                placeholder="- 없이 숫자만 입력"
+                value={refundAccount.accountNo}
+                onChange={onRefundAccountChange}
+              />
+              {refundErrors.accountNo && <div className="form_hint error">{refundErrors.accountNo}</div>}
+            </div>
+          </div>
+
+          <div className="form_group">
+            <label className="form_label" htmlFor="accountHolder">예금주명</label>
+            <div className="form_control">
+              <input
+                id="accountHolder"
+                type="text"
+                className={`form_input ${refundErrors.accountHolder ? 'is_error' : ''}`}
+                placeholder="예: 홍길동"
+                value={refundAccount.accountHolder}
+                onChange={onRefundAccountChange}
+              />
+              {refundErrors.accountHolder && <div className="form_hint error">{refundErrors.accountHolder}</div>}
+            </div>
+          </div>
+        </div>
       </Modal>
 
       <AlertModal open={alert !== null} onClose={() => setAlert(null)} message={alert?.message ?? ''} variant={alert?.variant} />
