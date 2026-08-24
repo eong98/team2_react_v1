@@ -25,6 +25,8 @@ export default function SurveyAnswerForm() {
   const { no } = useParams<{ no: string }>();
   const navigate = useNavigate();
   const memberNo = GlobalStoreSession((state) => state.no);
+  const grade = GlobalStoreSession((state) => state.grade);
+  const isShopOwner = grade === 10;
 
   const [survey, setSurvey] = useState<Survey | null>(null);
   const [answers, setAnswers] = useState<AnswerState>({});
@@ -103,10 +105,7 @@ export default function SurveyAnswerForm() {
 
   /* 주관식, 단일선택, 만족도 답변 변경 */
   const handleAnswerChange = (questionNo: number, value: string) => {
-    setAnswers((prev) => ({
-      ...prev,
-      [questionNo]: value,
-    }));
+    setAnswers((prev) => ({ ...prev, [questionNo]: value }));
   };
 
   /* 복수선택 답변 변경 */
@@ -124,10 +123,7 @@ export default function SurveyAnswerForm() {
         ? [...current, option]
         : current.filter((item) => item !== option);
 
-      return {
-        ...prev,
-        [questionNo]: next,
-      };
+      return { ...prev, [questionNo]: next };
     });
   };
 
@@ -135,9 +131,7 @@ export default function SurveyAnswerForm() {
   const hasAnswer = (questionNo: number): boolean => {
     const answer = answers[questionNo];
 
-    if (Array.isArray(answer)) {
-      return answer.length > 0;
-    }
+    if (Array.isArray(answer)) return answer.length > 0;
 
     return Boolean(answer && answer.trim().length > 0);
   };
@@ -174,6 +168,16 @@ export default function SurveyAnswerForm() {
   /* 최초 제출 또는 기존 응답 수정을 처리한다. */
   const handleSubmit = async () => {
     if (!survey || !no) return;
+
+    // 점주만 설문 제출/수정 가능
+    if (!isShopOwner) {
+      setAlert({
+        message: '설문조사 응답은 점주만 가능합니다.',
+        variant: 'error',
+      });
+      return;
+    }
+
     if (!validateAnswers()) return;
 
     /*
@@ -275,6 +279,33 @@ export default function SurveyAnswerForm() {
 
         <div className="card card_pad_lg">
           설문을 불러오는 중입니다.
+        </div>
+      </section>
+    );
+  }
+
+  /* 점주가 아닌 경우 설문 응답 페이지 접근 제한 */
+  if (!isShopOwner) {
+    return (
+      <section className="view active">
+        <PageHeader
+          title="설문조사"
+          description="설문조사 응답은 점주만 가능합니다."
+        />
+
+        <div className="card card_pad_lg">
+          <p style={{ margin: 0 }}>
+            점주 계정만 설문조사에 참여할 수 있습니다.
+          </p>
+
+          <button
+            type="button"
+            className="btn btn_md btn_primary"
+            style={{ marginTop: '16px' }}
+            onClick={() => navigate('/user/survey')}
+          >
+            목록으로
+          </button>
         </div>
       </section>
     );
@@ -486,10 +517,7 @@ export default function SurveyAnswerForm() {
                         : ''
                     }
                     onChange={(e) =>
-                      handleAnswerChange(
-                        question.no,
-                        e.target.value
-                      )
+                      handleAnswerChange(question.no, e.target.value)
                     }
                   />
                 )}

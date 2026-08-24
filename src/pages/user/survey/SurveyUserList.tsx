@@ -8,10 +8,12 @@ import {
   formatDate,
   getSurveyStatus,
 } from '../../../components/ts/survey';
+
 import {
   getMemberSurveyResponse,
   getSurveys,
 } from '../../../components/ts/surveyApi';
+
 import { GlobalStoreSession } from '../../../store/LoginStore';
 
 /* =========================================================
@@ -19,15 +21,24 @@ import { GlobalStoreSession } from '../../../store/LoginStore';
    - 진행 중 + 미참여: 참여하기
    - 진행 중 + 참여완료: 응답 수정
    - 종료 + 참여완료: 내 응답 보기
+   - 설문 응답/수정은 점주(grade 10)만 가능
 ========================================================= */
 export default function SurveyUserList() {
   const navigate = useNavigate();
+
   const memberNo = GlobalStoreSession((state) => state.no);
+  const grade = GlobalStoreSession((state) => state.grade);
+
+  // 10등급만 점주
+  const isShopOwner = grade === 10;
 
   const [surveys, setSurveys] = useState<Survey[]>([]);
-  const [participatedSurveyNos, setParticipatedSurveyNos] = useState<Set<number>>(new Set());
+  const [participatedSurveyNos, setParticipatedSurveyNos] =
+    useState<Set<number>>(new Set());
+
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+
   const [alert, setAlert] = useState<{
     message: string;
     variant?: 'success' | 'error';
@@ -68,8 +79,11 @@ export default function SurveyUserList() {
         setParticipatedSurveyNos(new Set(completedNos));
       } catch (error: any) {
         console.error(error);
+
         setAlert({
-          message: error.response?.data?.message ?? '설문 목록을 불러오지 못했습니다.',
+          message:
+            error.response?.data?.message ??
+            '설문 목록을 불러오지 못했습니다.',
           variant: 'error',
         });
       } finally {
@@ -112,6 +126,14 @@ export default function SurveyUserList() {
 
   /* 참여하기 / 응답 수정 화면으로 이동한다. */
   const handleAnswer = (surveyNo: number) => {
+    if (!isShopOwner) {
+      setAlert({
+        message: '설문조사 응답은 점주만 가능합니다.',
+        variant: 'error',
+      });
+      return;
+    }
+
     navigate(`/user/survey/${surveyNo}`);
   };
 
@@ -152,8 +174,11 @@ export default function SurveyUserList() {
                   borderBottom: '1px solid var(--border)',
                 }}
               >
-                <div>
-                  <h3 style={{ margin: '0 0 8px' }}>{survey.title}</h3>
+                {/* 설문 정보 */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h3 style={{ margin: '0 0 8px' }}>
+                    {survey.title}
+                  </h3>
 
                   {survey.detail && (
                     <div
@@ -179,38 +204,48 @@ export default function SurveyUserList() {
                   </div>
                 </div>
 
-                {/* 진행 중 + 미참여: 최초 설문 작성 */}
-                {isActive && !participated && (
-                  <button
-                    type="button"
-                    className="btn btn_md btn_primary"
-                    onClick={() => handleAnswer(survey.no)}
-                  >
-                    참여하기
-                  </button>
-                )}
+                {/* 오른쪽 버튼 영역 */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    flexShrink: 0,
+                  }}
+                >
+                  {/* 진행 중 + 미참여 + 점주 */}
+                  {isShopOwner && isActive && !participated && (
+                    <button
+                      type="button"
+                      className="btn btn_md btn_primary"
+                      onClick={() => handleAnswer(survey.no)}
+                    >
+                      참여하기
+                    </button>
+                  )}
 
-                {/* 진행 중 + 참여완료: 기존 응답 수정 */}
-                {isActive && participated && (
-                  <button
-                    type="button"
-                    className="btn btn_md btn_primary"
-                    onClick={() => handleAnswer(survey.no)}
-                  >
-                    응답 수정
-                  </button>
-                )}
+                  {/* 진행 중 + 참여완료 + 점주 */}
+                  {isShopOwner && isActive && participated && (
+                    <button
+                      type="button"
+                      className="btn btn_md btn_primary"
+                      onClick={() => handleAnswer(survey.no)}
+                    >
+                      응답 수정
+                    </button>
+                  )}
 
-                {/* 설문 종료 + 참여완료: 수정 없이 상세조회만 가능 */}
-                {!isActive && participated && (
-                  <button
-                    type="button"
-                    className="btn btn_md btn_ghost"
-                    onClick={() => handleResponseDetail(survey.no)}
-                  >
-                    내 응답 보기
-                  </button>
-                )}
+                  {/* 설문 종료 + 참여완료 */}
+                  {!isActive && participated && (
+                    <button
+                      type="button"
+                      className="btn btn_md btn_ghost"
+                      onClick={() => handleResponseDetail(survey.no)}
+                    >
+                      내 응답 보기
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -230,7 +265,9 @@ export default function SurveyUserList() {
               type="button"
               className="btn btn_sm"
               disabled={page === 1}
-              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+              onClick={() =>
+                setPage((prev) => Math.max(1, prev - 1))
+              }
             >
               이전
             </button>
@@ -243,7 +280,11 @@ export default function SurveyUserList() {
               type="button"
               className="btn btn_sm"
               disabled={page === totalPages}
-              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+              onClick={() =>
+                setPage((prev) =>
+                  Math.min(totalPages, prev + 1)
+                )
+              }
             >
               다음
             </button>
