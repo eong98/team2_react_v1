@@ -2,12 +2,8 @@ import axios from 'axios';
 import type { KeyboardEvent } from 'react';
 
 const getIP = () => {
-  // return "10.1.205.120"; // 학원
+  return "10.1.205.120"; // 학원
   // return "1.201.122.84"; // 가비아
-  // return "10.1.205.118"; // 학원
-  // return "1.201.122.5"; // 장우원 가비아
-  // return "1.201.122.67"; // 김승연 가비아
-  return "10.1.205.126"; // 김승연 학원
 }
 
 const getCopyright = () => {
@@ -64,7 +60,7 @@ const axiosInstance = axios.create({
     // npm run dev: import.meta.env.PROD -> false로 자동 설정
     // npm run build: import.meta.env.PROD -> true로 자동 설정
     // '': 같은 ip에 Backend 서버가 있다는 가정하에 상대경로로 요청을 보냄.
-    baseURL:`http://${getIP()}:9102`
+    baseURL: import.meta.env.PROD ? `http://${getIP()}:9102` : `http://${getIP()}:9102`
 })
 
 /**
