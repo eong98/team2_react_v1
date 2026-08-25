@@ -68,7 +68,7 @@ export default function Login() {
         GlobalStoreSession.getState().setMname(user.mname);
 
         alert('로그인에 성공했습니다!');
-        navigate('/');
+        navigate('/shopplan');
       } else {
         alert('아이디 또는 비밀번호가 일치하지 않습니다');
       }

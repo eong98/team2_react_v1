@@ -1,0 +1,450 @@
+/* =========================================================================
+   구독권 안내 · 결제 (SubscriptionPlan.tsx) 전용 스타일
+========================================================================= */
+
+/* ----- 프로그레스 스테퍼 ----- */
+.progress_stepper {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 36px;
+}
+.progress_step {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1;
+  max-width: 160px;
+}
+.progress_step_row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.progress_step_circle {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--surface);
+  border: 1.5px solid var(--border-strong);
+  color: var(--text-faint);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.progress_step_line {
+  flex: 1;
+  height: 1.5px;
+  background: var(--border-strong);
+  margin: 0 4px;
+  transition: background 0.15s;
+}
+.progress_step_label {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-faint);
+  transition: color 0.15s;
+}
+.progress_step.on .progress_step_circle {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #04211d;
+}
+.progress_step.on .progress_step_label {
+  color: var(--text);
+  font-weight: 700;
+}
+.progress_step.done .progress_step_circle {
+  background: var(--primary_dim, rgba(51, 214, 138, 0.15));
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.progress_step.done .progress_step_line {
+  background: var(--primary);
+}
+.progress_step.done .check {
+  width:20px; height:20px;
+  background:url('../../../assets/images/icon/ico-check.png') no-repeat center;
+  background-size:contain;
+}
+.progress_step:last-child {
+  flex: 0 0 auto;
+}
+
+/* ----- STEP 1 상단 헤드 ----- */
+.ott_hero {
+  text-align: center;
+  max-width: 520px;
+  margin: 0 auto 28px;
+}
+.ott_hero p {
+  margin-top: 8px;
+}
+
+
+/* ----- 공통 텍스트 ----- */
+.panel {
+  max-width:1000px;
+  margin:0 auto;
+}
+.panel.flex {
+  display:flex;
+  flex-direction:column;
+  align-items: center;
+}
+.panel .b_caption {
+  text-align:right;
+}
+
+/* 이전으로 돌아가기 */
+.gd_label {
+  display:flex;
+  justify-content: space-between;
+  align-items: center;
+  gap:12px;
+  margin-bottom:12px;
+}
+.gd_label > .b_title {
+  margin:0;
+}
+.wz_back {
+  color: var(--text-faint);
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  transition:.3s;
+}
+.wz_back:hover {
+  color: var(--primary);
+}
+
+
+/* ----- STEP 1 : 기간 토글 — 얇고 슬라이딩 ----- */
+.ott_toggle_wrap {
+  position: relative;
+  max-width: 360px;
+  padding-top: 28px;
+  margin:0 auto;
+}
+.ott_free_badge {
+  position: absolute;
+  top: -6px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: var(--primary);
+  color: #04211d;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 100px;
+  box-shadow: 0 4px 14px rgba(51, 214, 138, 0.35);
+  animation: ott_badge_bounce 1.6s ease-in-out infinite;
+  z-index: 2;
+}
+.ott_free_badge::after {
+  content: '';
+  position: absolute;
+  top: 99%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid var(--primary);
+}
+@keyframes ott_badge_bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-4px); }
+}
+.ott_toggle {
+  position: relative;
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 100px;
+  height: 34px;
+  margin-bottom:24px;
+}
+.ott_toggle_slider {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  border-radius: 100px;
+  background: var(--primary);
+  transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 0;
+}
+.ott_toggle_btn {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  border: none;
+  padding:0;
+  background: none;
+  color: var(--text-dim);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.ott_toggle_btn.on {
+  color: #04211d;
+}
+@media (max-width: 640px) {
+  .ott_toggle_wrap {
+    max-width: 100%;
+  }
+}
+
+/* ----- STEP 1 : 요금제 카드 ----- */
+.plan_grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  justify-content: center;
+}
+.plan_card {
+  position: relative;
+  padding: 30px 24px 24px; /* 위쪽 탭 배지 공간 확보 */
+  overflow: visible; /* 탭이 카드 밖으로 살짝 나가니 잘리지 않게 */
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+}
+.plan_card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+.plan_card h3 {
+  font-size: 16px;
+  margin: 0 0 6px;
+}
+.plan_card .plan_range {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 6px;
+  text-align: right;
+}
+.plan_card .plan_unit {
+  font-size: 13px;
+  color: var(--text-faint);
+  margin-bottom: 14px;
+  text-align: right;
+}
+.plan_card .plan_unit .price {color:var(--primary)}
+.plan_card ul {
+  list-style: none;
+  padding: 12px 0 0;
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top:1px solid var(--border);
+}
+
+.plan_card ul li {position:relative; padding-left:12px;}
+.plan_card ul li::before {display:block; position:absolute; left:0; top:calc(50% - 2px); content:''; width:4px; height:4px; border-radius:4px; background-color:var(--primary);}
+
+/* 추천/이용중일 때 카드 테두리 전체 강조 */
+.plan_card.plan_highlight {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+/* 카드 테두리 위에 걸치는 탭형 배지 — 레이아웃은 공통, 색상만 modifier로 분기 */
+.plan_tag {
+  position: absolute;
+  top: -9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--primary);
+  color: #04211D;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+
+.plan_tag.popular, /* 사용자 인기 */
+.plan_tag.reco /* 관리자 추천 */ {
+  left: 16px;
+}
+.plan_tag.current {
+  right: 16px;
+  /* background: var(--surface-2); */
+  background: var(--n-900, #0a0e13);
+  border: 1.5px solid var(--primary);
+  color: var(--primary);
+}
+
+/* 관리자 미리보기 모달 전용 — "판매중" 표시 (카드 하단, 중립 톤) */
+/* ??????????????????? */
+.plan_card .sell_tag {
+  position: absolute;
+  bottom: -11px;
+  left: 20px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  color: var(--text-dim);
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 100px;
+}
+
+/* ----- STEP 2 / STEP 3 : 결제 요약 카드 ----- */
+.order_summary {
+  width:100%;
+  max-width: 440px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 26px;
+}
+.cctv_stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+.cctv_stepper label {
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.stepper_btn {
+  width: 34px;
+  height: 36px;
+  background: var(--surface-2);
+  border: none;
+  color: var(--text);
+  font-size: 16px;
+  cursor: pointer;
+  transition:.3s;
+}
+.stepper_btn:hover {
+  background: var(--primary_dim, rgba(51, 214, 138, 0.12));
+  color: var(--primary);
+}
+.stepper_btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.stepper_input {
+  width: 52px;
+  height: 36px;
+  border: none;
+  border-left: 1px solid var(--border-strong);
+  border-right: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+.order_lines {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 0;
+  margin-bottom: 16px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.order_line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+.order_line span:last-child {
+  color: var(--text);
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+.order_total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 20px;
+}
+.order_total > span:first-child {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.order_total .price {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 800;
+}
+.order_total .price span:last-child {
+  font-size: 14px;
+  color: var(--text-faint);
+  font-weight: 400;
+  margin-left: 2px;
+}
+
+/* ----- STEP 3 : 결제수단 필터칩 ----- */
+.pmethod_filter_wrap {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.pmethod_filter {
+  display: flex;
+  gap: 8px;
+}
+.pmethod_chip {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.1s;
+}
+.pmethod_chip:hover {
+  border-color: var(--primary);
+}
+.pmethod_chip.on {
+  border-color: var(--primary);
+  background: var(--primary_dim, rgba(51, 214, 138, 0.12));
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+.pmethod_chip_icon {
+  font-size: 18px;
+}

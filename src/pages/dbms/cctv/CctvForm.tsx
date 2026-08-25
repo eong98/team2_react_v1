@@ -226,7 +226,7 @@ export default function CctvFormView() {
       />
 
       <form onSubmit={send}>
-        <div className="card card_pad_lg">
+        <div className="card card_pad_lg form_page">
 
           {/* 매장번호 - 어느 매장 소유 CCTV인지 지정, "매장 확인"으로 매장명 미리보기 */}
           <div className="form_group">

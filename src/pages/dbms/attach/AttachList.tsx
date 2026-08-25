@@ -195,6 +195,19 @@ export default function AttachList() {
         </div>
       ),
     },
+    {
+      header: '이동',
+      width: '120px',
+      render: (a) => (
+        <div className="actions">
+          {a.tno !== 10 && (
+            <button type="button" className="btn btn_sm btn_ghost" onClick={() => navigateWithQuery(`/dbms/${a.tname.toLowerCase()}/${a.bno}`)}>
+              게시글로 이동
+            </button>
+          )}
+        </div>
+      ),
+    },
   ];
 
 
@@ -277,8 +290,6 @@ export default function AttachList() {
         data={attachList}
         rowKey={(a) => a.no}
         loading={loading}
-        onEdit={(a) => navigateWithQuery(`/dbms/${a.tname.toLowerCase()}/${a.bno}`)}
-        editLabel="게시글로 이동"
       />
       
 

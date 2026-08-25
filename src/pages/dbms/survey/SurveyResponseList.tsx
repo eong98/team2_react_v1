@@ -10,6 +10,7 @@ import {
   formatDateTime,
   getAnswerText,
   getQuestionTypeLabel,
+  getSurveyStatus,
 } from '../../../components/ts/survey';
 import {
   analyzeSurvey,
@@ -124,24 +125,42 @@ export default function SurveyResponseList() {
       setChecking(false);
     }
   };
+  /* AI 분석은 설문 기간이 종료된 후에만 가능하다. */
+  const surveyEnded = survey ? getSurveyStatus(survey) === 'END' : false;
 
-  /* FastAPI 설문 전체 AI 분석 */
+  /* FastAPI 설문 전체 AI 분석
+ * 설문 종료 후에만 분석할 수 있으며 응답이 없는 경우에도 실행하지 않는다.
+ */
   const handleAnalyze = async () => {
-    if (!no) return;
+    if (!no || !survey) return;
+
+    if (!surveyEnded) {
+      setAlert({
+        message: '설문 기간이 종료된 후 AI 분석을 진행할 수 있습니다.',
+        variant: 'error',
+      });
+      return;
+    }
 
     if (responses.length === 0) {
-      setAlert({ message: '분석할 설문 응답이 없습니다.', variant: 'error' });
+      setAlert({
+        message: '분석할 설문 응답이 없습니다.',
+        variant: 'error',
+      });
       return;
     }
 
     try {
       setAnalyzing(true);
 
-      // FastAPI가 Oracle에서 전체 응답 조회 → AI 분석 → SURVEYANALYSIS 저장
+      // FastAPI가 Oracle에서 전체 응답 조회 후 AI 분석 결과를 저장한다.
       const result = await analyzeSurvey(no);
       setAnalysis(result);
 
-      setAlert({ message: 'AI 설문 분석이 완료되었습니다.', variant: 'success' });
+      setAlert({
+        message: 'AI 설문 분석이 완료되었습니다.',
+        variant: 'success',
+      });
     } catch (error: any) {
       console.error(error);
 
@@ -243,7 +262,7 @@ export default function SurveyResponseList() {
             type="button"
             className="btn btn_md btn_primary"
             onClick={handleAnalyze}
-            disabled={analyzing || responses.length === 0}
+            disabled={analyzing || responses.length === 0 || !surveyEnded}
           >
             {analyzing ? '분석 중...' : analysis ? '다시 분석' : 'AI 분석'}
           </button>
@@ -308,7 +327,9 @@ export default function SurveyResponseList() {
           >
             {responses.length === 0
               ? '등록된 설문 응답이 없어 분석할 내용이 없습니다.'
-              : '아직 AI 분석 내용이 없습니다. AI 분석 버튼을 눌러주세요.'}
+              : !surveyEnded
+                ? '설문 기간이 종료된 후 AI 분석을 진행할 수 있습니다.'
+                : '아직 AI 분석 내용이 없습니다. AI 분석 버튼을 눌러주세요.'}
           </div>
         )}
       </div>

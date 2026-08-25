@@ -200,7 +200,7 @@ export default function ShopMenuFormView() {
         }
       />
       <form onSubmit={send}>
-        <div className="card card_pad_lg">
+        <div className="card card_pad_lg form_page">
 
           {/* 메뉴 뎁스 */}
           <div className="form_group">

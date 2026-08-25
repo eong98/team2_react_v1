@@ -26,11 +26,15 @@ import CctvVisitorList from '../pages/user/cctv/CctvVisitorList';
 
 import SurveyUserList from '../pages/user/survey/SurveyUserList';
 import SurveyAnswerForm from '../pages/user/survey/SurveyAnswerForm';
+import SurveyMyResponse from '../pages/user/survey/SurveyMyResponse';
 
 import ShopMapUserList from '../pages/user/shopmap/ShopMapUserList';
 
 import MyPage from '../pages/main/mypage/MyPage';
 import ChangePassword from '../pages/main/mypage/ChangePassword';
+
+import ShopMatch from '../pages/user/shoporder/ShopMatch';
+import ShopOrderList from '../pages/user/shoporder/ShopOrderList';
 
 
 export default function UserRoutes() {
@@ -46,6 +50,9 @@ export default function UserRoutes() {
 
       <Route path="notice" element={<NoticeList />} />
       <Route path="notice/:no" element={<NoticeDetail />} />
+
+      <Route path="shoporder" element={<ShopOrderList />} />
+      <Route path="shoporder/:orderno/match" element={<ShopMatch />} />
 
       <Route path="shop" element={<ShopList />} />
       <Route path="shop/new" element={<ShopForm />} />
@@ -71,6 +78,7 @@ export default function UserRoutes() {
 
       <Route path="survey" element={<SurveyUserList />} />
       <Route path="survey/:no" element={<SurveyAnswerForm />} />
+      <Route path="survey/:no/response" element={<SurveyMyResponse />} />
 
       <Route path="shopmap" element={<ShopMapUserList />} />
 

@@ -255,7 +255,7 @@ export default function ShopFormView() {
       />
 
       <form onSubmit={send}>
-        <div className="card card_pad_lg">
+        <div className="card card_pad_lg form_page">
 
           {/* 매장명 */}
           <div className="form_group">

@@ -1,216 +1,169 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+
 import {
-  AdminToolbar,
-  AlertModal,
-  ConfirmDeleteModal,
-  DataTable,
-  DbmsPagination,
-  Modal,
   PageHeader,
+  DataTable,
+  type DataTableColumn,
+  UserPagination,
 } from '../../../components/ui';
-import type { DataTableColumn } from '../../../components/ui';
+
+import Filterbar from '../../../components/ui/user/Filterbar';
+
 import { axiosInstance } from '../../../utils/Tool';
+
 import './ShopMapList.css';
 
-interface ShopMap {
-  shopmapno: number;
-  no: number;
-  fname: string;
-  fsaved: string;
-  cdate: string;
-}
 
-interface Shop {
+/**
+ * SHOP + SHOPMAP LEFT JOIN 결과
+ *
+ * SHOP
+ * - no: 매장번호
+ * - mno: 회원번호
+ * - title: 매장명
+ * - address: 기본 주소
+ * - address2: 상세 주소
+ *
+ * SHOPMAP
+ * - shopmapno: 도면번호
+ * - fname: 원본 파일명
+ * - fsaved: 서버 저장 파일명
+ * - shopmapCdate: 도면 등록일
+ */
+interface ShopMapRow {
   no: number;
   mno: number;
   title: string;
+
+  address: string | null;
+  address2: string | null;
+
+  shopmapno: number | null;
+  fname: string | null;
+  fsaved: string | null;
+  shopmapCdate: string | null;
 }
 
-interface ShopMapRow extends ShopMap {
-  mno?: number;
-  shopTitle?: string;
-}
+const PAGE_SIZE = 10;
 
-const PAGE_SIZE = 6;
 
 export default function ShopMapList() {
-  const [rows, setRows] = useState<ShopMapRow[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  // 검색
-  const [searchText, setSearchText] = useState('');
-  const [keyword, setKeyword] = useState('');
-
-  // 페이징
-  const [page, setPage] = useState(1);
-
-  // 도면 미리보기
-  const [previewTarget, setPreviewTarget] = useState<ShopMapRow | null>(null);
-  const [previewUrl, setPreviewUrl] = useState('');
-  const [previewLoading, setPreviewLoading] = useState(false);
-
-  // 삭제
-  const [deleteTarget, setDeleteTarget] = useState<ShopMapRow | null>(null);
-  const [deleting, setDeleting] = useState(false);
-
-  // 결과 알림
-  const [alert, setAlert] = useState<{
-    message: string;
-    variant?: 'success' | 'error';
-  } | null>(null);
 
   /**
-   * 전체 매장 도면 조회
+   * 검색어
+   *
+   * 매장명 또는 주소를 입력합니다.
    */
-  const fetchShopMaps = async () => {
+  const [keyword, setKeyword] = useState('');
+
+  /**
+   * 실제 조회에 사용된 검색어
+   */
+  const [searchedKeyword, setSearchedKeyword] = useState('');
+
+  /**
+   * JOIN 조회 결과
+   */
+  const [rows, setRows] = useState<ShopMapRow[]>([]);
+
+  /**
+   * 현재 페이지
+   */
+  const [page, setPage] = useState(1);
+
+  /**
+   * 서버 조회 상태
+   */
+  const [loading, setLoading] = useState(false);
+
+  /**
+   * 조회 여부
+   */
+  const [searched, setSearched] = useState(false);
+
+
+  /**
+   * 매장명 / 주소 기준
+   * 매장 + 도면 LEFT JOIN 조회
+   *
+   * GET /api/shopmaps/admin?keyword=검색어
+   *
+   * 검색어가 없으면 전체 매장을 조회합니다.
+   */
+  const loadShopMaps = async () => {
+
+    const searchKeyword = keyword.trim();
+
     setLoading(true);
+    setSearched(true);
 
     try {
-      const response = await axiosInstance.get<ShopMap[]>('/api/shopmaps');
 
-      const result = await Promise.all(
-        response.data.map(async (map) => {
-          try {
-            const shopResponse = await axiosInstance.get<Shop>(
-              `/shop/${map.no}`
-            );
-
-            return {
-              ...map,
-              mno: shopResponse.data.mno,
-              shopTitle: shopResponse.data.title,
-            };
-          } catch {
-            // 매장 정보 조회가 실패해도 도면은 표시
-            return map;
-          }
-        })
+      const response = await axiosInstance.get<ShopMapRow[]>(
+        '/api/shopmaps/admin',
+        {
+          params: {
+            keyword: searchKeyword || undefined,
+          },
+        }
       );
 
-      setRows(result);
+      setRows(response.data);
+      setSearchedKeyword(searchKeyword);
+      setPage(1);
+
     } catch (error) {
+
       console.error('매장 도면 목록 조회 실패:', error);
 
-      setAlert({
-        message: '매장 도면 목록을 불러오지 못했습니다.',
-        variant: 'error',
-      });
+      setRows([]);
+      setSearchedKeyword(searchKeyword);
+
+      alert('매장 도면 목록을 불러오지 못했습니다.');
+
     } finally {
+
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchShopMaps();
-  }, []);
-
-  /**
-   * 검색
-   */
-  const onSearch = () => {
-    setKeyword(searchText.trim());
-    setPage(1);
-  };
 
   /**
    * 검색 초기화
    */
-  const onReset = () => {
-    setSearchText('');
+  const handleReset = () => {
+
     setKeyword('');
+    setSearchedKeyword('');
+    setRows([]);
     setPage(1);
+    setSearched(false);
   };
 
-  /**
-   * 검색 결과
-   */
-  const filtered = useMemo(() => {
-    const word = keyword.toLowerCase();
-
-    if (!word) return rows;
-
-    return rows.filter(
-      (row) =>
-        String(row.mno ?? '').includes(word) ||
-        String(row.no).includes(word) ||
-        (row.shopTitle ?? '').toLowerCase().includes(word) ||
-        row.fname.toLowerCase().includes(word)
-    );
-  }, [rows, keyword]);
-
-  const totalCount = filtered.length;
-  const totalPages = Math.max(
-    1,
-    Math.ceil(totalCount / PAGE_SIZE)
-  );
-
-  const paged = filtered.slice(
-    (page - 1) * PAGE_SIZE,
-    page * PAGE_SIZE
-  );
 
   /**
-   * 도면 보기
+   * 관리자 도면 다운로드
+   *
+   * GET /api/shopmaps/admin/download/{shopmapno}
    */
-  const openPreview = async (row: ShopMapRow) => {
-    setPreviewTarget(row);
-    setPreviewLoading(true);
+  const handleDownload = async (row: ShopMapRow) => {
 
-    try {
-      const response = await axiosInstance.get('/download', {
-        params: {
-          dir: 'shopmap',
-          filename: row.fsaved,
-          downname: row.fsaved,
-        },
-        responseType: 'blob',
-      });
-
-      const url = window.URL.createObjectURL(
-        new Blob([response.data])
-      );
-
-      setPreviewUrl(url);
-    } catch (error) {
-      console.error('도면 미리보기 실패:', error);
-
-      setPreviewTarget(null);
-
-      setAlert({
-        message: '도면 이미지를 불러오지 못했습니다.',
-        variant: 'error',
-      });
-    } finally {
-      setPreviewLoading(false);
-    }
-  };
-
-  const closePreview = () => {
-    if (previewUrl) {
-      window.URL.revokeObjectURL(previewUrl);
+    if (!row.shopmapno || !row.fname) {
+      return;
     }
 
-    setPreviewUrl('');
-    setPreviewTarget(null);
-  };
-
-  /**
-   * 도면 다운로드
-   */
-  const downloadFile = async (row: ShopMapRow) => {
     try {
-      const response = await axiosInstance.get('/download', {
-        params: {
-          dir: 'shopmap',
-          filename: row.fsaved,
-          downname: row.fsaved,
-        },
-        responseType: 'blob',
-      });
 
-      const url = window.URL.createObjectURL(
-        new Blob([response.data])
+      const response = await axiosInstance.get(
+        `/api/shopmaps/admin/download/${row.shopmapno}`,
+        {
+          responseType: 'blob',
+        }
       );
+
+      const blob = new Blob([response.data]);
+
+      const url = window.URL.createObjectURL(blob);
 
       const link = document.createElement('a');
 
@@ -218,149 +171,221 @@ export default function ShopMapList() {
       link.download = row.fname;
 
       document.body.appendChild(link);
+
       link.click();
+
       link.remove();
 
       window.URL.revokeObjectURL(url);
+
     } catch (error) {
+
       console.error('도면 다운로드 실패:', error);
 
-      setAlert({
-        message: '도면 다운로드에 실패했습니다.',
-        variant: 'error',
-      });
+      alert('도면 파일 다운로드 중 오류가 발생했습니다.');
     }
   };
 
+
   /**
-   * 관리자 도면 삭제
+   * 등록된 도면 수
    */
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
+  const registeredCount = useMemo(() => {
 
-    setDeleting(true);
+    return rows.filter((row) => row.shopmapno !== null).length;
 
-    try {
-      await axiosInstance.delete(
-        `/api/shopmaps/${deleteTarget.shopmapno}`
-      );
+  }, [rows]);
 
-      setDeleteTarget(null);
-
-      await fetchShopMaps();
-
-      if (paged.length === 1 && page > 1) {
-        setPage(page - 1);
-      }
-
-      setAlert({
-        message: '매장 도면이 삭제되었습니다.',
-        variant: 'success',
-      });
-    } catch (error) {
-      console.error('도면 삭제 실패:', error);
-
-      setAlert({
-        message: '매장 도면 삭제에 실패했습니다.',
-        variant: 'error',
-      });
-    } finally {
-      setDeleting(false);
-    }
-  };
 
   /**
-   * 도면 목록 컬럼
+   * 미등록 도면 수
+   */
+  const unregisteredCount = rows.length - registeredCount;
+
+
+  /**
+   * 페이지 계산
+   */
+  const totalPages = Math.max(
+    1,
+    Math.ceil(rows.length / PAGE_SIZE)
+  );
+
+  const paged = rows.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE
+  );
+
+  const from =
+    rows.length === 0
+      ? 0
+      : (page - 1) * PAGE_SIZE + 1;
+
+  const to = Math.min(
+    page * PAGE_SIZE,
+    rows.length
+  );
+
+
+  /**
+   * 관리자 도면 관리 테이블
    */
   const columns: DataTableColumn<ShopMapRow>[] = [
+
     {
-      header: '회원번호',
-      width: 100,
+      header: '매장번호',
+      accessor: 'no',
+      width: '10%',
+      mono: true,
+    },
+
+    {
+      header: '매장명',
+      accessor: 'title',
+      width: '20%',
+    },
+
+    {
+      header: '주소',
+      width: '28%',
+      render: (row) => {
+
+        const fullAddress = [
+          row.address,
+          row.address2,
+        ]
+          .filter(Boolean)
+          .join(' ');
+
+        return fullAddress || '-';
+      },
+    },
+
+    {
+      header: '도면 상태',
+      width: '12%',
       render: (row) => (
-        <span className="mono">{row.mno ?? '-'}</span>
+        row.shopmapno ? (
+          <span className="shopmap_status registered">
+            등록
+          </span>
+        ) : (
+          <span className="shopmap_status unregistered">
+            미등록
+          </span>
+        )
       ),
     },
-    {
-      header: '매장',
-      width: 220,
-      render: (row) => (
-        <div>
-          <div className="cell_title">
-            {row.shopTitle || `매장 No.${row.no}`}
-          </div>
-          <div className="cell_sub">
-            매장번호 {row.no}
-          </div>
-        </div>
-      ),
-    },
+
     {
       header: '도면 파일',
+      width: '18%',
       render: (row) => (
-        <div>
-          <div className="cell_title">{row.fname}</div>
-          <div className="cell_sub">
-            도면번호 {row.shopmapno}
-          </div>
-        </div>
+        row.fname ? (
+          <span className="shopmap_filename">
+            {row.fname}
+          </span>
+        ) : (
+          <span className="shopmap_empty">
+            -
+          </span>
+        )
       ),
     },
+
     {
       header: '등록일',
-      width: 170,
+      width: '12%',
       mono: true,
-      accessor: 'cdate',
+      render: (row) => (
+        row.shopmapCdate ?? '-'
+      ),
     },
+
     {
       header: '관리',
-      width: 230,
+      width: '12%',
       render: (row) => (
-        <div className="shopmap_actions">
+        row.shopmapno ? (
           <button
             type="button"
-            className="btn btn_sm btn_ghost"
-            onClick={() => openPreview(row)}
-          >
-            보기
-          </button>
-
-          <button
-            type="button"
-            className="btn btn_sm btn_ghost"
-            onClick={() => downloadFile(row)}
+            className="btn btn_outline_primary shopmap_download_btn"
+            onClick={() => handleDownload(row)}
           >
             다운로드
           </button>
-
-          <button
-            type="button"
-            className="btn btn_sm btn_danger"
-            onClick={() => setDeleteTarget(row)}
-          >
-            삭제
-          </button>
-        </div>
+        ) : (
+          <span className="shopmap_empty">
+            -
+          </span>
+        )
       ),
     },
   ];
 
+
   return (
     <section className="view active">
+
       <PageHeader
-        title="회원 도면 관리"
-        description="회원이 등록한 매장 도면을 조회하고 관리합니다."
+        title="매장 도면 관리"
+        description="매장명 또는 주소로 매장을 검색하고 도면 등록 상태를 확인할 수 있습니다."
       />
 
-      <AdminToolbar
-        searchValue={searchText}
-        onSearchChange={setSearchText}
-        searchPlaceholder="회원번호, 매장명, 매장번호, 파일명 검색"
+
+      <Filterbar
+        left={
+          <span className="pagination_info">
+
+            {searched ? (
+              <>
+                {searchedKeyword ? (
+                  <>
+                    검색어{' '}
+                    <em className="b_num">
+                      {searchedKeyword}
+                    </em>
+                    {' '}· 매장{' '}
+                    <em className="b_num">
+                      {rows.length}
+                    </em>
+                    개
+                  </>
+                ) : (
+                  <>
+                    전체 매장{' '}
+                    <em className="b_num">
+                      {rows.length}
+                    </em>
+                    개
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                매장명 또는 주소를 검색해주세요.
+              </>
+            )}
+
+          </span>
+        }
+
+        searchValue={keyword}
+
+        onSearchChange={(value) => {
+          setKeyword(value);
+        }}
+
+        onSearchEnter={loadShopMaps}
+
+        searchPlaceholder="매장명 또는 주소 입력"
+
         extra={
           <>
             <button
               type="button"
-              className="btn btn_ghost"
-              onClick={onReset}
+              className="btn btn_outline_primary"
+              onClick={handleReset}
             >
               초기화
             </button>
@@ -368,81 +393,102 @@ export default function ShopMapList() {
             <button
               type="button"
               className="btn btn_primary"
-              onClick={onSearch}
+              onClick={loadShopMaps}
             >
-              검색
+              조회
             </button>
           </>
         }
       />
 
-      <DataTable
-        columns={columns}
-        data={paged}
-        rowKey={(row) => row.shopmapno}
-        loading={loading}
-        emptyMessage="등록된 매장 도면이 없습니다."
-      />
 
-      <DbmsPagination
-        page={page}
-        totalPages={totalPages}
-        totalCount={totalCount}
-        pageSize={PAGE_SIZE}
-        onChange={setPage}
-      />
+      {searched && (
+        <div className="shopmap_summary">
 
-      {/* 도면 미리보기 */}
-      <Modal
-        open={previewTarget !== null}
-        onClose={closePreview}
-        titleId="shopmap-preview-title"
-        title={previewTarget?.shopTitle || '매장 도면'}
-        footer={
-          <button
-            type="button"
-            className="btn btn_md btn_ghost"
-            onClick={closePreview}
-          >
-            닫기
-          </button>
-        }
-      >
-        <div className="shopmap_preview">
-          {previewLoading ? (
-            <p>도면을 불러오는 중입니다.</p>
-          ) : previewUrl ? (
-            <img
-              src={previewUrl}
-              alt={previewTarget?.fname || '매장 도면'}
-            />
-          ) : (
-            <p>표시할 도면이 없습니다.</p>
-          )}
+          <div className="shopmap_summary_item">
+
+            <span className="shopmap_summary_label">
+              전체 매장
+            </span>
+
+            <strong>
+              {rows.length}
+            </strong>
+
+          </div>
+
+
+          <div className="shopmap_summary_item">
+
+            <span className="shopmap_summary_label">
+              도면 등록
+            </span>
+
+            <strong>
+              {registeredCount}
+            </strong>
+
+          </div>
+
+
+          <div className="shopmap_summary_item">
+
+            <span className="shopmap_summary_label">
+              도면 미등록
+            </span>
+
+            <strong>
+              {unregisteredCount}
+            </strong>
+
+          </div>
+
         </div>
-      </Modal>
+      )}
 
-      {/* 삭제 확인 */}
-      <ConfirmDeleteModal
-        open={deleteTarget !== null}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDelete}
-        loading={deleting}
-        targetLabel={
-          deleteTarget
-            ? `${deleteTarget.shopTitle || `매장 ${deleteTarget.no}`} · ${deleteTarget.fname}`
-            : undefined
-        }
-        requirePassword={false}
-      />
 
-      {/* 결과 알림 */}
-      <AlertModal
-        open={alert !== null}
-        onClose={() => setAlert(null)}
-        message={alert?.message ?? ''}
-        variant={alert?.variant}
-      />
+      {loading ? (
+
+        <div className="loading_box">
+          매장 도면 정보를 불러오는 중입니다...
+        </div>
+
+      ) : (
+
+        <DataTable<ShopMapRow>
+          columns={columns}
+          data={paged}
+          rowKey={(row) => row.no}
+
+          emptyMessage={
+            searched
+              ? '검색 조건에 해당하는 매장이 없습니다.'
+              : '매장명 또는 주소를 검색하면 도면 목록이 표시됩니다.'
+          }
+        />
+
+      )}
+
+
+      {rows.length > 0 && (
+
+        <>
+          <div className="shopmap_result_info">
+            조회 결과 {rows.length}건 중 {from}–{to}건 표시
+          </div>
+
+          <UserPagination
+            page={page}
+            totalPages={totalPages}
+            totalCount={rows.length}
+            pageSize={PAGE_SIZE}
+            onChange={setPage}
+            showInfo={false}
+          />
+        </>
+
+      )}
+
     </section>
   );
 }

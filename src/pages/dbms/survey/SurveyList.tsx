@@ -264,7 +264,7 @@ export default function SurveyList() {
       header: '작성자',
       render: (survey) => (
         <span className="mono">
-          관리자 {survey.memberNo}
+          관리자 {survey.managerNo}
         </span>
       ),
     },
