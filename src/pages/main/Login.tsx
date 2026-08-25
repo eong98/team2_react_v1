@@ -56,7 +56,11 @@ export default function Login() {
 
     try {
       const loginResult = await axiosInstance.post(
-        `http://${getIP()}:9102/v1/user/login?id=${input.id}&password=${input.password}`
+        `http://${getIP()}:9102/v1/user/login`,
+        {
+          id: input.id,
+          password: input.password,
+        }
       );
       const { success, user } = loginResult.data;
 

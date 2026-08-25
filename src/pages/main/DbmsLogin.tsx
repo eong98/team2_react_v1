@@ -58,7 +58,11 @@ export default function Login() {
 
     try {
       const loginResult = await axiosInstance.post(
-        `http://${getIP()}:9102/v1/dbms/login?id=${input.id}&password=${input.password}`
+        `http://${getIP()}:9102/v1/dbms/login`,
+        {
+          id: input.id,
+          password: input.password,
+        }
       );
       const { success, dbms } = loginResult.data;
 

@@ -27,3 +27,5 @@ dist-ssr
 
 /vite.config.ts
 **/Tool.ts
+vite.config.ts
+src/utils/Tool.ts

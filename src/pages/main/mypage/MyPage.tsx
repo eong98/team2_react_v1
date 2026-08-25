@@ -1,5 +1,4 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { AlertModal, ConfirmDeleteModal, Modal, PageHeader } from '../../../components/ui';
 import { axiosInstance, set_focus } from '../../../utils/Tool';
 import { GlobalStoreSession } from '../../../store/LoginStore';
@@ -24,7 +23,6 @@ declare global {
 }
 
 export default function MyPage() {
-  const navigate = useNavigate();
   const { no, grade, setMname } = GlobalStoreSession();
   const isAdmin = isAdminGrade(grade);
 
@@ -43,11 +41,13 @@ export default function MyPage() {
   const [deleteImageOpen, setDeleteImageOpen] = useState(false);
   const [deletingImage, setDeletingImage] = useState(false);
 
-  // 비밀번호 변경 확인 모달
+  // 비밀번호 변경 모달 - 현재/새/새확인 비밀번호를 한 모달에서 처리
   const [pwModalOpen, setPwModalOpen] = useState(false);
-  const [pwInput, setPwInput] = useState('');
-  const [pwError, setPwError] = useState<string | null>(null);
-  const [pwChecking, setPwChecking] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [pwErrors, setPwErrors] = useState<{ current?: string; newPassword?: string; confirm?: string }>({});
+  const [pwSaving, setPwSaving] = useState(false);
 
   const loadInfo = () => {
     if (!no) return;
@@ -200,35 +200,54 @@ export default function MyPage() {
 
   // ---- 비밀번호 변경 ----
   const openPwModal = () => {
-    setPwInput('');
-    setPwError(null);
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmNewPassword('');
+    setPwErrors({});
     setPwModalOpen(true);
+    setTimeout(() => set_focus('currentPasswordInput'), 50); // 1회용 포커스 이동
   };
 
-  // 별도의 "비밀번호 확인" 전용 API가 없어서, 기존 비밀번호 변경 API에 같은 값을
-  // newPassword로 함께 보내 검증만 수행합니다(check_login 실패 시 아무 것도 바뀌지 않음).
-  const confirmPassword = async () => {
-    if (!pwInput.trim()) {
-      setPwError('비밀번호를 입력해주세요.');
+  // 현재 비밀번호 확인 + 새 비밀번호 변경을 모달 안에서 한 번에 처리합니다.
+  const submitPasswordChange = async () => {
+    const nextErrors: typeof pwErrors = {};
+
+    if (!currentPassword.trim()) {
+      nextErrors.current = '현재 비밀번호를 입력해주세요.';
+    }
+    if (newPassword.length < 8) {
+      nextErrors.newPassword = '비밀번호는 8자 이상이어야 합니다.';
+    }
+    if (newPassword !== confirmNewPassword) {
+      nextErrors.confirm = '비밀번호 확인이 일치하지 않습니다.';
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setPwErrors(nextErrors);
+      if (nextErrors.current) set_focus('currentPasswordInput');
+      else if (nextErrors.newPassword) set_focus('newPasswordInput');
+      else if (nextErrors.confirm) set_focus('confirmNewPasswordInput');
       return;
     }
-    setPwChecking(true);
+
+    setPwSaving(true);
     try {
       const endpoint = isAdmin ? '/v1/dbms/update/password' : '/v1/user/update/password';
       const id = isAdmin ? managerInfo?.id : memberInfo?.id;
-      const res = await axiosInstance.post(endpoint, { id, password: pwInput, newPassword: pwInput });
+      const res = await axiosInstance.post(endpoint, {id: id, password: currentPassword,newPassword: newPassword });
 
       if (res.data === true) {
         setPwModalOpen(false);
-        navigate('change-password', { state: { currentPassword: pwInput } });
+        setFormAlert({ message: '비밀번호 변경에 성공하였습니다.', variant: 'success' });
       } else {
-        setPwError('비밀번호가 일치하지 않습니다.');
+        setPwErrors({ current: '비밀번호가 일치하지 않습니다.' });
+        set_focus('currentPasswordInput');
       }
     } catch (err) {
-      console.error('비밀번호 확인 실패:', err);
-      setPwError('비밀번호 확인 중 오류가 발생했습니다.');
+      console.error('비밀번호 변경 실패:', err);
+      setPwErrors({ current: '비밀번호 변경 중 오류가 발생했습니다.' });
     } finally {
-      setPwChecking(false);
+      setPwSaving(false);
     }
   };
 
@@ -530,43 +549,88 @@ export default function MyPage() {
         )}
       </div>
 
-      {/* 비밀번호 확인 모달 (공용 Modal.tsx 스타일) */}
+      {/* 비밀번호 변경 모달 - 현재/새/새확인 비밀번호를 한 번에 입력받아 처리 */}
       <Modal
         open={pwModalOpen}
         onClose={() => setPwModalOpen(false)}
-        titleId="pwConfirmModalTitle"
-        title="비밀번호 확인"
+        titleId="pwChangeModalTitle"
+        title="비밀번호 변경"
         footer={
           <>
-            <button type="button" className="btn btn_md btn_ghost" onClick={() => setPwModalOpen(false)}>
+            <button type="button" className="btn btn_md btn_ghost" onClick={() => setPwModalOpen(false)} disabled={pwSaving}>
               취소
             </button>
-            <button type="button" className="btn btn_md btn_primary" onClick={confirmPassword} disabled={pwChecking}>
-              {pwChecking ? '확인 중...' : '확인'}
+            <button type="button" className="btn btn_md btn_primary" onClick={submitPasswordChange} disabled={pwSaving}>
+              {pwSaving ? '변경 중...' : '변경'}
             </button>
           </>
         }
       >
         <div className="form_group" style={{ marginTop: 8 }}>
-          <label className="form_label" htmlFor="pwConfirmInput">
+          <label className="form_label" htmlFor="currentPasswordInput">
             현재 비밀번호<span className="req">*</span>
           </label>
           <div className="form_control">
             <input
-              id="pwConfirmInput"
+              id="currentPasswordInput"
               type="password"
-              className={`form_input ${pwError ? 'is_error' : ''}`}
-              value={pwInput}
+              className={`form_input ${pwErrors.current ? 'is_error' : ''}`}
+              value={currentPassword}
               onChange={(e) => {
-                setPwInput(e.target.value);
-                setPwError(null);
+                setCurrentPassword(e.target.value);
+                setPwErrors((prev) => ({ ...prev, current: undefined }));
               }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') confirmPassword();
+                if (e.key === 'Enter') set_focus('newPasswordInput');
               }}
-              autoFocus
             />
-            {pwError && <div className="form_hint error">{pwError}</div>}
+            {pwErrors.current && <div className="form_hint error">{pwErrors.current}</div>}
+          </div>
+        </div>
+
+        <div className="form_group">
+          <label className="form_label" htmlFor="newPasswordInput">
+            새 비밀번호<span className="req">*</span>
+          </label>
+          <div className="form_control">
+            <input
+              id="newPasswordInput"
+              type="password"
+              className={`form_input ${pwErrors.newPassword ? 'is_error' : ''}`}
+              placeholder="8자 이상 입력하세요"
+              value={newPassword}
+              onChange={(e) => {
+                setNewPassword(e.target.value);
+                setPwErrors((prev) => ({ ...prev, newPassword: undefined }));
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') set_focus('confirmNewPasswordInput');
+              }}
+            />
+            {pwErrors.newPassword && <div className="form_hint error">{pwErrors.newPassword}</div>}
+          </div>
+        </div>
+
+        <div className="form_group">
+          <label className="form_label" htmlFor="confirmNewPasswordInput">
+            새 비밀번호 확인<span className="req">*</span>
+          </label>
+          <div className="form_control">
+            <input
+              id="confirmNewPasswordInput"
+              type="password"
+              className={`form_input ${pwErrors.confirm ? 'is_error' : ''}`}
+              placeholder="새 비밀번호를 다시 입력하세요"
+              value={confirmNewPassword}
+              onChange={(e) => {
+                setConfirmNewPassword(e.target.value);
+                setPwErrors((prev) => ({ ...prev, confirm: undefined }));
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') submitPasswordChange();
+              }}
+            />
+            {pwErrors.confirm && <div className="form_hint error">{pwErrors.confirm}</div>}
           </div>
         </div>
       </Modal>
