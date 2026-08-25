@@ -315,6 +315,7 @@ table td {padding:0; word-break:break-all;}
 .card_pad_md{padding:20px;}
 .card_pad_lg{padding:28px;}
 .card.danger {border-color:var(--danger)}
+.card.primary {border-color:var(--primary)}
 
 
 /* PrevNextNav.tsx — 이전글/다음글.*/

@@ -98,7 +98,7 @@ export default function ShopPlan() {
     setPaying(true);
     try {
       const orderRes = await axiosInstance.post<ShopOrderTypes>('/shop_order', orderPayload);
-      navigate(`/user/subscribe/${orderRes.data.orderno}/shop-select`);
+      navigate(`/user/shoporder/${orderRes.data.orderno}/match`);
     } catch (err) {
       console.error('결제 실패:', err);
       setAlert({ message: '결제 처리 중 오류가 발생했습니다.', variant: 'error' });

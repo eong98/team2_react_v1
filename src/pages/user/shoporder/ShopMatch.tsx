@@ -5,6 +5,8 @@ import { axiosInstance } from '../../../utils/Tool';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import type { LinkShopRequest } from '../../../components/ts/ShopOrder';
 import { PAGE_SIZE, type ShopType } from '../../../components/ts/ShopUser';
+import type { ShopOrderTypes } from '../../../components/ts/ShopOrder';
+import type { ShopPlanTypes } from '../../../components/ts/ShopPlan';
 
 /* ---------------------------------------------------------------------
    구독 결제 완료 후 매장 연결 (/user/subscribe/:orderno/shop-select)
@@ -27,6 +29,8 @@ export default function ShopMatch() {
   const { orderno } = useParams<{ orderno: string }>();
   const navigate = useNavigate();
   const { no: mno } = GlobalStoreSession();
+  const [order, setOrder] = useState<ShopOrderTypes | null>(null);
+  const [plan, setPlan] = useState<ShopPlanTypes | null>(null);
 
   const [shops, setShops] = useState<ShopType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,6 +40,18 @@ export default function ShopMatch() {
   const [draft, setDraft] = useState({ keyword: '' });
   const [applied, setApplied] = useState({ keyword: '' });
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    if (!orderno) return;
+    axiosInstance
+      .get<ShopOrderTypes>(`/shop_order/${orderno}`)
+      .then((res) => {
+        setOrder(res.data);
+        return axiosInstance.get<ShopPlanTypes>(`/shop_plan/${res.data.pno}`);
+      })
+      .then((res) => setPlan(res.data))
+      .catch((err) => console.error('구독 내역 조회 실패:', err));
+  }, [orderno]);
 
   useEffect(() => {
     if (!mno) {
@@ -83,12 +99,22 @@ export default function ShopMatch() {
       const payload: LinkShopRequest = { sno };
       await axiosInstance.put(`/shop_order/${orderno}/link-shop`, payload);
       setAlert({ message: '매장에 구독권이 연결되었습니다.', variant: 'success' });
-    } catch (err) {
+    } catch (err: any) {
       console.error('매장 연결 실패:', err);
-      setAlert({
-        message: '매장 연결에 실패했습니다. 등록된 CCTV 대수가 결제하신 대수와 다를 수 있습니다.',
-        variant: 'error',
-      });
+
+      if (err.response?.status === 422) {
+        setAlert({
+          message: '결제된 CCTV 대수와 매장에 등록된 CCTV 대수가 달라 해당 매장에 구독권을 연결할 수 없습니다.',
+          variant: 'error',
+        });
+      } else if (err.response?.status === 409) {
+        setAlert({
+          message: err.response?.data?.message ?? '이미 다른 구독권이 연결된 매장입니다.',
+          variant: 'error',
+        });
+      } else {
+        setAlert({ message: '매장 연결 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.', variant: 'error' });
+      }
     } finally {
       setLinking(null);
     }
@@ -104,8 +130,20 @@ export default function ShopMatch() {
         title="구독권을 연결할 매장을 선택하세요"
         description="구독 시 지정한 CCTV 대수와 매장에 등록된 CCTV 대수가 일치해야 연결할 수 있습니다."
         createLabel={shops.length > 0 ? '+ 새 매장 등록' : undefined}
-        onCreate={shops.length > 0 ? () => navigate(`/user/shop/new?orderno=${orderno}`, {replace: true}) : undefined}
+        onCreate={shops.length > 0 ? () => navigate('/user/shop/new') : undefined}
       />
+
+      {order && shops.length > 0 && (
+        <div className="order_lines">
+          <p className='b_title lg'>선택한 구독권</p>
+          <div className="card card_pad_lg primary" style={{ marginBottom: 20 }}>
+            <div className="order_line"><span>구독권</span><span>{plan?.pname ?? `구독권 #${order.pno}`}</span></div>
+            <div className="order_line"><span>이용 기간</span><span>{order.pmonth}개월</span></div>
+            <div className="order_line"><span>CCTV 대수</span><span>{order.ccnt}대</span></div>
+            <div className="order_line"><span>결제 금액</span><span>{order.totalprice.toLocaleString('ko-KR')}원</span></div>
+          </div>
+        </div>
+      )}
 
       {shops.length > PAGE_SIZE && (
         <Filterbar
@@ -130,9 +168,9 @@ export default function ShopMatch() {
       )}
 
       {filtered.length === 0 ? (
-        <div className="card card_pad_lg cal_empty">
-          <p className="b_title">먼저 관리할 매장을 선택해주세요.</p>
-          <button type="button" className="btn btn_md btn_primary">매장 선택하러 가기</button>
+        <div className="card card_pad_lg cal_empty a-c">
+          <p className="b_title">등록된 매장이 없습니다. 먼저 매장을 생성해 주세요.</p>
+          <button type="button" className="btn btn_md btn_primary" onClick={() => navigate('/user/shop/new')}>+ 새 매장 등록</button>
         </div>
 
       ) : (
@@ -171,7 +209,7 @@ export default function ShopMatch() {
         onClose={() => {
           const success = alert?.variant === 'success';
           setAlert(null);
-          if (success) navigate('/');
+          if (success) navigate('/user/shoporder');
         }}
         message={alert?.message ?? ''}
         variant={alert?.variant}

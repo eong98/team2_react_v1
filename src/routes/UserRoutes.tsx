@@ -51,9 +51,7 @@ export default function UserRoutes() {
       <Route path="notice/:no" element={<NoticeDetail />} />
 
       <Route path="shoporder" element={<ShopOrderList />} />
-      {/* <Route path="shoporder/:no/edit" element={<ShopPlanForm />} /> */}
-
-      {/* <Route path="shopmatch/:orderno" element={<ShopMatch />} /> */}
+      <Route path="shoporder/:orderno/match" element={<ShopMatch />} />
 
       <Route path="shop" element={<ShopList />} />
       <Route path="shop/new" element={<ShopForm />} />
