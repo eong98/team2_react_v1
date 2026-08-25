@@ -28,6 +28,8 @@ interface DataTableProps<T> {
   deleteLabel?: string;
   emptyMessage?: string;
   loading?: boolean;
+  /** 지정하면 표 하단(<tfoot>)에 합계/요약 행으로 렌더링됨. colSpan은 전체 컬럼수로 자동 적용 */
+  footer?: ReactNode;
 }
 
 /**
@@ -58,6 +60,7 @@ export default function DataTable<T>({
   deleteLabel = '삭제',
   emptyMessage = '등록된 데이터가 없습니다.',
   loading = false,
+  footer,
 }: DataTableProps<T>) {
   const hasActions = Boolean(onEdit || onDelete);
   const colCount = columns.length + (hasActions ? 1 : 0);
@@ -124,8 +127,14 @@ export default function DataTable<T>({
                 )}
               </tr>
             ))
-          )}
-        </tbody>
+          )}        </tbody>
+        {footer && !loading && data.length > 0 && (
+          <tfoot>
+            <tr className="table_footer_row">
+              <td colSpan={colCount}>{footer}</td>
+            </tr>
+          </tfoot>
+        )}
       </table>
     </div>
   );

@@ -36,11 +36,11 @@ export type RowType = ShopOrderTypes & { cnt: number };
 
 export const ORDER_STATUS_MAP: Record<number, { label: string; className: string }> = {
   0: { label: '정상', className: 'success' },
-  1: { label: '만료됨', className: 'info' },
-  2: { label: '취소', className: 'danger' },
+  1: { label: '만료됨', className: 'orange' },
+  2: { label: '취소', className: 'neutral' },
 };
 
-export const PAGE_SIZE = 10;
+export const PAGE_SIZE = 6;
 
 export interface Filters {
   word: string;
@@ -80,6 +80,7 @@ export interface ORRequest {
   ccnt: number;
   bprice: number;
   totalprice: number;
+  pmethod: number; // 0 카드 / 1 계좌이체 / 2 토스페이 (ShopPayment.ts)
 }
 
 export interface LinkShopRequest {

@@ -7,6 +7,8 @@ import { GlobalCurrentShop } from '../../../store/UserStore';
 import type { ShopPlanTypes } from '../../../components/ts/ShopPlan';
 import './shoPlan.css'
 import type { ORRequest, ShopOrderTypes } from '../../../components/ts/ShopOrder';
+import { PMETHOD_MAP, PMETHOD_ICON } from '../../../components/ts/ShopPayment';
+
 
 /* ---------------------------------------------------------------------
    구독권 안내 · 결제 (/user/subscribe) — 3단계 위저드
@@ -93,6 +95,7 @@ export default function ShopPlan() {
       ccnt: qty,
       bprice: Number(plan.bprice),
       totalprice: totalPrice,
+      pmethod
     };
 
     setPaying(true);
@@ -329,9 +332,20 @@ export default function ShopPlan() {
                 </div>
 
                 <div className="pmethod_filter_wrap">
-                  <div className="form_label">결제수단 선택</div>
+                  <div className="form_label" style={{ marginBottom: 10 }}>결제수단</div>
                   <div className="pmethod_filter" role="radiogroup" aria-label="결제수단 선택">
-                    카드, 토스페이, 계좌이체 ...
+                    {[0, 1, 2].map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        className={`pmethod_chip${pmethod === m ? ' on' : ''}`}
+                        onClick={() => setPmethod(m as 0 | 1 | 2)}
+                        aria-pressed={pmethod === m}
+                      >
+                        <span className="pmethod_chip_icon">{PMETHOD_ICON[m]}</span>
+                        {PMETHOD_MAP[m].label}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
