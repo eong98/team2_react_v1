@@ -31,7 +31,7 @@ export default function Login() {
   };
 
   const test = () => {
-    setInput({ id: 'testuser01', password: '1234' });
+    setInput({ id: 'testuser01', password: '12341234' });
     setErrors({});
   };
 
