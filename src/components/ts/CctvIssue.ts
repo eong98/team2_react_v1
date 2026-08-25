@@ -11,9 +11,19 @@ export interface CctvIssueType {
   cdate: string;
 }
 
+/**
+ * GET /cctv_issue/search 목록 응답 항목.
+ * hasAttach: ATTACH 테이블(tname='CCTV_ISSUE')에 등록된 첨부파일이 있는지 여부.
+ * 서버에서 이슈 조회 쿼리에 EXISTS 서브쿼리로 함께 계산해서 내려주므로(N+1 없음),
+ * "보기" 누르기 전에 목록에서 바로 첨부 유무를 표시할 수 있습니다.
+ */
+export interface CctvIssueListItem extends CctvIssueType {
+  hasAttach: boolean;
+}
+
 /** GET /cctv_issue/search 응답 형태 (Spring Page 대신 서버에서 Map으로 직접 내려줌) */
 export interface CctvIssueSearchResult {
-  content: CctvIssueType[];
+  content: CctvIssueListItem[];
   totalElements: number;
   totalPages: number;
   page: number; // 0부터 시작
@@ -52,7 +62,15 @@ export const STATE_BADGE: Record<number, string> = {
   2: 'badge_neutral',
 };
 
-export type RowType = CctvIssueType & { cnt: number };
+export type RowType = CctvIssueListItem & { cnt: number };
+
+/** 신뢰도 문자열을 '74%' 형태로 통일 (저장값에 이미 %가 붙어있어도 중복으로 나오지 않게 방지) */
+export function formatReliability(reliability: string | null | undefined): string {
+  if (!reliability) return '-';
+  const trimmed = String(reliability).trim();
+  if (trimmed === '') return '-';
+  return trimmed.endsWith('%') ? trimmed : `${trimmed}%`;
+}
 
 export interface Filters {
   cno: string;
