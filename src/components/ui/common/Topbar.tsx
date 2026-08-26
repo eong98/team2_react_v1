@@ -31,11 +31,16 @@ interface TopbarProps {
      하단의 "매장 전체 관리" 링크로 /user/shop 목록 화면으로 이동합니다.
 
    API (ShopCont, /shop)
-   GET /shop/search?mno=&keyword=&page=&size=
+   GET /shop/search?mno=&grade=&keyword=&page=&size=
      → { content, totalElements, totalPages, page(0부터), size }
      (드롭다운에서는 keyword 없이 size를 넉넉히(50) 줘서 로그인 회원의
      매장을 사실상 전부 한 번에 불러옵니다. 매장이 50개를 넘는 경우는
      "매장 전체 관리" 링크의 검색/페이징 화면을 쓰면 됩니다.)
+
+   ※ 2026-08-26 수정: grade 파라미터 추가. grade === 10(점주)는 기존과 동일하게
+     SHOP.MNO(소유) 기준으로 매장을 불러오고, grade 6~9(직원)는 SHOP_MEMBER
+     테이블에서 로그인 회원(mno)에게 배정된 매장(SNO)만 불러옵니다
+     (서버 dev.jpa.allimio.shop.ShopService.searchForUser 참고).
 --------------------------------------------------------------------- */
 export default function Topbar({ onMenuClick }: TopbarProps) {
   const { pathname } = useLocation();
@@ -43,7 +48,7 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
   const isUserArea = pathname.startsWith('/user');
   const clock = useClock();
   const { no: shopNo, title: shopTitle, setShop } = GlobalCurrentShop();
-  const { no: mno } = GlobalStoreSession();
+  const { no: mno, grade } = GlobalStoreSession();
 
   const [open, setOpen] = useState(false);
   const [shops, setShops] = useState<ShopType[]>([]);
@@ -51,13 +56,15 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
 
   // 드롭다운 열릴 때마다 최신 매장 목록을 다시 불러옵니다(방금 생성한 매장도 바로 보이도록).
+  // grade === 10(점주)는 SHOP.MNO 소유 매장, grade 6~9(직원)는 SHOP_MEMBER에 배정된
+  // 매장만 내려옵니다(서버 ShopService.searchForUser 참고).
   useEffect(() => {
     if (!open || !mno) return;
 
     setLoading(true);
     axiosInstance
       .get<ShopSearchResult>('/shop/search', {
-        params: { mno, page: 0, size: 50 },
+        params: { mno, grade, page: 0, size: 50 },
       })
       .then((res) => setShops(res.data.content ?? []))
       .catch((err) => {
@@ -65,7 +72,7 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
         setShops([]);
       })
       .finally(() => setLoading(false));
-  }, [open, mno]);
+  }, [open, mno, grade]);
 
   // 바깥 클릭 / ESC로 닫기
   useEffect(() => {

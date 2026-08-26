@@ -28,7 +28,7 @@ interface SessionStore {
   setNo: (value: number) => void;
   id: string;
   setId: (value: string) => void;
-  // 1~5 관리자, 6~10 사용자
+  // 1~5 관리자, 6~10 사용자 10:점주, 6~9:직원
   grade: number;
   setGrade: (value: number) => void;
   mname: string;
@@ -45,7 +45,7 @@ export const GlobalStoreSession = create<SessionStore>()(
       setNo: (value) => set({ no: value }),
       id: '',
       setId: (value) => set({ id: value }), 
-      // 1: 최상위 관리자, 2~5: 일반 관리자, 6~10 사용자, 99: 손님
+      // 1: 최상위 관리자, 2~5: 일반 관리자, 6~10 사용자, 10:점주 , 99: 손님
       grade: 99,  
       setGrade: (value) => set({ grade: value}),
       mname: '',

@@ -25,8 +25,11 @@
    PUT  /shop/update        - ShopDTO(JSON, no 포함) → 수정
    GET  /shop/{pk}          - 단건 조회
    GET  /shop/search        - 목록 검색 + 페이징
-        ?mno=&keyword=&page=&size=
+        ?mno=&grade=&keyword=&page=&size=
         → { content, totalElements, totalPages, page(0부터), size }
+        (grade는 로그인 세션의 GlobalStoreSession().grade를 그대로 넘기면 됨.
+        grade === 10(점주)는 SHOP.MNO 소유 매장, grade 6~9(직원)는 SHOP_MEMBER에
+        배정된 매장만 내려옴. 서버 dev.jpa.allimio.shop.ShopService.searchForUser 참고.)
    DELETE /shop/{pk}        - 삭제
 
    ※ save/update가 @RequestBody(JSON)이므로 FormData/multipart가 아닌

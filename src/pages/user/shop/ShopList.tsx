@@ -21,8 +21,10 @@ import { GlobalCurrentShop } from '../../../store/UserStore.ts';
    ※ 2026-08-11 PAYSTATE/QRIMG 컬럼은 테이블에서 제거되어 더 이상 쓰지 않습니다.
 
    API (ShopCont, /shop)
-   GET /shop/search?mno=&keyword=&page=&size=
+   GET /shop/search?mno=&grade=&keyword=&page=&size=
      → { content, totalElements, totalPages, page(0-base), size }
+     (grade === 10(점주)는 SHOP.MNO 소유 매장, grade 6~9(직원)는 SHOP_MEMBER에
+     배정된 매장만 내려옵니다. 서버 ShopService.searchForUser 참고.)
    DELETE /shop/{pk}
 
    상수/타입(PAGE_SIZE, Filters, EMPTY_FILTERS, ShopType, ShopSearchResult)은
@@ -31,7 +33,7 @@ import { GlobalCurrentShop } from '../../../store/UserStore.ts';
 
 export default function ShopListView() {
   const navigate = useNavigate();
-  const { no: mno } = GlobalStoreSession(); 
+  const { no: mno, grade } = GlobalStoreSession();
   const { setShop } = GlobalCurrentShop();
 
   // draft: 입력 중인 값(타이핑만으로는 검색 안 됨) / applied: "검색" 눌렀을 때 실제 조회에 쓰이는 값
@@ -53,6 +55,7 @@ export default function ShopListView() {
       const res = await axiosInstance.get<ShopSearchResult>('/shop/search', {
         params: {
           mno,
+          grade,
           page: page - 1,
           size: PAGE_SIZE,
           keyword: applied.keyword.trim() || undefined,
@@ -77,7 +80,7 @@ export default function ShopListView() {
   useEffect(() => {
     loadList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [applied, page]);
+  }, [applied, page, grade]);
 
   const onSearch = () => {
     setPage(1);
