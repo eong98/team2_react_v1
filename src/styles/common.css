@@ -1,11 +1,3 @@
-
-@keyframes allimio_blink{0%,100%{opacity:1;}50%{opacity:.35;}}
-@keyframes allimio_blink_soft{0%,100%{opacity:.85;}50%{opacity:.3;}}
-.blink{animation:allimio_blink 2.4s ease-in-out infinite;}
-.blink_soft{animation:allimio_blink_soft 2.4s ease-in-out infinite;}
-
-
-
 .mono {font-family: var(--font-mono);}
 
 /* align */

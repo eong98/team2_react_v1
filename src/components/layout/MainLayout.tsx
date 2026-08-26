@@ -13,12 +13,9 @@ const MainLayout = () => {
     <div className='home'>
       <header>
         <nav>
-          <Link to='/'>
-            <h1 className="logo">
-              <span className="dot" />
-              allimio
-            </h1>
-          </Link>
+          <h1 className="logo">
+            <Link to='/'>allimio</Link>
+          </h1>
 
           {!isAdmin ? (
             <>

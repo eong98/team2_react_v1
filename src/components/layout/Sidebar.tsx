@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { fetchMenuNav, type MenuNavBase, type MenuNavGroup } from '../ts/menuNav';
 import { GlobalStoreSession } from '../../store/LoginStore';
 import { axiosInstance } from '../../utils/Tool';
@@ -132,75 +132,11 @@ export default function Sidebar({ open, onNavigate }: SidebarProps) {
 
   return (
     <aside className={`sidebar${open ? ' open' : ''}`}>
-      <div className="brand">
-        {/* <span className="logo_placeholder" aria-hidden="true" /> */}
-
-
-        <svg width="28" height="28" viewBox="0 0 64 64">
-          <circle cx="32" cy="32" r="22" fill="none" stroke="#DDE3E9" stroke-width="3" opacity="0.55"/>
-          <circle cx="32" cy="32" r="13" fill="#FF4D5E" opacity="0.14"/>
-          <circle cx="32" cy="32" r="7" fill="#FF4D5E" className="blink"/>
-        </svg>
-
-        {isDbms ? 'allimio 관리자' : 'allimio'}
-
-      </div>
-      <div className="brand">
-
-        
-        <svg width="25" height="25" viewBox="0 0 64 64">
-          <circle cx="32" cy="32" r="22" fill="none" stroke="#dde3e9ad" stroke-width="2" stroke-linecap="round" stroke-dasharray="118 21" stroke-dashoffset="-14" transform="rotate(-90 32 32)"/>
-          <circle cx="32" cy="32" r="16" fill="#FF4D5E" opacity="0.12" className="blink_soft"/>
-          <circle cx="32" cy="32" r="10" fill="#FF4D5E" opacity="0.4" className="blink_soft"/>
-          <circle cx="32" cy="32" r="5" fill="#FF4D5E" opacity="0.85" className="blink"/>
-        </svg>
-        {isDbms ? 'allimio 관리자' : 'allimio'}
-
-      </div>
-      <div className="brand">
-        <svg width="25" height="25" viewBox="0 0 64 64">
-          <g fill="none" stroke="#DDE3E9" stroke-width="2.5" stroke-linecap="round">
-            <path d="M8 20V12a4 4 0 0 1 4-4h8"/>
-            <path d="M44 8h8a4 4 0 0 1 4 4v8"/>
-            <path d="M8 44v8a4 4 0 0 0 4 4h8"/>
-            <path d="M44 56h8a4 4 0 0 0 4-4v-8"/>
-          </g>
-          <circle cx="32" cy="32" r="10" fill="#FF4D5E" opacity="0.18"/>
-          <circle cx="32" cy="32" r="6" fill="#FF4D5E" className="blink"/>
-        </svg>
-        {isDbms ? 'allimio 관리자' : 'allimio'}
-      </div>
-      <div className="brand">
-        <svg width="25" height="25" viewBox="0 0 64 64">
-          <g fill="none" stroke="#DDE3E9" stroke-width="2.5" stroke-linecap="round">
-            <path d="M8 20V12a4 4 0 0 1 4-4h8"/>
-            <path d="M44 8h8a4 4 0 0 1 4 4v8"/>
-            <path d="M8 44v8a4 4 0 0 0 4 4h8"/>
-            <path d="M44 56h8a4 4 0 0 0 4-4v-8"/>
-          </g>
-          <circle cx="32" cy="32" r="15" fill="#FF4D5E" opacity="0.1" className="blink_soft"/>
-          <circle cx="32" cy="32" r="7" fill="#FF4D5E" opacity="0.75" className="blink"/>
-        </svg>
-        {isDbms ? 'allimio 관리자' : 'allimio'}
-
-
-      </div>
-      <div className="brand">
-
-        <svg width="28" height="28" viewBox="0 0 64 64">
-          <g fill="none" stroke="#dde3e9c7" stroke-width="2.5" stroke-linecap="round">
-            <path d="M8 20V12a4 4 0 0 1 4-4h8"/>
-            <path d="M44 8h8a4 4 0 0 1 4 4v8"/>
-            <path d="M8 44v8a4 4 0 0 0 4 4h8"/>
-            <path d="M44 56h8a4 4 0 0 0 4-4v-8"/>
-          </g>
-          <circle cx="32" cy="32" r="15" fill="#FF4D5E" opacity="0.1" className="blink_soft"/>
-          <circle cx="32" cy="32" r="7" fill="#FF4D5E" opacity="0.75" className="blink"/>
-        </svg>
-
-
-        {isDbms ? 'allimio 관리자' : 'allimio'}
-      </div>
+      <h1 className='logo'>
+        <Link to={isDbms ? '/dbms' : '/user'}>
+          {isDbms ? 'allimio 관리자' : 'allimio'}
+        </Link>
+      </h1>
 
       <nav className="lnb">
         {loading ? (

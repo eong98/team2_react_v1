@@ -36,16 +36,6 @@
   max-width:var(--maxw);margin:0 auto;padding:18px 32px;
   display:flex;align-items:center;justify-content:space-between;
 }
-.home .logo {
-  display:flex;align-items:center;gap:9px;
-  font-weight:700;font-size:17px;letter-spacing:-0.01em;
-}
-.home .logo .dot{
-  width:9px;height:9px;border-radius:50%;background:var(--cyan);
-  box-shadow:0 0 0 3px var(--cyan-dim);
-  animation:blink 2.4s ease-in-out infinite;
-}
-@keyframes blink{0%,100%{opacity:1;}50%{opacity:.35;}}
 
 .home .navlinks{display:flex;gap:36px;font-size:14px;color:var(--text-dim);}
 .home .navlinks a:hover{color:var(--text);}

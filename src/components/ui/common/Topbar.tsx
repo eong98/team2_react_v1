@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useClock } from '../../../hooks/useClock';
 import { GlobalCurrentShop } from '../../../store/UserStore';
 import { GlobalStoreSession } from '../../../store/LoginStore';
@@ -173,10 +173,6 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
       <button className="menu_btn" onClick={onMenuClick} aria-label="전체 메뉴 열기">
         ☰
       </button>
-      <div className="brand">
-        <span className="logo_placeholder" aria-hidden="true" />
-        allimio
-      </div>
     </header>
   );
 }
