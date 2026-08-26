@@ -142,6 +142,10 @@ export default function Sidebar({ open, onNavigate }: SidebarProps) {
           <circle cx="32" cy="32" r="7" fill="#FF4D5E" className="blink"/>
         </svg>
 
+        {isDbms ? 'allimio 관리자' : 'allimio'}
+
+      </div>
+      <div className="brand">
 
         
         <svg width="25" height="25" viewBox="0 0 64 64">
@@ -150,7 +154,10 @@ export default function Sidebar({ open, onNavigate }: SidebarProps) {
           <circle cx="32" cy="32" r="10" fill="#FF4D5E" opacity="0.4" className="blink_soft"/>
           <circle cx="32" cy="32" r="5" fill="#FF4D5E" opacity="0.85" className="blink"/>
         </svg>
+        {isDbms ? 'allimio 관리자' : 'allimio'}
 
+      </div>
+      <div className="brand">
         <svg width="25" height="25" viewBox="0 0 64 64">
           <g fill="none" stroke="#DDE3E9" stroke-width="2.5" stroke-linecap="round">
             <path d="M8 20V12a4 4 0 0 1 4-4h8"/>
@@ -158,17 +165,29 @@ export default function Sidebar({ open, onNavigate }: SidebarProps) {
             <path d="M8 44v8a4 4 0 0 0 4 4h8"/>
             <path d="M44 56h8a4 4 0 0 0 4-4v-8"/>
           </g>
-          {/* 작은원 */}
           <circle cx="32" cy="32" r="10" fill="#FF4D5E" opacity="0.18"/>
           <circle cx="32" cy="32" r="6" fill="#FF4D5E" className="blink"/>
-          
-          {/* 큰원 */}
-          {/* <circle cx="32" cy="32" r="15" fill="#FF4D5E" opacity="0.1" className="blink_soft"/>
-          <circle cx="32" cy="32" r="7" fill="#FF4D5E" opacity="0.75" className="blink"/> */}
         </svg>
+        {isDbms ? 'allimio 관리자' : 'allimio'}
+      </div>
+      <div className="brand">
+        <svg width="25" height="25" viewBox="0 0 64 64">
+          <g fill="none" stroke="#DDE3E9" stroke-width="2.5" stroke-linecap="round">
+            <path d="M8 20V12a4 4 0 0 1 4-4h8"/>
+            <path d="M44 8h8a4 4 0 0 1 4 4v8"/>
+            <path d="M8 44v8a4 4 0 0 0 4 4h8"/>
+            <path d="M44 56h8a4 4 0 0 0 4-4v-8"/>
+          </g>
+          <circle cx="32" cy="32" r="15" fill="#FF4D5E" opacity="0.1" className="blink_soft"/>
+          <circle cx="32" cy="32" r="7" fill="#FF4D5E" opacity="0.75" className="blink"/>
+        </svg>
+        {isDbms ? 'allimio 관리자' : 'allimio'}
 
 
-        <svg width="32" height="32" viewBox="0 0 64 64">
+      </div>
+      <div className="brand">
+
+        <svg width="28" height="28" viewBox="0 0 64 64">
           <g fill="none" stroke="#dde3e9c7" stroke-width="2.5" stroke-linecap="round">
             <path d="M8 20V12a4 4 0 0 1 4-4h8"/>
             <path d="M44 8h8a4 4 0 0 1 4 4v8"/>
