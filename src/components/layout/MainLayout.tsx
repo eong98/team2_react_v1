@@ -48,7 +48,6 @@ const MainLayout = () => {
       <footer>
         <div className="wrap foot_row">
           <div className="logo">
-            <span className="dot" />
             allimio
           </div>
 

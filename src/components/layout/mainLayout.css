@@ -57,6 +57,13 @@
 
 
 .home footer{margin-top:auto; border-top:1px solid var(--n-600);padding:40px 0;}
+.home footer .logo{
+  display:inline-flex;align-items:center;gap:9px;
+  font-weight:700;font-size:17px;letter-spacing:-0.01em;
+  padding-left:34px;
+  background:url('../../assets/logo.svg') no-repeat left center;
+  background-size:28px;
+}
 .home .foot_row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;}
 .home .foot_links{display:flex;gap:24px;font-size:13px;color:var(--text-faint);}
 .home .foot_links a:hover{color:var(--text-dim);}
