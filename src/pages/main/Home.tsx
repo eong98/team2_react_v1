@@ -2,8 +2,8 @@
 import './home.css'
 /* ------------------------------------------- */
 import { Link } from 'react-router-dom';
-import { useReveal } from '../../hooks/useReveal';
 import { useClock } from '../../hooks/useClock';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 const PROBLEMS = [
   { tag: '심야 시간대', text: '새벽 시간, 매장에는 CCTV만 돌아가고 이상 상황이 생겨도 발견까지 시간이 걸립니다.', sub: '관리 공백 시간대' },
@@ -50,16 +50,60 @@ const ROAD = [
 
 
 const LINKS = [
-  { href: '/e', stage: 'LIVE', title: '실시간 관제 대시보드', text: 'CCTV 화면, 이벤트 이력, 통계 리포트를 한 화면에서 확인합니다.', now: true },
-  { href: '/d', stage: '회원', title: '로그인 · 마이페이지 · 문의사항', text: '회원가입, 정보수정, 로그인 이력, 문의 접수까지.', now: true },
-  { href: '/c', stage: '매장', title: '매장 · CCTV 관리', text: '매장 등록, CCTV·오디오 센서 등록, 이상행동 유형코드 관리.', now: true },
-  { href: '/b', stage: '알림', title: '알림 · 메일 · AI 생성', text: 'SMS·메일 발송, 웹메일함 번역, 생성이미지·AI 도면 관리.', now: true },
-  { href: '/', stage: '고객지원', title: '게시판 · 챗봇 · 구독', text: '공지사항, 1:1문의, 챗봇 상담, 구독권 결제까지.', now: true },
-  { href: '/a', stage: 'DESIGN', title: '공통 디자인 가이드', text: '컬러·타이포·버튼·폼 등 실무 퍼블리싱 클래스 레퍼런스.', now: false },
+  { href: '/user/dashboard', stage: 'LIVE', title: '실시간 관제 대시보드', text: 'CCTV 화면, 이벤트 이력, 통계 리포트를 한 화면에서 확인합니다.', now: true },
+  { href: '/user/mypage', stage: '회원', title: '로그인 · 마이페이지 · 문의사항', text: '회원가입, 정보수정, 로그인 이력, 문의 접수까지.', now: true },
+  { href: '/user/shop', stage: '매장', title: '매장 · CCTV 관리', text: '매장 등록, CCTV·오디오 센서 등록, 이상행동 유형코드 관리.', now: true },
+  { href: '/user/survey', stage: '알림', title: '알림 · 메일 · AI 생성 · 설문참여', text: 'SMS·메일 발송, 웹메일함 번역, 생성이미지·AI 도면 관리.', now: true },
+  { href: '/user/notice', stage: '고객지원', title: '게시판 · 챗봇 · 구독', text: '공지사항, 1:1문의, 챗봇 상담, 구독권 결제까지.', now: true },
+  { href: '/guide', stage: 'DESIGN', title: '공통 디자인 가이드', text: '컬러·타이포·버튼·폼 등 실무 퍼블리싱 클래스 레퍼런스.', now: false },
 ];
 
+
+
+interface RevealSectionProps {
+  id?: string;
+  className?: string;
+  children: ReactNode;
+}
+
+export function RevealSection({ id, className = '', children }: RevealSectionProps) {
+  // 1. TypeScript 타입을 HTMLSectionElement로 명시
+  const ref = useRef<HTMLElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setVisible(true);
+            io.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12 }
+    );
+
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  const sectionClassName = `border_top reveal${visible ? ' in' : ''} ${className}`.trim();
+
+  // 2. <section> 태그에 id, className, ref 바인딩
+  return (
+    <section id={id} className={sectionClassName} ref={ref}>
+      {children}
+    </section>
+  );
+}
+
+
+
 const Home = () => {
-  const { ref, className } = useReveal<HTMLElement>();
   const clock = useClock();
   return (
     <>
@@ -132,7 +176,7 @@ const Home = () => {
         </div>
       </section>
       
-      <section className={`border_top ${className}`} ref={ref}>
+      <RevealSection>
         <div className="wrap">
           <div className="section_head">
             <span className="eyebrow">문제 상황</span>
@@ -149,10 +193,10 @@ const Home = () => {
             ))}
           </div>
         </div>
-      </section>
+      </RevealSection>
 
       
-      <section id="features" className={`border_top ${className}`} ref={ref}>
+      <RevealSection id="features">
         <div className="wrap">
           <div className="section_head">
             <span className="eyebrow">핵심 기능</span>
@@ -169,10 +213,10 @@ const Home = () => {
             ))}
           </div>
         </div>
-      </section>
+      </RevealSection>
 
       
-      <section id="flow" className={`border_top ${className}`} ref={ref}>
+      <RevealSection id="flow">
         <div className="wrap">
           <div className="section_head">
             <span className="eyebrow">작동 방식</span>
@@ -190,10 +234,10 @@ const Home = () => {
             ))}
           </div>
         </div>
-      </section>
+      </RevealSection>
       
       
-      <section id="dashboard" className={`border_top ${className}`} ref={ref}>
+      <RevealSection id="dashboard">
         <div className="wrap">
           <div className="section_head">
             <span className="eyebrow">관리자 대시보드</span>
@@ -240,10 +284,10 @@ const Home = () => {
             </div>
           </div>
         </div>
-      </section>
+      </RevealSection>
 
       
-      <section id="roadmap" className={`border_top ${className}`} ref={ref}>
+      <RevealSection id="roadmap">
         <div className="wrap">
           <div className="section_head">
             <span className="eyebrow">지금과 다음</span>
@@ -260,10 +304,10 @@ const Home = () => {
             ))}
           </div>
         </div>
-      </section>
+      </RevealSection>
 
       
-      <section className={`border_top ${className}`} ref={ref}>
+      <RevealSection>
         <div className="wrap">
           <div className="section_head">
             <span className="eyebrow">바로가기</span>
@@ -280,9 +324,9 @@ const Home = () => {
             ))}
           </div>
         </div>
-      </section>
+      </RevealSection>
       
-      <section className="cta border_top">
+      <RevealSection className="cta border_top">
         <div className="wrap">
           <h2>지금, 매장에 눈을 달아주세요</h2>
           <p>도입 상담과 데모 시연을 신청하시면 담당자가 안내해드립니다.</p>
@@ -295,7 +339,7 @@ const Home = () => {
             </Link>
           </div>
         </div>
-      </section>
+      </RevealSection>
     </>
   )
 }
