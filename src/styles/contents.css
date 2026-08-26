@@ -24,6 +24,10 @@ body.alert_mode .alert_banner{
   animation:pulseBg 1.8s ease-in-out infinite;
 }
 @keyframes pulseBg{0%,100%{background:linear-gradient(90deg, rgba(255,77,94,0.16), rgba(255,77,94,0.05));}50%{background:linear-gradient(90deg, rgba(255,77,94,0.28), rgba(255,77,94,0.08));}}
+
+/* 여러 곳(REC 점, LIVE 뱃지 등)에서 참조만 하고 정의가 빠져있던 keyframes.
+   여기서 한 번만 정의해두면 기존 .rec::before / .pulse_dot 등도 같이 정상 동작합니다. */
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.25;}}
 .alert_banner .aicon{
   width:36px;height:36px;border-radius:8px;background:var(--red-500);color:#1a0508;
   display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;flex-shrink:0;
@@ -184,9 +188,19 @@ body.alert_mode .bbox{display:block;animation:pulseBox 1.6s ease-in-out infinite
 ========================================================= */
 .store_grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
 .store_card{padding:0;overflow:hidden;}
-.store_thumb{position:relative;aspect-ratio:16/9;background:#060A0E;}
+.store_thumb{position:relative;aspect-ratio:16/9;background:#060A0E;overflow:hidden;}
+.store_thumb::after{ /* 스캔라인 텍스처, .monitor_screen과 동일 패턴 */
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(180deg,rgba(255,255,255,0.02) 0 1px,transparent 1px 3px);
+}
+.store_thumb .thumb_video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.9;}
 .store_thumb .noise{position:absolute;inset:0;background:radial-gradient(circle at 35% 40%, rgba(51,214,138,0.07), transparent 55%);}
-.store_thumb .sdot{position:absolute;top:10px;right:10px;display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10.5px;padding:4px 9px;border-radius:100px;}
+.store_thumb .sdot{
+  position:absolute;top:10px;right:10px;display:flex;align-items:center;gap:6px;
+  font-family:var(--font-mono);font-size:10.5px;padding:4px 9px;border-radius:100px;
+  color:var(--green-500);background:rgba(51,214,138,0.14);border:1px solid rgba(51,214,138,0.35);
+}
+.store_thumb .sdot_pulse{width:6px;height:6px;border-radius:50%;background:currentColor;animation:blink 1s infinite;}
 .store_body{padding:16px;}
 .store_body .sname{font-size:14.5px;font-weight:700;margin-bottom:4px;}
 .store_body .saddr{font-size:11.5px;color:var(--text-faint);margin-bottom:14px;}

@@ -186,7 +186,24 @@ export default function ShopListView() {
           rows.map((s) => (
             <div className="card store_card" key={s.no}>
               <div className="store_thumb">
+                {/*
+                  실제 CCTV 스냅샷/스트림 연동 전까지 쓰는 임시 미리보기 영상.
+                  public/mock/shop-live-preview.mp4 (합성 생성한 목업, 실제 매장 영상 아님) —
+                  실 서비스 연동 시 이 <video> 블록만 실제 스트림 URL로 바꿔주면 됩니다.
+                */}
+                <video
+                  className="thumb_video"
+                  src="/mock/shop-live-preview.mp4"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                />
                 <div className="noise" />
+                <span className="sdot">
+                  <span className="sdot_pulse" />
+                  LIVE
+                </span>
               </div>
               <div className="store_body">
                 <div className="sname">{s.title}</div>
