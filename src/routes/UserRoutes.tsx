@@ -39,7 +39,7 @@ import ShopOrderDetail from '../pages/user/shoporder/ShopOrderDetail';
 import ShopPaymentList from '../pages/user/shoporder/ShopPaymentList';
 import ShopPaymentDetail from '../pages/user/shoporder/ShopPaymentDetail';
 import ShopRefundDetail from '../pages/user/shoporder/ShopRefundDetail';
-
+import ShopOrderLog from '../pages/user/shoporder/ShopOrderLog';
 
 export default function UserRoutes() {
   return (
@@ -56,11 +56,15 @@ export default function UserRoutes() {
       <Route path="notice/:no" element={<NoticeDetail />} />
 
       <Route path="shoporder" element={<ShopOrderList />} />
-      <Route path="shoporder/:orderno" element={<ShopOrderDetail />} />
-      <Route path="shoporder/:orderno/match" element={<ShopMatch />} />
-      <Route path="order/payment" element={<ShopPaymentList />} />
-      <Route path="order/payment/:ono" element={<ShopPaymentDetail />} />
-      <Route path="order/refunds/:ono" element={<ShopRefundDetail />} />
+      <Route path="shoporder/:no/match" element={<ShopMatch />} />
+
+      <Route path="shoporder/:ono" element={<ShopOrderDetail />}>
+        <Route path="payment" element={<ShopPaymentList />} />
+        <Route path="history" element={<ShopOrderLog />} />
+      </Route>
+
+      <Route path="shoporder/:ono/payment/:pno" element={<ShopPaymentDetail />} />
+      <Route path="shoporder/:ono/payment/:pno/refund" element={<ShopRefundDetail />} />
 
       <Route path="shop" element={<ShopList />} />
       <Route path="shop/new" element={<ShopForm />} />

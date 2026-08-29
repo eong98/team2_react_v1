@@ -11,7 +11,7 @@
 
 export interface ShopOrderLogTypes {
   no: number;
-  orderno: string;
+  ono: string;
   mno: number;
   action: number;
   sno: number | null;
@@ -27,13 +27,11 @@ export type RowType = ShopOrderLogTypes & { cnt: number };
 
 // ACTION (이벤트 종류)
 export const LOG_ACTION_MAP: Record<number, { label: string; className: string }> = {
-  0: { label: '결제', className: 'orange' },
+  0: { label: '신규결제', className: 'orange' },
   1: { label: '매장연결', className: 'info' },
   2: { label: '갱신', className: 'success' },
   3: { label: '취소', className: 'danger' },
 };
-
-export const PAGE_SIZE = 10;
 
 export interface Filters {
   sno: string;
@@ -48,6 +46,8 @@ export const EMPTY_FILTERS: Filters = {
   dateFrom: '',
   dateTo: '',
 };
+
+export const PAGE_SIZE = 6;
 
 /** GET /shop_order_log/mno/{mno}/search, /shop_order_log/list/admin 응답 형태 (PageResponse) */
 export interface LogSearchResult {

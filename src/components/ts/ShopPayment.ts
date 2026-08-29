@@ -29,29 +29,72 @@ export interface ShopPaymentTypes {
   udate?: string;
 }
 
+export interface ShopRefundTypes {
+  no: number;
+  ono: string;
+  pno: number;
+  mno: number;
+  bankName: string;
+  accountNo: string;
+  accountHolder: string;
+  amount: number;
+  status: number;
+  cdate: string;
+  udate?: string;
+}
+
+export interface RefundAccount {
+  bankName: string;
+  accountNo: string;
+  accountHolder: string;
+}
+
+export const EMPTY_ACCOUNT: RefundAccount = { 
+  bankName: '', 
+  accountNo: '', 
+  accountHolder: '' 
+};
+
+export const REFUND_STATUS_MAP: Record<number, { label: string; className: string }> = {
+  0: { label: '환불요청', className: 'wait' },
+  1: { label: '환불완료', className: 'success' },
+  2: { label: '환불반려', className: 'danger' },
+};
+
+
+
 export type RowType = ShopPaymentTypes & { cnt: number };
 
-export const PAGE_SIZE = 10;
+export const PAGE_SIZE = 6;
 
-export interface Filters {
-  pmethod: string;
-  pstatus: string;
+export interface PayFilters {
+  pmethod?: string;
+  pstatus?: string; /* 결제 상태 */
+  status?: string; /* 환불 상태 */
+  sno?: string;
+  action?: string; /* 기록 형태 */
   dateFrom: string;
   dateTo: string;
 }
 
-export const EMPTY_FILTERS: Filters = {
+export const EMPTY_PAY_FILTERS: PayFilters = {
   pmethod: '',
   pstatus: '',
+  status: '',
+  sno: '',
+  action: '',
   dateFrom: '',
   dateTo: '',
 };
 
+
+
 /** GET /shop_payment/mno/{mno}/search, /shop_payment/list/admin 응답 형태 (PageResponse) */
-export interface PaymentSearchResult {
+export interface SearchResult {
   content: ShopPaymentTypes[];
   totalElements: number;
   totalPages: number;
   page: number;
   size: number;
 }
+

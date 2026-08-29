@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   PageHeader,
@@ -21,38 +21,25 @@ import {
   type RenewResult,
   type Filters,
   EMPTY_FILTERS,
+  type ShopOrderTypes,
 } from '../../../components/ts/ShopOrder';
-import type { ShopPlanTypes } from '../../../components/ts/ShopPlan';
-import type { ShopType } from '../../../components/ts/ShopUser';
 import { usePaging } from '../../../hooks/usePaging';
-import { EMPTY_ACCOUNT, type RefundAccount } from '../../../components/ts/ShopRefund';
-
-/* ---------------------------------------------------------------------
-   구독 내역 (/user/subscribe/orders) — 현재 이용중/갱신 필요한 구독만 보여주는
-   "실무 처리용" 화면입니다. 정상(0)·만료(1) 상태만 조회하고, 취소된 건은
-   여기 안 보입니다(취소 이력은 별도 "구독 이력" 화면에서 확인).
-
-   검색 기능 없음(status를 0,1로 고정해서 호출), 페이징만 유지.
-
-   갱신 버튼: edate 있고(매장 연결됨) 종료일까지 7일 이하 남았거나 이미 만료(1)일 때만 노출.
-   매장 연결 버튼: 매장 미연결(sno 없음) 주문에만 노출 (취소 건이 없으므로 별도 status 체크 불필요).
-
-   API
-   GET /shop_order/mno/{mno}/search?status=0&status=1... (아래 참고: status 단일값이라
-        0/1을 각각 호출해서 합치는 방식으로 구현)
-   PUT /shop_order/{orderno}/cancel   → CancelResult
-   PUT /shop_order/{orderno}/renew    → RenewResult (body 없음, 기간 연장 전용)
---------------------------------------------------------------------- */
+import { EMPTY_ACCOUNT, type RefundAccount } from '../../../components/ts/ShopPayment';
 
 export default function ShopOrderList() {
   const navigate = useNavigate();
   const { no: mno } = GlobalStoreSession();
-  const { page, setPage, navigateWithQuery } = usePaging({ basePath: '/user/shoporder' });
+  const { page, setPage } = usePaging({ basePath: '/user/shoporder' });
+
+  // 상세로 이동할 때 현재 목록 page를 listPage로 실어 보냄
+  const goToDetail = (ono: string) => {
+    navigate(`/user/shoporder/${ono}?listPage=${page}`);
+  };
 
   /* API 데이터 저장 */
   const [orders, setOrders] = useState<RowType[]>([]);
-  const [plans, setPlans] = useState<ShopPlanTypes[]>([]);
-  const [shops, setShops] = useState<ShopType[]>([]);
+  // 매장번호(sno)별 activeCount를 기억하는 캐시 저장소
+  const [activeCountsMap, setActiveCountsMap] = useState<Record<number, number>>({});
   const [loading, setLoading] = useState(true);
 
   /* 필터바 설정 */
@@ -60,9 +47,9 @@ export default function ShopOrderList() {
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
 
   /* 페이징 설정 */
-  const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  
+  const [totalElements, setTotalElements] = useState(0);
+
   /* 취소 */
   const [cancelTarget, setCancelTarget] = useState<RowType | null>(null);
   const [cancelling, setCancelling] = useState(false);
@@ -75,100 +62,111 @@ export default function ShopOrderList() {
 
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error' } | null>(null);
 
-  /* 필터에서 사용할 구독권 종류/매장 조회 */
-  useEffect(() => {
-    if (!mno) return;
-    axiosInstance
-      .get<ShopPlanTypes[]>('/shop_plan/list')
-      .then((res) => setPlans(res.data))
-      .catch((err) => console.error('구독권 목록 조회 실패:', err));
-
-    axiosInstance
-      .get(`/shop/search`, { params: { mno, page: 0, size: 100 } })
-      .then((res) => setShops(res.data.content ?? []))
-      .catch((err) => console.error('매장 목록 조회 실패:', err));
-  }, [mno]);
-
-
-  const loadList = () => {
+  const loadList = async () => {
     if (!mno) {
       setLoading(false);
       return;
     }
     setLoading(true);
 
-    const matchedPno = findPno(applied.pname, applied.pmonth);
+    try {
+      const res = await axiosInstance.get<OrderSearchResult>(`/shop_order/mno/${mno}/search`, {
+        params: {
+          page: page - 1,
+          size: PAGE_SIZE,
+          word: applied.word.trim() || undefined,
+          status: applied.status === '' ? undefined : Number(applied.status),
+          pmonth: applied.pmonth === '' ? undefined : Number(applied.pmonth),
+          pname: applied.pname === '' ? undefined : applied.pname,
+          dateFrom: applied.dateFrom || undefined,
+          dateTo: applied.dateTo || undefined,
+        },
+      });
 
-    // 상태 필터가 있으면 그 상태만, 없으면 정상/만료/취소 세 개 다 조회
-    const statusesToFetch = applied.status !== '' ? [Number(applied.status)] : [0, 1, 2];
+      const { content, totalElements: total, totalPages: pages, page: serverPage, size } = res.data;
 
-    Promise.all(
-      statusesToFetch.map((status) =>
-        axiosInstance.get<OrderSearchResult>(`/shop_order/mno/${mno}/search`, {
-          params: {
-            word: applied.word || undefined,
-            status,
-            pno: matchedPno,
-            sno: applied.sno === '' ? undefined : Number(applied.sno),
-            page: 0,
-            size: 1000,
-          },
-        })
-      )
-    )
-      .then((responses) => {
-        let merged = responses.flatMap((res) => res.data.content);
+      if (content.length === 0 && page > 1) {
+        setPage(page - 1);
+        return;
+      }
 
-        // pname/pmonth가 pno로 특정 안 됐으면(둘 중 하나만 골랐을 때) 프론트에서 한 번 더 거름
-        if (!matchedPno && applied.pname) {
-          const validPnos = new Set(plans.filter((p) => p.pname === applied.pname).map((p) => p.no));
-          merged = merged.filter((o) => validPnos.has(o.pno));
-        }
-        if (!matchedPno && applied.pmonth) {
-          const validPnos = new Set(plans.filter((p) => String(p.pmonth) === applied.pmonth).map((p) => p.no));
-          merged = merged.filter((o) => validPnos.has(o.pno));
-        }
+      // 새로 필요한 sno 목록만 추출하여 병렬 조회
+      const newSnoList = Array.from(
+        new Set(
+          content
+            .map((item) => item.sno)
+            .filter((sno): sno is number => Boolean(sno) && activeCountsMap[sno!] === undefined)
+        )
+      );
 
-        merged.sort((a, b) => (a.cdate < b.cdate ? 1 : -1));
+      const newFetchedCounts: Record<number, number> = {};
 
-        const total = merged.length;
-        const pageStart = (page - 1) * PAGE_SIZE;
-        const pageItems = merged.slice(pageStart, pageStart + PAGE_SIZE);
+      if (newSnoList.length > 0) {
+        await Promise.all(
+          newSnoList.map(async (sno) => {
+            try {
+              const countRes = await axiosInstance.get<ShopOrderTypes[]>(`/shop_order/sno/${sno}`);
+              const activeCount = countRes.data.filter((order) => order.status === 1).length;
+              newFetchedCounts[sno] = activeCount;
+            } catch {
+              newFetchedCounts[sno] = 0;
+            }
+          })
+        );
+      }
 
-        const withCnt: RowType[] = pageItems.map((item, idx) => ({
-          ...item,
-          cnt: total - (pageStart + idx),
-        }));
+      // 캐시 맵 갱신 (기존 + 새로 조회한 매장) - 함수형 업데이트 적용
+      if (Object.keys(newFetchedCounts).length > 0) {
+        setActiveCountsMap((prev) => ({ ...prev, ...newFetchedCounts }));
+      }
 
-        setOrders(withCnt);
-        setTotalElements(total);
-        setTotalPages(Math.max(1, Math.ceil(total / PAGE_SIZE)));
-      })
-      .catch((err) => console.error('구독 내역 조회 실패:', err))
-      .finally(() => setLoading(false));
+      const mergedMap = { ...activeCountsMap, ...newFetchedCounts };
+
+      // 목록 데이터 구성
+      const withCnt: RowType[] = content.map((item, idx) => ({
+        ...item,
+        cnt: total - (serverPage * size + idx),
+        activeCount: item.sno ? (mergedMap[item.sno] ?? 0) : 0,
+      }));
+
+      setOrders(withCnt);
+      setTotalElements(total);
+      setTotalPages(Math.max(1, pages));
+    } catch (error) {
+      console.error('구독 내역 조회 실패:', error);
+      setOrders([]);
+      setTotalElements(0);
+      setTotalPages(1);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     loadList();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mno, applied, page]);
 
-  const planName = (pno: number) => plans.find((p) => p.no === pno)?.pname ?? `구독권 #${pno}`;
-  const shopName = (sno: number | null) => (sno ? shops.find((s) => s.no === sno)?.title ?? `매장 #${sno}` : null);
+  /* 플랜명 중복제거: useMemo로 최적화 */
+  const plans = useMemo(() => {
+    if (!Array.isArray(orders) || orders.length === 0) return [];
+    const names = orders.map((item) => item.pname).filter((name): name is string => Boolean(name));
+    return Array.from(new Set(names));
+  }, [orders]);
 
-  // plans에서 pname만 뽑아 중복 제거 (베이직/프로/엔터프라이즈처럼 등급명 단위로 노출)
-  const planNames = Array.from(new Set(plans.map((p) => p.pname)));
-
-  // pname + pmonth 조건에 맞는 pno 찾기 (검색 요청 시 사용)
-  const findPno = (pname: string, pmonth: string): number | undefined => {
-    const matched = plans.filter(
-      (p) => (pname === '' || p.pname === pname) && (pmonth === '' || String(p.pmonth) === pmonth)
-    );
-    return matched.length === 1 ? matched[0].no : undefined; // 1개로 특정될 때만 pno 확정
-  };
-
+  // 갱신 버튼 노출 검사 함수
   const canRenew = (order: RowType) => {
     if (!order.edate) return false;
-    if (order.status === 1) return true;
+
+    // 해당 매장의 정상(status=1) 구독 개수
+    const activeCount = order.sno ? (activeCountsMap[order.sno] ?? order.activeCount ?? 0) : 0;
+
+    // 만료 상태(status = 2), 동일한 매장에 정상상태인 구독권이 있는경우 갱신 불가
+    if (order.status === 2 && activeCount >= 1) return false;
+    // 취소상태, 매장연결 완료 갱신 불가
+    if (order.status === 3) return false;
+
+    // 만료 7일 전 체크
     const daysLeft = Math.ceil((new Date(order.edate).getTime() - Date.now()) / 86400000);
     return daysLeft <= 7;
   };
@@ -192,7 +190,6 @@ export default function ShopOrderList() {
   const submitCancel = async () => {
     if (!cancelTarget) return;
 
-    // 환불 대상(예상 환불액 > 0)이면 계좌 정보 필수 검증
     if (cancelEstimate && cancelEstimate.refundAmount > 0) {
       const errors: typeof refundErrors = {};
       if (!refundAccount.bankName.trim()) errors.bankName = '은행명을 입력해주세요.';
@@ -206,7 +203,7 @@ export default function ShopOrderList() {
 
     setCancelling(true);
     try {
-      const res = await axiosInstance.put<CancelResult>(`/shop_order/${cancelTarget.orderno}/cancel`, refundAccount);
+      const res = await axiosInstance.put<CancelResult>(`/shop_order/${cancelTarget.no}/cancel`, refundAccount);
       const { usedMonths, refundMonths, refundAmount } = res.data;
 
       setCancelTarget(null);
@@ -214,6 +211,8 @@ export default function ShopOrderList() {
         message: `구독이 취소되었습니다.\n사용 개월수 ${usedMonths}개월 · 환불 대상 ${refundMonths}개월\n환불 금액: ${refundAmount.toLocaleString('ko-KR')}원`,
         variant: 'success',
       });
+      // 데이터 재요청 시 매장 개수도 최신화하기 위해 초기화 후 재호출
+      setActiveCountsMap({});
       loadList();
     } catch (err) {
       console.error('구독 취소 실패:', err);
@@ -232,7 +231,7 @@ export default function ShopOrderList() {
 
     setRenewing(true);
     try {
-      const res = await axiosInstance.put<RenewResult>(`/shop_order/${renewTarget.orderno}/renew`);
+      const res = await axiosInstance.put<RenewResult>(`/shop_order/${renewTarget.no}/renew`);
       const { edate, totalprice } = res.data;
 
       closeRenewModal();
@@ -240,6 +239,7 @@ export default function ShopOrderList() {
         message: `구독이 갱신되었습니다.\n새 구독 종료일: ${edate}\n총 결제 금액(누적): ${totalprice.toLocaleString('ko-KR')}원`,
         variant: 'success',
       });
+      setActiveCountsMap({});
       loadList();
     } catch (err) {
       console.error('갱신 실패:', err);
@@ -254,14 +254,12 @@ export default function ShopOrderList() {
     setApplied(draft);
   };
 
-  // 필터 입력값(draft)/적용값(applied) 초기화. page는 여기서 안 건드림 — 필요한 곳에서 따로 처리
   const resetFilters = () => {
     const empty = { ...EMPTY_FILTERS };
     setDraft(empty);
     setApplied(empty);
   };
 
-  // [초기화 버튼 클릭] 모든 필터 조건을 초기화하고 1페이지로 이동
   const onReset = () => {
     resetFilters();
     setPage(1);
@@ -271,41 +269,36 @@ export default function ShopOrderList() {
 
   const columns: DataTableColumn<RowType>[] = [
     { header: '번호', width: '64px', mono: true, render: (o) => o.cnt },
-    { header: '구독권', width:'100px', render: (o) => (
-      <button type="button" className="btn_link" onClick={() => navigate(`/user/shoporder/${o.orderno}`)}>
-        {planName(o.pno)}
-      </button>
-    ) },
+    {
+      header: '구독권',
+      width: '100px',
+      render: (o) => (
+        <button type="button" className="btn_link" onClick={() => goToDetail(o.no)}>
+          {o.pname}
+        </button>
+      ),
+    },
     { header: '기간', width: '80px', mono: true, render: (o) => `${o.pmonth}개월` },
     { header: '대수', width: '60px', mono: true, render: (o) => `${o.ccnt}대` },
-    { header: '결제금액', width: '100px', mono: true, render: (o) => `${o.totalprice.toLocaleString('ko-KR')}원` },
-    { header: '구매일', width: '100px', mono: true, render: (o) => o.cdate.split(' ')[0] },
     {
       header: '구독기간',
-      width: '180px',
+      width: '200px',
       mono: true,
-      render: (o) => 
-        shopName(o.sno) ? (
-          `${o.sdate} ~ ${o.edate}`
-        ) : o.status === 2 ? (
-          <span className="cell_sub">-</span>
-        ) : (
-          <span className='badge orange'>대기중</span>
-        ),
+      render: (o) => (o.sno ? `${o.sdate} ~ ${o.edate}` : <span className="cell_sub">-</span>),
     },
     {
-      header: '연결된 매장',
-      width: '10%',
+      header: '연결매장',
+      width: '200px',
       render: (o) =>
-        shopName(o.sno) ? (
-          <span className="b_title">{shopName(o.sno)}</span>
-        ) : o.status === 2 ? (
+        o.sno ? (
+          <span className="b_title">{o.sname}</span>
+        ) : o.status === 3 ? (
           <span className="cell_sub">-</span>
         ) : (
           <button
             type="button"
             className="btn btn_xsm btn_ghost"
-            onClick={() => navigate(`/user/shoporder/${o.orderno}/match`)}
+            onClick={() => navigate(`/user/shoporder/${o.no}/match`)}
           >
             매장 연결
           </button>
@@ -313,22 +306,24 @@ export default function ShopOrderList() {
     },
     {
       header: '상태',
-      width: '80px',
+      width: '100px',
       render: (o) => (
         <span className={`badge ${ORDER_STATUS_MAP[o.status].className}`}>{ORDER_STATUS_MAP[o.status].label}</span>
       ),
     },
+    { header: '결제금액(원)', width: '120px', mono: true, render: (o) => `${o.totalprice.toLocaleString('ko-KR')}` },
+    { header: '구매일', width: '120px', mono: true, render: (o) => o.cdate.split(' ')[0] },
     {
       header: '관리',
       width: '110px',
       render: (o) => (
         <div className="actions">
-          {canRenew(o) && o.status !== 2 && (
-            <button type="button" className="btn btn_xsm btn_outline_primary" onClick={() => openRenewModal(o)}>
+          {canRenew(o) && (
+            <button type="button" className="btn btn_xsm btn_ghost" onClick={() => openRenewModal(o)}>
               갱신
             </button>
           )}
-          {o.status === 0 && (
+          {(o.status === 0 || o.status === 1) && (
             <button type="button" className="btn btn_xsm btn_danger_outline" onClick={() => openCancelModal(o)}>
               취소
             </button>
@@ -341,9 +336,9 @@ export default function ShopOrderList() {
   return (
     <section className="view active">
       <PageHeader
-        title="구독 내역"
-        description="현재 이용중이거나 갱신이 필요한 구독을 확인합니다."
-        createLabel='+ 새 구독'
+        title="전체 구독 내역"
+        description="전체 매장의 현재 이용중이거나 갱신이 필요한 구독을 확인합니다."
+        createLabel="+ 새 구독"
         onCreate={() => navigate('/shopplan')}
       />
 
@@ -354,7 +349,7 @@ export default function ShopOrderList() {
         searchValue={draft.word}
         onSearchChange={(value) => setDraft((prev) => ({ ...prev, word: value }))}
         onSearchEnter={onSearch}
-        searchPlaceholder='주문번호로 검색'
+        searchPlaceholder="매장 · 플랜 이름으로 검색"
         filters={
           <>
             <select
@@ -363,10 +358,10 @@ export default function ShopOrderList() {
               onChange={(e) => setDraft((prev) => ({ ...prev, pname: e.target.value }))}
               aria-label="구독권 종류 필터"
             >
-              <option value="">구독권 종류 전체</option>
-              {planNames.map((name) => (
-                <option key={name} value={name}>
-                  {name}
+              <option value="">구독권 전체</option>
+              {plans.map((plan) => (
+                <option key={plan} value={plan}>
+                  {plan}
                 </option>
               ))}
             </select>
@@ -375,13 +370,13 @@ export default function ShopOrderList() {
               className="form_select"
               value={draft.pmonth}
               onChange={(e) => setDraft((prev) => ({ ...prev, pmonth: e.target.value }))}
-              aria-label="이용 기간 필터"
+              aria-label="구독기간 필터"
             >
-              <option value="">기간 전체</option>
+              <option value="">구독기간 전체</option>
               <option value="6">6개월</option>
               <option value="12">12개월</option>
             </select>
-            
+
             <select
               className="form_select"
               value={draft.status}
@@ -389,24 +384,34 @@ export default function ShopOrderList() {
               aria-label="구독 상태 필터"
             >
               <option value="">상태 전체</option>
-              <option value="0">정상</option>
-              <option value="1">만료됨</option>
-              <option value="2">취소</option>
-            </select>
-
-            <select
-              className="form_select"
-              value={draft.sno}
-              onChange={(e) => setDraft((prev) => ({ ...prev, sno: e.target.value }))}
-              aria-label="매장 필터"
-            >
-              <option value="">매장 전체</option>
-              {shops.map((s) => (
-                <option key={s.no} value={s.no}>
-                  {s.title}
+              {Object.entries(ORDER_STATUS_MAP).map(([type, { label }]) => (
+                <option key={type} value={type}>
+                  {label}
                 </option>
               ))}
             </select>
+
+            <input
+              type="date"
+              className="form_input"
+              value={draft.dateFrom}
+              onChange={(e) => setDraft((prev) => ({ ...prev, dateFrom: e.target.value }))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onSearch();
+              }}
+              aria-label="구매일 시작"
+            />
+            <span style={{ alignSelf: 'center' }}>~</span>
+            <input
+              type="date"
+              className="form_input"
+              value={draft.dateTo}
+              onChange={(e) => setDraft((prev) => ({ ...prev, dateTo: e.target.value }))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onSearch();
+              }}
+              aria-label="구매일 종료"
+            />
           </>
         }
         extra={
@@ -423,14 +428,20 @@ export default function ShopOrderList() {
       <DataTable
         columns={columns}
         data={orders}
-        rowKey={(o) => o.orderno}
+        rowKey={(o) => o.no}
         loading={loading}
         emptyMessage="현재 이용중인 구독이 없습니다."
       />
 
-      <UserPagination page={page} totalPages={totalPages} totalCount={totalElements} pageSize={PAGE_SIZE} onChange={setPage} />
+      <UserPagination
+        page={page}
+        totalPages={totalPages}
+        totalCount={totalElements}
+        pageSize={PAGE_SIZE}
+        onChange={setPage}
+      />
 
-      {/* 취소 확인 */}
+      {/* 취소 확인 Modal */}
       <Modal
         open={cancelTarget !== null}
         onClose={closeCancelModal}
@@ -451,16 +462,32 @@ export default function ShopOrderList() {
           <div>
             <p className="b_title">구독 취소 시 해당 구독권은 재사용할 수 없습니다.</p>
             <div className="order_lines">
-              <div className="order_line"><span>구독권</span><span>{planName(cancelTarget.pno)} · {cancelTarget.pmonth}개월 · {cancelTarget.ccnt}대</span></div>
-              <div className="order_line"><span>사용 개월수</span><span>{cancelEstimate.usedMonths}개월</span></div>
-              <div className="order_line"><span>환불 대상 개월수</span><span>{cancelEstimate.refundMonths}개월</span></div>
-              <div className="order_line"><span>예상 환불액</span><span>{cancelEstimate.refundAmount.toLocaleString('ko-KR')}원</span></div>
+              <div className="order_line">
+                <span>구독권</span>
+                <span>
+                  {cancelTarget.pname} · {cancelTarget.pmonth}개월 · {cancelTarget.ccnt}대
+                </span>
+              </div>
+              <div className="order_line">
+                <span>사용 개월수</span>
+                <span>{cancelEstimate.usedMonths}개월</span>
+              </div>
+              <div className="order_line">
+                <span>환불 대상 개월수</span>
+                <span>{cancelEstimate.refundMonths}개월</span>
+              </div>
+              <div className="order_line">
+                <span>예상 환불액</span>
+                <span>{cancelEstimate.refundAmount.toLocaleString('ko-KR')}원</span>
+              </div>
             </div>
 
             {cancelEstimate.refundAmount > 0 && (
               <div style={{ marginTop: 16 }}>
                 <div className="form_group">
-                  <label className="form_label" htmlFor="bankName">은행명</label>
+                  <label className="form_label" htmlFor="bankName">
+                    은행명
+                  </label>
                   <div className="form_control">
                     <input
                       id="bankName"
@@ -475,7 +502,9 @@ export default function ShopOrderList() {
                 </div>
 
                 <div className="form_group">
-                  <label className="form_label" htmlFor="accountNo">계좌번호</label>
+                  <label className="form_label" htmlFor="accountNo">
+                    계좌번호
+                  </label>
                   <div className="form_control">
                     <input
                       id="accountNo"
@@ -490,7 +519,9 @@ export default function ShopOrderList() {
                 </div>
 
                 <div className="form_group">
-                  <label className="form_label" htmlFor="accountHolder">예금주명</label>
+                  <label className="form_label" htmlFor="accountHolder">
+                    예금주명
+                  </label>
                   <div className="form_control">
                     <input
                       id="accountHolder"
@@ -509,7 +540,7 @@ export default function ShopOrderList() {
         )}
       </Modal>
 
-      {/* 갱신 확인 */}
+      {/* 갱신 확인 Modal */}
       <Modal
         open={renewTarget !== null}
         onClose={closeRenewModal}
@@ -532,15 +563,29 @@ export default function ShopOrderList() {
               동일 조건({renewTarget.ccnt}대, {renewTarget.pmonth}개월)으로 구독 기간이 연장됩니다.
             </p>
             <div className="order_lines">
-              <div className="order_line"><span>구독권</span><span>{planName(renewTarget.pno)}</span></div>
-              <div className="order_line"><span>현재 종료일</span><span>{renewTarget.edate}</span></div>
-              <div className="order_line"><span>연장 개월수</span><span>{renewTarget.pmonth}개월</span></div>
+              <div className="order_line">
+                <span>구독권</span>
+                <span>{renewTarget.pname}</span>
+              </div>
+              <div className="order_line">
+                <span>현재 종료일</span>
+                <span>{renewTarget.edate}</span>
+              </div>
+              <div className="order_line">
+                <span>연장 개월수</span>
+                <span>{renewTarget.pmonth}개월</span>
+              </div>
             </div>
           </div>
         )}
       </Modal>
 
-      <AlertModal open={alert !== null} onClose={() => setAlert(null)} message={alert?.message ?? ''} variant={alert?.variant} />
+      <AlertModal
+        open={alert !== null}
+        onClose={() => setAlert(null)}
+        message={alert?.message ?? ''}
+        variant={alert?.variant}
+      />
     </section>
   );
 }

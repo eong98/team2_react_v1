@@ -2,108 +2,118 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '../../../components/ui';
 import { axiosInstance } from '../../../utils/Tool';
-import { REFUND_STATUS_MAP, type ShopRefundTypes } from '../../../components/ts/ShopRefund';
-import { ORDER_STATUS_MAP, type ShopOrderTypes } from '../../../components/ts/ShopOrder';
-import type { ShopPlanTypes } from '../../../components/ts/ShopPlan';
+import { PMETHOD_MAP, PSTATUS_MAP, REFUND_STATUS_MAP, type ShopPaymentTypes, type ShopRefundTypes } from '../../../components/ts/ShopPayment';
+import { usePaging } from '../../../hooks/usePaging';
 
 /* ---------------------------------------------------------------------
-   환불 상세 (/user/shoporder/refunds/:ono) — 환불계좌 1건의 전체 정보를
-   보여주는 조회 전용 화면입니다. 연결된 구독 내역 요약도 같이 표시합니다.
+   결제 상세 (/user/shoporder/:ono/payment/:no) — 결제 고유번호(PK) 하나로 조회합니다.
 
    API
-   GET /shop_refund/order/{ono} → ShopRefundTypes[]
-   GET /shop_order/{ono}        → ShopOrderTypes
-   GET /shop_plan/list          → 구독권 이름 매핑용
+   GET /shop_payment/{no} → ShopPaymentTypes
 --------------------------------------------------------------------- */
 
-export default function ShopRefundDetail() {
-  const { ono } = useParams<{ ono: string }>();
+export default function ShopPaymentDetail() {
   const navigate = useNavigate();
+  const { pno, ono } = useParams<{ pno: string; ono: string }>();
 
+  const { goToList } = usePaging({ basePath: `/user/shoporder/${ono}/payment` });
+  const [payment, setPayment] = useState<ShopPaymentTypes | null>(null);
   const [refund, setRefund] = useState<ShopRefundTypes | null>(null);
-  const [order, setOrder] = useState<ShopOrderTypes | null>(null);
-  const [plans, setPlans] = useState<ShopPlanTypes[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!ono) return;
+    if (!pno) return;
     setLoading(true);
 
     Promise.all([
-      axiosInstance.get<ShopRefundTypes[]>(`/shop_refund/order/${ono}`),
-      axiosInstance.get<ShopOrderTypes>(`/shop_order/${ono}`),
-      axiosInstance.get<ShopPlanTypes[]>('/shop_plan/list'),
+      axiosInstance.get<ShopRefundTypes[]>(`/shop_refund/${pno}`),
+      axiosInstance.get<ShopPaymentTypes>(`/shop_payment/${pno}`)
     ])
-      .then(([refundRes, orderRes, planRes]) => {
+      .then(([refundRes, payRes]) => {
         setRefund(refundRes.data[0] ?? null);
-        setOrder(orderRes.data);
-        setPlans(planRes.data);
+        setPayment(payRes.data);
       })
-      .catch((err) => console.error('환불 상세 조회 실패:', err))
+      .catch((err) => {
+        console.error('환불 내역 조회 실패:', err);
+        setRefund(null);
+        setPayment(null);
+      })
       .finally(() => setLoading(false));
-  }, [ono]);
 
-  const planName = (pno: number) => plans.find((p) => p.no === pno)?.pname ?? `구독권 #${pno}`;
+  }, [pno, ono]);
+  console.log(payment)
+  console.log(refund)
 
-  if (loading) return <p className="b_title">환불 상세 정보를 불러오는 중...</p>;
-  if (!refund) return <p className="cell_sub">환불계좌 내역을 찾을 수 없습니다.</p>;
+  if (loading) {
+    return (
+      <section className="view active">
+        <PageHeader
+          title="환불 내역"
+          actions={
+            <button type="button" className="btn btn_md btn_ghost" onClick={() => goToList()}>
+              ← 목록으로
+            </button>
+          }
+        />
+        <p className="b_title">환불 내역 정보를 불러오는 중...</p>
+      </section>
+    );
+  }
+
+  if (!payment || !refund) {
+    return (
+      <section className="view active">
+        <PageHeader
+          title="환불 내역"
+          actions={
+            <button type="button" className="btn btn_md btn_ghost" onClick={() => goToList()}>
+              ← 목록으로
+            </button>
+          }
+        />
+        <p className="empty_row">환불 내역을 찾을 수 없습니다.</p>
+      </section>
+    );
+  }
 
   return (
     <section className="view active">
-      <PageHeader title="환불 상세" description={`주문번호 ${refund.ono}`} />
+      <PageHeader
+        title="환불 내역"
+        description={`주문번호 ${payment.ono}`}
+        createLabel="목록으로"
+        actions={
+          <button type="button" className="btn btn_md btn_ghost" onClick={() => goToList()}>
+            ← 목록으로
+          </button>
+        }
+      />
 
-      <div className="card card_pad_lg" style={{ maxWidth: 480, marginBottom: 16 }}>
+      <div className="card card_pad_lg" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-          <div>
-            <div className="cell_sub" style={{ marginBottom: 4 }}>{refund.cdate}</div>
-            <h3 style={{ fontSize: 20, margin: 0 }}>{refund.amount.toLocaleString('ko-KR')}원</h3>
-          </div>
+          <h3 style={{ fontSize: 20, margin: 0 }}>{refund.amount.toLocaleString('ko-KR')}원</h3>
           <span className={`badge ${REFUND_STATUS_MAP[refund.status].className}`}>
             {REFUND_STATUS_MAP[refund.status].label}
           </span>
         </div>
 
         <div className="order_lines">
+          <div className="order_line">
+            <span>결제 취소일</span>
+            <span>{payment.cdate}</span>
+          </div>
+          <div className="order_line">
+            <span>결제수단</span>
+            <span>{payment.pmethod !== null && PMETHOD_MAP[payment.pmethod] ? PMETHOD_MAP[payment.pmethod].label : '-'}</span>
+          </div>
           <div className="order_line"><span>은행</span><span>{refund.bankName}</span></div>
           <div className="order_line"><span>계좌번호</span><span className="mono">{refund.accountNo}</span></div>
           <div className="order_line"><span>예금주</span><span>{refund.accountHolder}</span></div>
           <div className="order_line"><span>환불금액</span><span>{refund.amount.toLocaleString('ko-KR')}원</span></div>
-          <div className="order_line"><span>등록일시</span><span>{refund.cdate}</span></div>
+          <div className="order_line"><span>환불요청일</span><span>{refund.cdate}</span></div>
           {refund.udate && <div className="order_line"><span>처리일시</span><span>{refund.udate}</span></div>}
         </div>
-
-        {refund.status === 0 && (
-          <div className="form_hint" style={{ marginTop: 12 }}>
-            아직 관리자 확인 전입니다. 처리가 완료되면 상태가 "완료"로 바뀝니다.
-          </div>
-        )}
       </div>
-
-      {order && (
-        <div className="card card_pad_lg" style={{ maxWidth: 480, marginBottom: 16 }}>
-          <div className="cell_sub" style={{ marginBottom: 10 }}>연결된 구독</div>
-          <div className="order_lines">
-            <div className="order_line"><span>구독권</span><span>{planName(order.pno)}</span></div>
-            <div className="order_line"><span>이용 기간</span><span>{order.pmonth}개월 · {order.ccnt}대</span></div>
-            <div className="order_line">
-              <span>구독상태</span>
-              <span className={`badge ${ORDER_STATUS_MAP[order.status].className}`}>{ORDER_STATUS_MAP[order.status].label}</span>
-            </div>
-          </div>
-          <button
-            type="button"
-            className="btn btn_sm btn_ghost"
-            style={{ marginTop: 12 }}
-            onClick={() => navigate(`/user/shoporder/${order.orderno}`)}
-          >
-            구독 상세 보기
-          </button>
-        </div>
-      )}
-
-      <button type="button" className="btn btn_md btn_ghost" onClick={() => navigate(-1)}>
-        목록으로
-      </button>
     </section>
   );
 }

@@ -4,9 +4,11 @@ import './mainLayout.css'
 
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { getCopyright } from '../../utils/Tool'
+import { GlobalStoreSession } from '../../store/LoginStore';
 
 const MainLayout = () => {
   const { pathname } = useLocation();
+  const { login } = GlobalStoreSession();
   const isMain = pathname.includes('/index');
   const isAdmin = pathname.includes('/dbms');
   return (
@@ -31,7 +33,7 @@ const MainLayout = () => {
                   문의하기
                 </Link>
 
-                <Link to="/login" className="btn btn_primary">
+                <Link to={login ? '/shopplan' : '/login'} className="btn btn_primary">
                   데모 신청
                 </Link>
               </div>

@@ -32,24 +32,6 @@ interface DataTableProps<T> {
   footer?: ReactNode;
 }
 
-/**
- * 컬럼 정의만 넘기면 되는 범용 관리자 테이블.
- * 기존 .table_wrap / .table / .mono / .actions / .empty_row 클래스를 그대로 사용
- * (StoresView.tsx / HistoryView.tsx 패턴과 동일).
- *
- * 사용 예:
- *   <DataTable
- *     columns={[
- *       { header: '매장명', width: 220, render: (r) => <span className="cell_title">{r.name}</span> },
- *       { header: '연락처', accessor: 'tel', mono: true, width: 140 },
- *       { header: '상태', render: (r) => <span className="badge badge_success">{r.status}</span> },
- *     ]}
- *     data={stores}
- *     rowKey={(r) => r.id}
- *     onEdit={(r) => openEditModal(r)}
- *     onDelete={(r) => askDelete(r)}
- *   />
- */
 export default function DataTable<T>({
   columns,
   data,
@@ -98,20 +80,26 @@ export default function DataTable<T>({
               <tr key={rowKey(row)}>
                 {columns.map((col) => (
                   <td key={col.header} className={col.className}>
-                    {col.render ? (
-                      col.render(row)
-                    ) : col.mono ? (
-                      <span className="mono">{col.accessor ? String(row[col.accessor] ?? '') : ''}</span>
-                    ) : col.accessor ? (
-                      String(row[col.accessor] ?? '')
-                    ) : (
-                      ''
-                    )}
+                    {(() => {
+                      // 1. 값 추출 (render 함수 우선, 없으면 accessor 사용)
+                      const content = col.render
+                        ? col.render(row)
+                        : col.accessor
+                        ? String(row[col.accessor] ?? '')
+                        : '';
+
+                      // 2. mono 옵션이 true이고 값이 존재하면 <span className="mono">로 감싸기
+                      if (col.mono && content !== '') {
+                        return <span className="mono">{content}</span>;
+                      }
+
+                      return content;
+                    })()}
                   </td>
                 ))}
                 {hasActions && (
                   <td>
-                    <div className="actions" style={{justifyContent: 'flex-end'}}>
+                    <div className="actions" style={{ justifyContent: 'flex-end' }}>
                       {onEdit && (
                         <button type="button" className="btn btn_sm btn_ghost" onClick={() => onEdit(row)}>
                           {editLabel}
@@ -127,7 +115,8 @@ export default function DataTable<T>({
                 )}
               </tr>
             ))
-          )}        </tbody>
+          )}
+        </tbody>
         {footer && !loading && data.length > 0 && (
           <tfoot>
             <tr className="table_footer_row">

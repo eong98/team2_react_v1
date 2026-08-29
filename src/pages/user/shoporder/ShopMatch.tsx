@@ -9,7 +9,7 @@ import type { ShopOrderTypes } from '../../../components/ts/ShopOrder';
 import type { ShopPlanTypes } from '../../../components/ts/ShopPlan';
 
 /* ---------------------------------------------------------------------
-   구독 결제 완료 후 매장 연결 (/user/subscribe/:orderno/shop-select)
+   구독 결제 완료 후 매장 연결 (/user/subscribe/:no/shop-select)
 
    규칙 4, 5 반영:
    - 연결 가능한 매장(무구독 매장 + 만료/취소된 구독이 걸린 매장)이 하나도 없으면 새 매장 등록 화면
@@ -21,12 +21,12 @@ import type { ShopPlanTypes } from '../../../components/ts/ShopPlan';
 
    API
    GET /shop_order/linkable-shops/{mno}     → ShopType[] (ShopWithCctvCount)
-   PUT /shop_order/{orderno}/link-shop       → LinkShopRequest → 연결 확정
+   PUT /shop_order/{no}/link-shop       → LinkShopRequest → 연결 확정
 --------------------------------------------------------------------- */
 
 
 export default function ShopMatch() {
-  const { orderno } = useParams<{ orderno: string }>();
+  const { no } = useParams<{ no: string }>();
   const navigate = useNavigate();
   const { no: mno } = GlobalStoreSession();
   const [order, setOrder] = useState<ShopOrderTypes | null>(null);
@@ -42,16 +42,16 @@ export default function ShopMatch() {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    if (!orderno) return;
+    if (!no) return;
     axiosInstance
-      .get<ShopOrderTypes>(`/shop_order/${orderno}`)
+      .get<ShopOrderTypes>(`/shop_order/${no}`)
       .then((res) => {
         setOrder(res.data);
         return axiosInstance.get<ShopPlanTypes>(`/shop_plan/${res.data.pno}`);
       })
       .then((res) => setPlan(res.data))
       .catch((err) => console.error('구독 내역 조회 실패:', err));
-  }, [orderno]);
+  }, [no]);
 
   useEffect(() => {
     if (!mno) {
@@ -93,11 +93,11 @@ export default function ShopMatch() {
   };
 
   const handleSelect = async (sno?: number) => {
-    if (!orderno || !sno) return;
+    if (!no || !sno) return;
     setLinking(sno);
     try {
       const payload: LinkShopRequest = { sno };
-      await axiosInstance.put(`/shop_order/${orderno}/link-shop`, payload);
+      await axiosInstance.put(`/shop_order/${no}/link-shop`, payload);
       setAlert({ message: '매장에 구독권이 연결되었습니다.', variant: 'success' });
     } catch (err: any) {
       console.error('매장 연결 실패:', err);
@@ -168,7 +168,7 @@ export default function ShopMatch() {
       )}
 
       {filtered.length === 0 ? (
-        <div className="card card_pad_lg cal_empty a-c">
+        <div className="card card_pad_lg no_data">
           <p className="b_title">등록된 매장이 없습니다. 먼저 매장을 생성해 주세요.</p>
           <button type="button" className="btn btn_md btn_primary" onClick={() => navigate('/user/shop/new')}>+ 새 매장 등록</button>
         </div>
