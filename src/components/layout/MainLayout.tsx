@@ -5,12 +5,17 @@ import './mainLayout.css'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { getCopyright } from '../../utils/Tool'
 import { GlobalStoreSession } from '../../store/LoginStore';
+import { AlertModal } from '../ui';
+import { useState } from 'react';
 
 const MainLayout = () => {
   const { pathname } = useLocation();
   const { login } = GlobalStoreSession();
   const isMain = pathname.includes('/index');
   const isAdmin = pathname.includes('/dbms');
+
+  const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
+    
   return (
     <div className='home'>
       <header>
@@ -26,10 +31,11 @@ const MainLayout = () => {
                 <a href="#flow">작동 방식</a>
                 <Link to="/user/dashboard/test1">대시보드</Link>
                 <a href="#roadmap">확장 계획</a>
+                <Link to={login ? '/user/notice' : '/board'}>고객센터</Link>
               </div>
 
               <div className="nav_cta">
-                <Link to="/" className="btn btn_ghost">
+                <Link to={login ? '/user/qa/new' : '/board/qa/new'} className="btn btn_ghost">
                   문의하기
                 </Link>
 
@@ -60,12 +66,15 @@ const MainLayout = () => {
               <a href="#flow">작동 방식</a>
               <Link to="/">대시보드</Link>
               <a href="#roadmap">확장 계획</a>
+              <Link to={login ? '/user/notice' : '/board'}>고객센터</Link>
             </div>
           ): null}
           
           <div className="copyright">{getCopyright()}</div>
         </div>
       </footer>
+
+
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import axios from 'axios';
-import type { KeyboardEvent } from 'react';
+import { useEffect, type KeyboardEvent } from 'react';
+import { useLocation } from 'react-router-dom';
 
 const getIP = () => {
   return "10.1.205.119"; // 학원
@@ -167,5 +168,23 @@ export const cutByByte = (str: string, maxBytes: number): string => {
 };
 
 
-export { getIP, getCopyright, getNowDate, enter_chk, set_focus, axiosInstance, download, isImage, getAttachUrl };
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    // 페이지가 바뀔 때 스크롤을 맨 위, 맨 왼쪽으로 이동
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'auto' // 부드러운 스크롤 효과
+    });
+  }, [pathname]);
+
+  // 화면에 아무것도 렌더링하지 않으므로 null 반환
+  return null;
+}
+
+
+export { getIP, getCopyright, getNowDate, enter_chk, set_focus, axiosInstance, download, isImage, getAttachUrl, ScrollToTop };
 // import {getIP, getCopyright, getNowDate, enter_chk, set_focus} from 'Tool';

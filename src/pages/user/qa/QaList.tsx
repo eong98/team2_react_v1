@@ -96,6 +96,7 @@ export default function QaList() {
     loadQaList();
   }, [tab, applied, page]);
 
+
   /* 첨부파일 목록 조회 */
   useEffect(() => {
     if (tab !== 'faq') return;
@@ -295,25 +296,6 @@ export default function QaList() {
                   </option>
                 ))}
               </select>
-            )}
-
-            {/* 회원번호 필터 (전체 문의 탭에서만 표시) */}
-            {tab === 'qa' && (
-              <input
-                type="number"
-                className="form_input"
-                placeholder="회원번호로 검색"
-                value={draft.mno}
-                onChange={(e) => setDraft((prev) => ({ ...prev, mno: e.target.value }))}
-                aria-label="회원번호 필터"
-                title='회원번호 검색'
-                style={{ maxWidth: 115 }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    onSearch?.();
-                  }
-                }}
-              />
             )}
           </>
         }

@@ -1,0 +1,97 @@
+.board_layout {
+  display: flex;
+  gap: 32px;
+}
+
+.board_lnb {
+  flex: 0 0 200px;
+}
+.board_lnb_title {
+  font-size: 18px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom:1px solid var(--border);
+}
+.board_lnb nav {
+  max-width:none;
+  padding:0;
+  display:block;
+}
+.board_lnb nav ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding:0;
+  margin:0;
+}
+.board_lnb_link {
+  display: block;
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: var(--text-dim);
+  font-size: 14px;
+}
+.board_lnb_link:hover {
+  background: var(--surface-2);
+}
+.board_lnb_link.active {
+  background: var(--primary_dim, rgba(51, 214, 138, 0.12));
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.board_content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* FAQ 아코디언 */
+.faq_list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.faq_item {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.faq_question {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  background: var(--surface);
+  border: none;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.faq_q_mark {
+  color: var(--primary);
+  font-weight: 800;
+}
+.faq_q_title {
+  flex: 1;
+  font-size: 14px;
+}
+.faq_toggle_icon {
+  color: var(--text-faint);
+  font-size: 16px;
+}
+.faq_answer {
+  display: flex;
+  gap: 10px;
+  padding: 0 16px 16px 16px;
+  background: var(--surface-2);
+  font-size: 13.5px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+.faq_a_mark {
+  color: var(--text-faint);
+  font-weight: 800;
+}

@@ -221,7 +221,7 @@ const AttachUploader = forwardRef<AttachUploaderHandle, AttachUploaderProps>(fun
   return (
     <div className="form_group">
       <label className="form_label" htmlFor='files'>
-        첨부파일<span className="req" title="필수 입력 요소">*</span>
+        첨부파일
       </label>
       
       <div className="form_control">

@@ -7,6 +7,7 @@ import { QA_TYPE_MAP, type QCRequest } from '../../../components/ts/QaType';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import { usePaging } from '../../../hooks/usePaging';
 import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
+import type { MyMemberInfo } from '../../../components/ts/MyPage';
 
 /**
  * 
@@ -16,10 +17,12 @@ import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 
 export default function QaForm() {
   const { no } = useParams<{ no: string }>(); // URL에 no가 있으면 수정 모드
-  const { no: mno, id, grade } = GlobalStoreSession();
+  const { no: mno, grade } = GlobalStoreSession();
   const isEdit = Boolean(no);
+  const [member, setMember] = useState<MyMemberInfo | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
+
 
   
   /* 첨부파일 변경확인 */
@@ -29,7 +32,7 @@ export default function QaForm() {
   type FormErrors = Partial<Record<keyof QCRequest, string>>;
   const [errors, setErrors] = useState<FormErrors>({});
 
-  const { goToList, navigateWithQuery } = usePaging({ basePath: '/user/qa' });
+  const { goToList, navigateWithQuery } = usePaging({ basePath: '../qa' });
 
   // 뒤로 가기 (수정이면 상세로, 신규 작성이면 목록으로)
   const goBack = () => {
@@ -50,7 +53,8 @@ export default function QaForm() {
     cdate: '',
     pw: '',
     vmode: 'N',
-    fileyn : 'N'
+    fileyn : 'N',
+    guestEmail: ''
   });
 
   
@@ -81,7 +85,19 @@ export default function QaForm() {
   useEffect(() => {
     if (!isEdit) return;
     loadQaList();
+    
   }, [isEdit, no]);
+
+  useEffect(() => {
+    if (!mno && mno === 0) return;
+    
+    axiosInstance.get(`/v1/user/find/${mno}`)
+      .then((res) => res.data)
+      .then((data) => {
+        setMember(data)
+      })
+      .catch((err) => console.error('회원정보 조회 실패', err))
+    }, [mno]);
 
   // 입력 필드 변경
   const onChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -109,6 +125,7 @@ export default function QaForm() {
     { field: 'title', label: '문의 제목', id: 'qa_title' },
     { field: 'content', label: '문의 내용', id: 'qa_content' },
     { field: 'pw', label: '게시글 비밀번호', id: 'password' },
+    { field: 'guestEmail', label: '이메일', id: 'guestEmail' },
   ];
 
   // 유효성 검사: 필수 필드 전부 검사해서 전부 에러로 잡고, 포커스는 맨 첫 번째 오류 필드로만 이동
@@ -141,14 +158,15 @@ export default function QaForm() {
     setSubmitting(true);
     try {
       const payload: QCRequest = {
-        mno: mno,
+        mno: mno === 0 ? null : mno,
         type: Number(input.type),
         title: input.title,
         content: input.content,
         cdate: getNowDate(),
         pw: input.pw,
         vmode: input.vmode,
-        fileyn: input.fileyn
+        fileyn: input.fileyn,
+        guestEmail: input.guestEmail
       };
 
       if (isEdit) {
@@ -261,10 +279,29 @@ export default function QaForm() {
                 id="user_id"
                 name="ano"
                 className="form_input"
-                value={`${isEdit ? id : '등록할때 저장된 아이디 수정예정'}  (No.${mno})`}
+                value={`${member?.id || '비회원'} (No.${mno})`}
                 readOnly
                 style={{ maxWidth: 200 }}
               />
+            </div>
+          </div>
+
+          {/* 이메일 */}
+          <div className="form_group">
+            <label className="form_label" htmlFor="guestEmail">
+              이메일<span className="req" title="필수 입력 요소">*</span>
+            </label>
+            <div className="form_control">
+              <input
+                type="text"
+                id="guestEmail"
+                className={`form_input ${errors.guestEmail ? 'is_error' : ''}`}
+                placeholder="이메일을 입력하세요"
+                name="guestEmail"
+                value={mno !== 0 ? member?.email : input.guestEmail}
+                onChange={onChange}
+              />
+              {errors.guestEmail && <div className="form_hint error">{errors.guestEmail}</div>}
             </div>
           </div>
 

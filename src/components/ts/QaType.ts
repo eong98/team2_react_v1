@@ -16,7 +16,9 @@
 
 export interface QaTypes {
   no: number;
-  mno: number;
+  mno: number | null;
+  id:string;
+  guestEmail?: string;
   type: number;
   
   title: string;
@@ -106,7 +108,7 @@ export interface FaqCRequest {
 
 /* 문의사항 등록 */
 export interface QCRequest {
-  mno: number;
+  mno: number | null;
   type: number;
   title: string;
   content: string;
@@ -114,6 +116,7 @@ export interface QCRequest {
   pw: string;
   vmode: string;
   fileyn?: string;
+  guestEmail?: string;
 }
 
 /* 문의사항 댓글 등록 */

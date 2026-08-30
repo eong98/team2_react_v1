@@ -8,7 +8,7 @@ import type { AttachType } from '../../../components/ts/Attach';
 
 export default function NoticeDetail() {
   const { no } = useParams<{ no: string }>(); // URL에서 no 추출
-  const { goToList } = usePaging({ basePath: '/user/notice' });
+  const { goToList } = usePaging({ basePath: '../notice' });
 
   const [notice, setNotice] = useState<NoticeTypes | null>(null);
   const [attach, setAttach] = useState<AttachType[]>([]);

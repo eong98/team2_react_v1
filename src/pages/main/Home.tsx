@@ -4,6 +4,7 @@ import './home.css'
 import { Link } from 'react-router-dom';
 import { useClock } from '../../hooks/useClock';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { GlobalStoreSession } from '../../store/LoginStore';
 
 const PROBLEMS = [
   { tag: '심야 시간대', text: '새벽 시간, 매장에는 CCTV만 돌아가고 이상 상황이 생겨도 발견까지 시간이 걸립니다.', sub: '관리 공백 시간대' },
@@ -104,6 +105,7 @@ export function RevealSection({ id, className = '', children }: RevealSectionPro
 
 
 const Home = () => {
+  const { login } = GlobalStoreSession();
   const clock = useClock();
   return (
     <>
@@ -121,7 +123,7 @@ const Home = () => {
               감지하고 관리자에게 알립니다.
             </p>
             <div className="hero_actions">
-              <Link to="/" className="btn btn_primary">
+              <Link to="/shopplan" className="btn btn_primary">
                 데모 신청하기
               </Link>
               <a href="#flow" className="btn btn_ghost">
@@ -331,10 +333,10 @@ const Home = () => {
           <h2>지금, 매장에 눈을 달아주세요</h2>
           <p>도입 상담과 데모 시연을 신청하시면 담당자가 안내해드립니다.</p>
           <div className="cta_actions">
-            <Link to="/" className="btn btn_primary">
+            <Link to="/shopplan" className="btn btn_primary">
               데모 신청하기
             </Link>
-            <Link to="/" className="btn btn_ghost">
+            <Link to={login ? '/user/qa/new' : '/board/qa/new'} className="btn btn_ghost">
               문의하기
             </Link>
           </div>

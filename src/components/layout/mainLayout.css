@@ -40,7 +40,7 @@
 .home .navlinks{display:flex;gap:36px;font-size:14px;color:var(--text-dim);}
 .home .navlinks a:hover{color:var(--text);}
 .home .nav_cta{
-  display:flex;align-items:center;gap:18px;
+  display:flex;gap:18px;
 }
 
 .home .btn{

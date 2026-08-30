@@ -1,18 +1,33 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { GlobalStoreSession } from '../../../store/LoginStore';
-import axios from 'axios';
-import { axiosInstance, getAttachUrl } from '../../../utils/Tool';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { usePaging } from '../../../hooks/usePaging';
-import { AlertModal, AttachViewer, ConfirmDeleteModal, PageHeader, PrevNextNav } from '../../../components/ui';
 import { QA_STATUS_MAP, QA_TYPE_MAP, type QaTypes } from '../../../components/ts/QaType';
+import { axiosInstance } from '../../../utils/Tool';
+import { AlertModal, AttachViewer, ConfirmDeleteModal, PageHeader, PrevNextNav } from '../../../components/ui';
 import type { AttachType } from '../../../components/ts/Attach';
+import axios from 'axios';
+import { GlobalStoreSession } from '../../../store/LoginStore';
+
+/* ---------------------------------------------------------------------
+   비회원 문의 상세 (/board/qna/:no) — 목록에서 비밀번호 확인을 이미
+   마쳤으면 location.state로 pw를 넘겨받아 POST /qa/{no}/verify로 재조회
+   합니다. 안 잠긴 글이면 pw 없이 GET /qa/{no}로 바로 조회됩니다.
+
+   pw는 절대 쿼리파라미터로 보내지 않습니다(URL 노출 방지) — 있으면 POST
+   바디로만 전달합니다.
+
+   API
+   GET  /qa/{no}          → QaResponse (비밀글 아닐 때)
+   POST /qa/{no}/verify    → QaResponse (pw 필요할 때)
+--------------------------------------------------------------------- */
 
 export default function QaDetail() {
-  const { no } = useParams<{ no: string }>(); // URL에서 no 추출
-  const { no: mno, grade } = GlobalStoreSession(); // 현재 로그인한 회원 번호
+  const location = useLocation();
+  const pwFromState = (location.state as { pw?: string } | null)?.pw;
 
-  const { goToList, navigateWithQuery } = usePaging({ basePath: '/user/qa' });
+  const { no } = useParams<{ no: string }>();
+  const { no: mno, grade } = GlobalStoreSession(); // 현재 로그인한 회원 번호
+  const { goToList, navigateWithQuery } = usePaging({ basePath: '../qa' });
 
   const [qa, setQa] = useState<QaTypes | null>(null);
   const [attach, setAttach] = useState<AttachType[]>([]);
@@ -20,69 +35,61 @@ export default function QaDetail() {
   const [error, setError] = useState<string | null>(null);
 
   // 이전글 다음글
-  const [navPosts, setNavPosts] = useState({
+  const [navPosts, setNavPosts] = useState<{ prev: any; next: any }>({
     prev: null,
-    next: null
+    next: null,
   });
 
   const [deleteTarget, setDeleteTarget] = useState<QaTypes | null>(null);
   const [deleting, setDeleting] = useState<boolean>(false);
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
 
-  
-  /* 문의내용 상세 데이터 */
+  /* 문의내용 상세 데이터 조회 */
   const loadQa = () => {
-    axiosInstance
-      .get(`/qa/${no}`, {
-        headers: {
-          accessNo: String(mno),
-          grade: String(grade),
-        },
-      })
-      .then(res => res.data)
+    setLoading(true);
+    setError(null);
+
+    const request = pwFromState
+      ? axiosInstance.post(`/qa/${no}/verify`, { pw: pwFromState })
+      : axiosInstance.get(`/qa/${no}`);
+
+    request
+      .then((res) => res.data)
       .then((data) => {
         setQa(data);
         setNavPosts({
           prev : data.prev ?? null,
           next: data.next ?? null,
         })
-        console.log(navPosts)
-
+        
         loadAttachList()
       })
       .catch((err) => {
-        console.error('문의사항 상세 조회 실패:', err);
-        setError('문의사항 내용을 불러오지 못했습니다.');
+        console.error('문의 상세 조회 실패:', err);
+        setError('비밀번호가 일치하지 않거나 접근 권한이 없습니다.');
       })
       .finally(() => setLoading(false));
-  }
 
+  };
+    
 
   useEffect(() => {
     if (!no) return;
-    setLoading(true);
-    setError(null);
-
+    
     loadQa();
-
-  }, [no, mno, grade]);
-
-  
+  }, [no, mno, grade, pwFromState]);
 
   /* 첨부파일 목록 조회 */
   const loadAttachList = () => {
-    setLoading(true);
-    axiosInstance.get<AttachType[]>(`/attach/list/${no}`)
+    axiosInstance
+      .get<AttachType[]>(`/attach/list/${no}`)
       .then((result) => result.data)
       .then((data) => {
         setAttach(data);
-
       })
       .catch((err) => {
         console.error('첨부파일 목록 조회 실패:', err);
-        setError('첨부파일을 불러오지 못했습니다.');
-      })
-      .finally(() => setLoading(false));
+      });
   };
 
 
@@ -125,6 +132,7 @@ export default function QaDetail() {
     }
   };
 
+
   if (loading) {
     return (
       <section className="view active">
@@ -132,6 +140,7 @@ export default function QaDetail() {
       </section>
     );
   }
+
 
   if (error || !qa) {
     return (
@@ -154,7 +163,6 @@ export default function QaDetail() {
     );
   }
 
-  // 답변 대기중이 아닌경우만
   const isWait = qa.status !== 0;
   const answered = qa.status === 2 && qa.answer;
 
@@ -183,38 +191,35 @@ export default function QaDetail() {
           </div>
 
           <div className="badge_area">
-            <span className={`badge ${QA_STATUS_MAP[qa.status].className}`}>{QA_STATUS_MAP[qa.status].label}</span>
-            <span className={`badge ${QA_TYPE_MAP[qa.type].className}`}>{QA_TYPE_MAP[qa.type].label}</span>
+            <span className={`badge ${QA_STATUS_MAP[qa.status]?.className}`}>{QA_STATUS_MAP[qa.status]?.label}</span>
+            <span className={`badge ${QA_TYPE_MAP[qa.type]?.className}`}>{QA_TYPE_MAP[qa.type]?.label}</span>
           </div>
 
           <div className="title_area">
             <h3 className="title md">
-              {qa.title} 
+              {qa.title}
               {qa.fileyn === 'Y' && (
-                <span className='icon file'>
-                  <span className='hidden'>첨부파일 포함</span>
+                <span className="icon file">
+                  <span className="hidden">첨부파일 포함</span>
                 </span>
               )}
             </h3>
             <p className="b_title">
-              <span>작성자 {qa.id}(No.{qa.mno})</span>
+              <span>작성자 {qa.id ? `${qa.id}(No.${qa.mno})` : qa.guestEmail ?? '비회원'}</span>
               <span className="right">{qa.cdate}</span>
             </p>
           </div>
 
-          <div className="card_contents">
-            {qa.content}
-          </div>
-          
+          <div className="card_contents">{qa.content}</div>
+
           {qa.fileyn === 'Y' && <AttachViewer bno={qa.no} onlyList={false} />}
 
-          {/* 본인 글인 경우에만 수정/삭제 노출 */}
-          {mno === qa.mno && (
+          {/* 본인 글(회원/비회원) 수정/삭제 노출 */}
+          {(mno === qa.mno || !qa.mno) && (
             <div className="form_page_footer">
               <button type="button" className="btn btn_danger" onClick={() => setDeleteTarget(qa)}>
                 삭제
               </button>
-              {/* 답변대기인 경우에만 수정 버튼 노출 */}
               {!isWait && (
                 <button
                   type="button"
@@ -244,15 +249,8 @@ export default function QaDetail() {
         </div>
       </div>
 
-      
-      {/* 🔑 이전글 / 다음글 컴포넌트 연동 */}
-      <PrevNextNav
-        prev={navPosts.prev}
-        next={navPosts.next}
-        basePath="../qa"
-      />
-
-
+      {/* 이전글 / 다음글 Navigation */}
+      <PrevNextNav prev={navPosts.prev} next={navPosts.next} basePath="../qa" />
 
       {/* 비밀번호 입력 삭제 모달 */}
       <ConfirmDeleteModal
@@ -261,7 +259,7 @@ export default function QaDetail() {
         onConfirm={(pw) => handleDeleteWithPw(pw || '')}
         loading={deleting}
         targetLabel={deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.title}` : undefined}
-        requirePassword={true}
+        requirePassword={!deleteTarget?.mno} // 비회원 글일 때만 삭제시 비밀번호 필수
         deleteWithAttach={deleteTarget?.no}
       />
 

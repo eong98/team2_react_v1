@@ -4,6 +4,7 @@ import '../styles/contents.css'
 /* ------------------------------------------- */
 
 import {BrowserRouter, Routes, Route, Navigate} from 'react-router-dom'
+import { ScrollToTop } from '../utils/Tool';
 
 /* 메인페이지 import */
 import MainLayout from '../components/layout/MainLayout'
@@ -22,16 +23,26 @@ import Topbar from '../components/ui/common/Topbar';
 import ChatWidget from '../components/ui/user/ChatWidget';
 
 
+/* 구독권 구매 */
+import ShopPlan from '../pages/main/shopplan/ShopPlan';
 
+/* 고객센터 */
+import BoardLayout from '../components/layout/BoardLayout';
+import FaqList from '../pages/main/board/FaqList';
+import NoticeList from '../pages/user/notice/NoticeList';
+import NoticeDetail from '../pages/user/notice/NoticeDetail';
+import QaList from '../pages/main/board/QaList';
+import QaDetail from '../pages/main/board/QaDetail';
+import QaForm from '../pages/user/qa/QaForm';
 
 
 import DesignGuide from '../pages/guide/DesignGuide';
-import ShopPlan from '../pages/main/shopplan/ShopPlan';
 
 
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <div id='allimio'>
         <Routes>
           {/* 메인 (공통) 영역 */}
@@ -45,6 +56,19 @@ function App() {
             {/* 회원가입, 구독권 등.... */}
             <Route path='/singup' element={<Singup />} />
             <Route path='/shopplan' element={<ShopPlan />} />
+
+            {/* 고객센터(비회원 전용) */}
+            <Route path='/board' element={<BoardLayout />}>
+              <Route index element={<Navigate to="faq" replace />} />
+              <Route path='faq' element={<FaqList />} />
+              <Route path='notice' element={<NoticeList />} />
+              <Route path='notice/:no' element={<NoticeDetail />} />
+              <Route path='qa' element={<QaList />} />
+              <Route path='qa/:no' element={<QaDetail />} />
+              <Route path='qa/new' element={<QaForm />} />
+              <Route path='qa/:no/edit' element={<QaForm />} />
+            </Route>
+
         
           </Route>
 
