@@ -22,6 +22,9 @@ import {
   type Filters,
   EMPTY_FILTERS,
   type ShopOrderTypes,
+  type ChangePreview,
+  type ChangeRequest,
+  type ChangeResult,
 } from '../../../components/ts/ShopOrder';
 import { usePaging } from '../../../hooks/usePaging';
 import { EMPTY_ACCOUNT, type RefundAccount } from '../../../components/ts/ShopPayment';
@@ -147,12 +150,123 @@ export default function ShopOrderList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mno, applied, page]);
 
+  
+  const onSearch = () => {
+    setPage(1);
+    setApplied(draft);
+  };
+
+  const resetFilters = () => {
+    const empty = { ...EMPTY_FILTERS };
+    setDraft(empty);
+    setApplied(empty);
+  };
+
+  const onReset = () => {
+    resetFilters();
+    setPage(1);
+  };
+
+
   /* 플랜명 중복제거: useMemo로 최적화 */
   const plans = useMemo(() => {
     if (!Array.isArray(orders) || orders.length === 0) return [];
     const names = orders.map((item) => item.pname).filter((name): name is string => Boolean(name));
     return Array.from(new Set(names));
   }, [orders]);
+
+
+
+  /**
+   *
+   * 구독권 갱신/변경/취소 로직
+   * 
+   */
+
+  // ── 변경 ──────────────────────────────────────────────
+  const [changeTarget, setChangeTarget] = useState<ShopOrderTypes | null>(null);
+  const [changePmonth, setChangePmonth] = useState<number>(6);
+  const [changeCcnt, setChangeCcnt] = useState<number>(1);
+  const [changePreview, setChangePreview] = useState<ChangePreview | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [changeSubmitting, setChangeSubmitting] = useState(false);
+  
+
+  // "변경" 버튼 클릭 — 단건 조회로 minCcnt/maxCcnt까지 포함된 최신 정보를 받아옴
+  const openChangeModal = async (order: RowType) => {
+    try {
+      const res = await axiosInstance.get<ShopOrderTypes>(`/shop_order/${order.no}`);
+      setChangeTarget(res.data);
+      setChangePmonth(res.data.pmonth);
+      setChangeCcnt(res.data.ccnt);
+      setChangePreview(null);
+    } catch (err) {
+      console.error('구독 상세 조회 실패:', err);
+      setAlert({ message: '구독 정보를 불러오지 못했습니다.', variant: 'error' });
+    }
+  };
+
+  const closeChangeModal = () => {
+    setChangeTarget(null);
+    setChangePreview(null);
+  };
+
+  // 기간/대수를 건드리면 이전 미리보기 결과는 무효화 — "예상액 확인"을 다시 눌러야 함
+  const onChangePmonth = (v: number) => {
+    setChangePmonth(v);
+    setChangePreview(null);
+  };
+
+  const onChangeCcnt = (v: number) => {
+    if (!changeTarget) return;
+    const min = changeTarget.minCcnt ?? 1;
+    const max = changeTarget.maxCcnt ?? 999;
+    setChangeCcnt(Math.min(max, Math.max(min, v)));
+    setChangePreview(null);
+  };
+
+  // "예상액 확인" 버튼 클릭 시에만 미리보기 API 호출 (실시간 자동조회 안 함)
+  const handleCheckPreview = () => {
+    if (!changeTarget) return;
+    setPreviewLoading(true);
+    const request: ChangeRequest = { pmonth: changePmonth, ccnt: changeCcnt };
+
+    axiosInstance
+      .post<ChangePreview>(`/shop_order/${changeTarget.no}/change/preview`, request)
+      .then((res) => setChangePreview(res.data))
+      .catch((err) => {
+        console.error('변경 미리보기 실패:', err);
+        setChangePreview(null);
+        setAlert({ message: '해당 조건에 맞는 구독권을 찾을 수 없습니다.', variant: 'error' });
+      })
+      .finally(() => setPreviewLoading(false));
+  };
+
+  // "변경 신청" 최종 확정
+  const submitChange = async () => {
+    if (!changeTarget || !changePreview) return;
+    setChangeSubmitting(true);
+    try {
+      const request: ChangeRequest = { pmonth: changePmonth, ccnt: changeCcnt };
+      const res = await axiosInstance.put<ChangeResult>(`/shop_order/${changeTarget.no}/change`, request);
+
+      closeChangeModal();
+      setAlert({
+        message: res.data.pending
+          ? '구독권 변경이 신청되었습니다.\nCCTV 대수 변경은 관리자 확인 후 최종 반영됩니다.'
+          : '구독권이 변경되었습니다.',
+        variant: 'success',
+      });
+      loadList();
+    } catch (err) {
+      console.error('구독권 변경 신청 실패:', err);
+      setAlert({ message: '변경 신청 중 오류가 발생했습니다.', variant: 'error' });
+    } finally {
+      setChangeSubmitting(false);
+    }
+  };
+
+
 
   // 갱신 버튼 노출 검사 함수
   const canRenew = (order: RowType) => {
@@ -249,24 +363,9 @@ export default function ShopOrderList() {
     }
   };
 
-  const onSearch = () => {
-    setPage(1);
-    setApplied(draft);
-  };
-
-  const resetFilters = () => {
-    const empty = { ...EMPTY_FILTERS };
-    setDraft(empty);
-    setApplied(empty);
-  };
-
-  const onReset = () => {
-    resetFilters();
-    setPage(1);
-  };
-
   const cancelEstimate = cancelTarget ? estimateCancelRefund(cancelTarget) : null;
 
+        console.log(orders)
   const columns: DataTableColumn<RowType>[] = [
     { header: '번호', width: '64px', mono: true, render: (o) => o.cnt },
     {
@@ -306,21 +405,37 @@ export default function ShopOrderList() {
     },
     {
       header: '상태',
-      width: '100px',
+      width: '150px',
       render: (o) => (
-        <span className={`badge ${ORDER_STATUS_MAP[o.status].className}`}>{ORDER_STATUS_MAP[o.status].label}</span>
+        <div>
+          {o.status === 0 && o.pendingCcnt != null ? (
+            <>
+              <span className={`badge ${ORDER_STATUS_MAP[o.status].className}`}>승인{ORDER_STATUS_MAP[o.status].label}</span>
+              <div className="cell_sub" style={{ marginTop: 4, fontSize: 11 }}>
+                {o.ccnt}대 → {o.pendingCcnt}대 변경 대기중
+              </div>
+            </>
+          ): (
+            <span className={`badge ${ORDER_STATUS_MAP[o.status].className}`}>연결{ORDER_STATUS_MAP[o.status].label}</span>
+          )}
+        </div>
       ),
     },
     { header: '결제금액(원)', width: '120px', mono: true, render: (o) => `${o.totalprice.toLocaleString('ko-KR')}` },
     { header: '구매일', width: '120px', mono: true, render: (o) => o.cdate.split(' ')[0] },
     {
       header: '관리',
-      width: '110px',
+      width: '190px',
       render: (o) => (
         <div className="actions">
           {canRenew(o) && (
             <button type="button" className="btn btn_xsm btn_ghost" onClick={() => openRenewModal(o)}>
               갱신
+            </button>
+          )}
+          {o.status === 1 && (
+            <button type="button" className="btn btn_xsm btn_outline_primary" onClick={() => openChangeModal(o)}>
+              변경
             </button>
           )}
           {(o.status === 0 || o.status === 1) && (
@@ -576,6 +691,116 @@ export default function ShopOrderList() {
                 <span>{renewTarget.pmonth}개월</span>
               </div>
             </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* 변경 신청 Modal */}
+      <Modal
+        open={changeTarget !== null}
+        onClose={closeChangeModal}
+        titleId="changeModalTitle"
+        title="구독권 변경"
+        footer={
+          <>
+            <button type="button" className="btn btn_md btn_ghost" onClick={closeChangeModal}>
+              취소
+            </button>
+            <button
+              type="button"
+              className="btn btn_md btn_primary"
+              disabled={changeSubmitting || !changePreview}
+              onClick={submitChange}
+            >
+              {changeSubmitting ? '처리 중...' : '변경 신청'}
+            </button>
+          </>
+        }
+      >
+        {changeTarget && (
+          <div>
+            <p className="cell_sub" style={{ marginBottom: 16 }}>
+              현재: {changeTarget.pname} · {changeTarget.pmonth}개월 · {changeTarget.ccnt}대
+            </p>
+
+            <div className="form_group">
+              <label className="form_label" htmlFor="changePmonth">이용 기간</label>
+              <div className="form_control">
+                <select
+                  id="changePmonth"
+                  className="form_select"
+                  value={changePmonth}
+                  onChange={(e) => onChangePmonth(Number(e.target.value))}
+                >
+                  <option value={6}>6개월</option>
+                  <option value={12}>12개월</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="cctv_stepper">
+              <label htmlFor="changeCcnt">CCTV 대수</label>
+              
+              <div className="stepper">
+                <button
+                  type="button"
+                  className="stepper_btn"
+                  disabled={changeCcnt <= (changeTarget.minCcnt ?? 1)}
+                  onClick={() => onChangeCcnt(changeCcnt - 1)}
+                  aria-label="대수 1대 줄이기"
+                >
+                  –
+                </button>
+                <input
+                  id="changeCcnt"
+                  type="number"
+                  className="stepper_input"
+                  value={changeCcnt}
+                  onChange={(e) => onChangeCcnt(Number(e.target.value) || (changeTarget.minCcnt ?? 1))}
+                />
+                <button
+                  type="button"
+                  className="stepper_btn"
+                  disabled={changeCcnt >= (changeTarget.maxCcnt ?? 999)}
+                  onClick={() => onChangeCcnt(changeCcnt + 1)}
+                  aria-label="대수 1대 늘리기"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <p className="cell_sub">
+              최소 {changeTarget.minCcnt}대 ~ 최대 {changeTarget.maxCcnt}대까지 선택 가능합니다.
+            </p>
+
+            <button
+              type="button"
+              className="btn btn_md btn_outline_primary"
+              style={{ width: '100%', marginTop: 12 }}
+              disabled={previewLoading}
+              onClick={handleCheckPreview}
+            >
+              {previewLoading ? '계산 중...' : '예상액 확인'}
+            </button>
+
+            {changePreview && (
+              <div className="order_lines" style={{ marginTop: 16 }}>
+                <div className="order_line"><span>적용될 구독권</span><span>{changePreview.pname}</span></div>
+                <div className="order_line"><span>구독 종료일</span><span>{changePreview.edate}</span></div>
+                {changePreview.extraCharge > 0 && (
+                  <div className="order_line"><span>추가 결제 금액</span><span>{changePreview.extraCharge.toLocaleString('ko-KR')}원</span></div>
+                )}
+                {changePreview.refundAmount > 0 && (
+                  <div className="order_line"><span>환불 금액</span><span>{changePreview.refundAmount.toLocaleString('ko-KR')}원</span></div>
+                )}
+              </div>
+            )}
+
+            {changePreview?.requiresApproval && (
+              <p className="form_hint" style={{ marginTop: 10 }}>
+                CCTV 대수가 바뀌는 변경이라, 신청 후 관리자가 매장 설치 상태를 확인하고 승인해야 최종 반영됩니다. 승인 전까지는 기존 조건으로 계속 이용하실 수 있습니다.
+              </p>
+            )}
           </div>
         )}
       </Modal>

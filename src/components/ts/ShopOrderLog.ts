@@ -31,6 +31,7 @@ export const LOG_ACTION_MAP: Record<number, { label: string; className: string }
   1: { label: '매장연결', className: 'info' },
   2: { label: '갱신', className: 'success' },
   3: { label: '취소', className: 'danger' },
+  4: { label: '승인대기', className: 'danger' },
 };
 
 export interface Filters {
