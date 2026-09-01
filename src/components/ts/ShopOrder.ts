@@ -28,13 +28,14 @@ export interface ShopOrderTypes {
 
 /* 구독 상태 */
 export const ORDER_STATUS_MAP: Record<number, { label: string; className: string }> = {
-  0: { label: '대기', className: 'wait' }, /* 매장 매칭 전 */
-  1: { label: '정상', className: 'success' },
-  2: { label: '만료됨', className: 'orange' },
-  3: { label: '취소', className: 'danger' },
+  0: { label: '연결대기', className: 'wait' }, /* 매장 매칭 전 */
+  1: { label: '승인대기', className: 'wait' },
+  2: { label: '정상', className: 'success' },
+  3: { label: '만료됨', className: 'orange' },
+  4: { label: '취소', className: 'danger' },
 };
 
-export type RowType = ShopOrderTypes & { cnt: number, activeCount: number };
+export type RowType = ShopOrderTypes & { cnt: number, activeCount?: number };
 
 export const PAGE_SIZE = 6;
 

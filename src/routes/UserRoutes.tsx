@@ -40,6 +40,8 @@ import ShopPaymentList from '../pages/user/shoporder/ShopPaymentList';
 import ShopPaymentDetail from '../pages/user/shoporder/ShopPaymentDetail';
 import ShopRefundDetail from '../pages/user/shoporder/ShopRefundDetail';
 import ShopOrderLog from '../pages/user/shoporder/ShopOrderLog';
+import ShopOrder from '../pages/user/shop/ShopOrder';
+import ShopOrderMatch from '../pages/user/shoporder/ShopOrderMatch';
 
 export default function UserRoutes() {
   return (
@@ -55,16 +57,20 @@ export default function UserRoutes() {
       <Route path="notice" element={<NoticeList />} />
       <Route path="notice/:no" element={<NoticeDetail />} />
 
+      {/* 전체 구독내역 */}
       <Route path="shoporder" element={<ShopOrderList />} />
       <Route path="shoporder/:no/match" element={<ShopMatch />} />
-
       <Route path="shoporder/:ono" element={<ShopOrderDetail />}>
         <Route path="payment" element={<ShopPaymentList />} />
         <Route path="history" element={<ShopOrderLog />} />
       </Route>
-
       <Route path="shoporder/:ono/payment/:pno" element={<ShopPaymentDetail />} />
       <Route path="shoporder/:ono/payment/:pno/refund" element={<ShopRefundDetail />} />
+
+      {/* 매장별 구독권 */}
+      <Route path="order" element={<ShopOrder />} />
+      <Route path="order/:no/match" element={<ShopOrderMatch />} />
+
 
       <Route path="shop" element={<ShopList />} />
       <Route path="shop/new" element={<ShopForm />} />

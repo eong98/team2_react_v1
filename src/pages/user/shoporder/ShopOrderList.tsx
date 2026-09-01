@@ -416,7 +416,7 @@ export default function ShopOrderList() {
               </div>
             </>
           ): (
-            <span className={`badge ${ORDER_STATUS_MAP[o.status].className}`}>연결{ORDER_STATUS_MAP[o.status].label}</span>
+            <span className={`badge ${ORDER_STATUS_MAP[o.status].className}`}>{ORDER_STATUS_MAP[o.status].label}</span>
           )}
         </div>
       ),
