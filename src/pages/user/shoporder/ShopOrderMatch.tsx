@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader, AlertModal } from '../../../components/ui';
 import { axiosInstance } from '../../../utils/Tool';
 import { GlobalStoreSession } from '../../../store/LoginStore';
-import type { ShopOrderTypes } from '../../../components/ts/ShopOrder';
+import { PAGE_SIZE, type ShopOrderTypes } from '../../../components/ts/ShopOrder';
+import { usePaging } from '../../../hooks/usePaging';
+import { GlobalCurrentShop } from '../../../store/UserStore';
 
 /* ---------------------------------------------------------------------
    매장에 연결할 구독권 선택 (/user/shop/:sno/link) — 이미 결제해뒀지만
@@ -19,21 +21,55 @@ import type { ShopOrderTypes } from '../../../components/ts/ShopOrder';
 export default function ShopOrderMatch() {
   const { sno } = useParams<{ sno: string }>();
   const navigate = useNavigate();
+  const shopTitle = GlobalCurrentShop((state) => state.title);
   const { no: mno } = GlobalStoreSession();
+  const { navigateWithQuery } = usePaging({ basePath: '/user/order' });
 
   const [orders, setOrders] = useState<ShopOrderTypes[]>([]);
   const [loading, setLoading] = useState(true);
   const [linking, setLinking] = useState<string | null>(null);
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error' } | null>(null);
 
+  const [draft, setDraft] = useState({ keyword: '' });
+  const [applied, setApplied] = useState({ keyword: '' });
+  const [page, setPage] = useState(1);
+
   useEffect(() => {
     if (!mno || !sno) return;
     axiosInstance
-      .get<ShopOrderTypes[]>(`/shop_order/mno/${mno}/sno/${sno}/linkable`)
+      .get<ShopOrderTypes[]>(`/shop_order/linkable-plans/${mno}/${sno}`)
       .then((res) => setOrders(res.data))
       .catch((err) => console.error('연결 가능한 구독권 조회 실패:', err))
       .finally(() => setLoading(false));
   }, [mno, sno]);
+
+  console.log(orders)
+
+  
+  const filtered = useMemo(() => {
+    const word = applied.keyword.trim();
+    if (!word) return orders;
+    return orders.filter(
+      (s) => s.pname?.includes(word)
+    );
+  }, [orders, applied.keyword]);
+
+  const totalElements = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalElements / PAGE_SIZE));
+  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const onSearch = () => {
+    setPage(1);
+    setApplied(draft);
+  };
+
+  const onReset = () => {
+    const empty = { keyword: '' };
+    setDraft(empty);
+    setPage(1);
+    setApplied(empty);
+  };
+
 
   const handleLink = async (orderNo: string) => {
     setLinking(orderNo);
@@ -48,6 +84,7 @@ export default function ShopOrderMatch() {
     }
   };
 
+  
   if (loading) {
     return <p className="b_title">연결 가능한 구독권을 확인하는 중...</p>;
   }
@@ -56,7 +93,18 @@ export default function ShopOrderMatch() {
     <section className="view active">
       <PageHeader
         title="연결할 구독권을 선택하세요"
-        description="이 매장에 등록된 CCTV 대수와 일치하는, 아직 매장이 연결되지 않은 구독권만 표시됩니다."
+        description={`${shopTitle} 매장에 등록된 CCTV 대수()와 일치하는, 아직 매장이 연결되지 않은 구독권만 표시됩니다.`}
+        actions={
+          <div className='actions'>
+            <button type="button" className="btn btn_md btn_ghost" onClick={() => navigateWithQuery('../order')}>
+              ← 목록으로
+            </button>
+            <button type="button" className="btn btn_md btn_primary" onClick={() => navigate('/shopplan')}>
+              + 새 구독
+            </button>
+          </div>
+          
+        }
       />
 
       {orders.length === 0 ? (
@@ -65,7 +113,7 @@ export default function ShopOrderMatch() {
             이 매장의 CCTV 대수와 일치하는, 연결 가능한 구독권이 없습니다.
           </p>
           <button type="button" className="btn btn_md btn_primary" onClick={() => navigate('/shopplan')}>
-            새 구독권 결제하러 가기
+            + 새 구독
           </button>
         </div>
       ) : (

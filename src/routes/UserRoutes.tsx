@@ -69,7 +69,7 @@ export default function UserRoutes() {
 
       {/* 매장별 구독권 */}
       <Route path="order" element={<ShopOrder />} />
-      <Route path="order/:no/match" element={<ShopOrderMatch />} />
+      <Route path="order/:sno/match" element={<ShopOrderMatch />} />
 
 
       <Route path="shop" element={<ShopList />} />

@@ -18,7 +18,7 @@
   transition:max-height .32s ease, opacity .25s ease, transform .32s ease,
              padding .32s ease, margin-bottom .32s ease, border-width .2s ease;
 }
-body.alert_mode .alert_banner{
+.alert_mode .alert_banner{
   max-height:120px;opacity:1;transform:translateY(0);
   padding:14px 18px;margin-bottom:18px;border-width:1px;
   animation:pulseBg 1.8s ease-in-out infinite;

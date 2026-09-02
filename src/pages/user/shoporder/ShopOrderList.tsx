@@ -275,9 +275,9 @@ export default function ShopOrderList() {
     // 해당 매장의 정상(status=1) 구독 개수
     const activeCount = order.sno ? (activeCountsMap[order.sno] ?? order.activeCount ?? 0) : 0;
 
-    // 만료 상태(status = 2), 동일한 매장에 정상상태인 구독권이 있는경우 갱신 불가
+    // 만료 상태(status=2)인데, 동일 매장에 이미 정상(1) 구독권이 있으면 갱신 불가
     if (order.status === 2 && activeCount >= 1) return false;
-    // 취소상태, 매장연결 완료 갱신 불가
+    // 취소(status=3) 상태는 갱신 불가
     if (order.status === 3) return false;
 
     // 만료 7일 전 체크
@@ -365,7 +365,6 @@ export default function ShopOrderList() {
 
   const cancelEstimate = cancelTarget ? estimateCancelRefund(cancelTarget) : null;
 
-        console.log(orders)
   const columns: DataTableColumn<RowType>[] = [
     { header: '번호', width: '64px', mono: true, render: (o) => o.cnt },
     {
@@ -378,12 +377,28 @@ export default function ShopOrderList() {
       ),
     },
     { header: '기간', width: '80px', mono: true, render: (o) => `${o.pmonth}개월` },
-    { header: '대수', width: '60px', mono: true, render: (o) => `${o.ccnt}대` },
+    { header: '대수', width: '100px', mono: true, 
+      render: (o) => 
+        o.status === 1 && o.pendingCcnt != null ? ( // 승인대기 상태일 때
+          <>
+            <span className="badge progress">
+              변경대기
+            </span>
+          </>
+        ): `${o.ccnt}대` 
+    },
     {
       header: '구독기간',
-      width: '200px',
+      width: '210px',
       mono: true,
-      render: (o) => (o.sno ? `${o.sdate} ~ ${o.edate}` : <span className="cell_sub">-</span>),
+      render: (o) => 
+        o.sno ? (
+          <>
+            {o.sdate} ~ { }
+            {canRenew(o) ? <span className='danger'>{o.edate}</span> : o.edate}
+          </>
+        ) : <span className="cell_sub">-</span>
+      ,
     },
     {
       header: '연결매장',
@@ -391,7 +406,7 @@ export default function ShopOrderList() {
       render: (o) =>
         o.sno ? (
           <span className="b_title">{o.sname}</span>
-        ) : o.status === 3 ? (
+        ) : o.status === 3 ? ( // 취소일 때만 매장연결 버튼 숨김
           <span className="cell_sub">-</span>
         ) : (
           <button
@@ -407,18 +422,9 @@ export default function ShopOrderList() {
       header: '상태',
       width: '150px',
       render: (o) => (
-        <div>
-          {o.status === 0 && o.pendingCcnt != null ? (
-            <>
-              <span className={`badge ${ORDER_STATUS_MAP[o.status].className}`}>승인{ORDER_STATUS_MAP[o.status].label}</span>
-              <div className="cell_sub" style={{ marginTop: 4, fontSize: 11 }}>
-                {o.ccnt}대 → {o.pendingCcnt}대 변경 대기중
-              </div>
-            </>
-          ): (
-            <span className={`badge ${ORDER_STATUS_MAP[o.status].className}`}>{ORDER_STATUS_MAP[o.status].label}</span>
-          )}
-        </div>
+        <span className={`badge ${ORDER_STATUS_MAP[o.status].className}`}>
+          {ORDER_STATUS_MAP[o.status].label}
+        </span>
       ),
     },
     { header: '결제금액(원)', width: '120px', mono: true, render: (o) => `${o.totalprice.toLocaleString('ko-KR')}` },
@@ -433,12 +439,12 @@ export default function ShopOrderList() {
               갱신
             </button>
           )}
-          {o.status === 1 && (
+          {o.status === 1 && ( // 1 (정상 상태일 때만 변경 가능)
             <button type="button" className="btn btn_xsm btn_outline_primary" onClick={() => openChangeModal(o)}>
               변경
             </button>
           )}
-          {(o.status === 0 || o.status === 1) && (
+          {(o.status === 0 || o.status === 1) && ( // (0 || 1), 연결대기/정상일 때만 취소 가능
             <button type="button" className="btn btn_xsm btn_danger_outline" onClick={() => openCancelModal(o)}>
               취소
             </button>

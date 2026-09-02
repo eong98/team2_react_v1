@@ -11,6 +11,7 @@
 .flex.both {justify-content: space-between;}
 .flex.right {justify-content: flex-end;}
 .flex.top {align-items: flex-start;}
+.flex.center {align-items: center;}
 
 /* ellipsis :말줄임 */
 .ellipsis {overflow:hidden; display:inline-block; max-width:100%; white-space:nowrap; text-overflow:ellipsis; vertical-align:middle;}
@@ -20,11 +21,8 @@
 .grid_2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
 .grid_3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
 .grid_4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
-.grid_split {
-  display: grid;
-  grid-template-columns: 1.1fr 1fr;
-  gap: 20px;
-}
+.grid_split {display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px;}
+
 @media(max-width:900px){
   .grid_2, 
   .grid_3, 
@@ -36,6 +34,9 @@
 /* .stack_sm > * + *{margin-top:8px;}
 .stack_md > * + *{margin-top:16px;}
 .stack_lg > * + *{margin-top:28px;} */
+
+/* color */
+.danger {color:var(--danger);}
 
 /* button
 ========================================================================== */

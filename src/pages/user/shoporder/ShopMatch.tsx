@@ -30,7 +30,6 @@ export default function ShopMatch() {
   const navigate = useNavigate();
   const { no: mno } = GlobalStoreSession();
   const [order, setOrder] = useState<ShopOrderTypes | null>(null);
-  const [plan, setPlan] = useState<ShopPlanTypes | null>(null);
 
   const [shops, setShops] = useState<ShopType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,9 +46,7 @@ export default function ShopMatch() {
       .get<ShopOrderTypes>(`/shop_order/${no}`)
       .then((res) => {
         setOrder(res.data);
-        return axiosInstance.get<ShopPlanTypes>(`/shop_plan/${res.data.pno}`);
       })
-      .then((res) => setPlan(res.data))
       .catch((err) => console.error('구독 내역 조회 실패:', err));
   }, [no]);
 
@@ -137,7 +134,7 @@ export default function ShopMatch() {
         <div className="order_lines">
           <p className='b_title lg'>선택한 구독권</p>
           <div className="card card_pad_lg primary" style={{ marginBottom: 20 }}>
-            <div className="order_line"><span>구독권</span><span>{plan?.pname ?? `구독권 #${order.pno}`}</span></div>
+            <div className="order_line"><span>구독권</span><span>{order?.pname ?? `구독권 #${order.pno}`}</span></div>
             <div className="order_line"><span>이용 기간</span><span>{order.pmonth}개월</span></div>
             <div className="order_line"><span>CCTV 대수</span><span>{order.ccnt}대</span></div>
             <div className="order_line"><span>결제 금액</span><span>{order.totalprice.toLocaleString('ko-KR')}원</span></div>
