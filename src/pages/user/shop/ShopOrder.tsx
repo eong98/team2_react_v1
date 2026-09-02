@@ -3,10 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader, Filterbar, UserPagination, DataTable, type DataTableColumn, Modal, AlertModal } from '../../../components/ui';
 import { axiosInstance } from '../../../utils/Tool';
 import { GlobalStoreSession } from '../../../store/LoginStore';
-import { EMPTY_FILTERS, estimateCancelRefund, getDaysFromStart, ORDER_STATUS_MAP, PAGE_SIZE, type CancelResult, type ChangePreview, type ChangeRequest, type ChangeResult, type Filters, type OrderSearchResult, type RenewResult, type RowType, type ShopOrderTypes } from '../../../components/ts/ShopOrder';
+import { EMPTY_FILTERS, estimateCancelRefund, getDaysFromStart, ORDER_STATUS_MAP, PAGE_SIZE, type CancelResult, type ChangePreview, type ChangeRequest, type ChangeResult, type Filters, type OrderSearchResult, type RenewRequest, type RenewResult, type RowType, type ShopOrderTypes } from '../../../components/ts/ShopOrder';
 import { GlobalCurrentShop } from '../../../store/UserStore';
 import { usePaging } from '../../../hooks/usePaging';
-import { EMPTY_ACCOUNT, type RefundAccount } from '../../../components/ts/ShopPayment';
+import { EMPTY_ACCOUNT, PMETHOD_ICON, PMETHOD_MAP, type RefundAccount } from '../../../components/ts/ShopPayment';
 
 /* ---------------------------------------------------------------------
    매장별 구독 내역 (/user/shop/:sno/orders) — 회원+매장 기준 단일 검색 API를
@@ -251,7 +251,7 @@ export default function ShopOrderBySno() {
 
 
   // 갱신 버튼 노출 검사 함수
-  const canRenew = (order: RowType) => {
+  const canRenew = (order: RowType | ShopOrderTypes) => {
     if (!order.edate) return false;
 
     // 해당 매장의 정상(status=1) 구독 개수
@@ -319,7 +319,12 @@ export default function ShopOrderBySno() {
   };
 
   // ── 갱신 (기간 연장 전용) ─────────────────────────────
-  const openRenewModal = (order: RowType) => setRenewTarget(order);
+  const [renewPmethod, setRenewPmethod] = useState<0 | 1 | 2>(0)
+  
+  const openRenewModal = (order: RowType) => {
+    setRenewTarget(order);
+    setRenewPmethod(0);
+  };
   const closeRenewModal = () => setRenewTarget(null);
 
   const submitRenew = async () => {
@@ -327,7 +332,8 @@ export default function ShopOrderBySno() {
 
     setRenewing(true);
     try {
-      const res = await axiosInstance.put<RenewResult>(`/shop_order/${renewTarget.no}/renew`);
+      const request: RenewRequest = { pmethod: renewPmethod };
+      const res = await axiosInstance.put<RenewResult>(`/shop_order/${renewTarget.no}/renew`, request);
       const { edate, totalprice } = res.data;
 
       closeRenewModal();
@@ -344,6 +350,7 @@ export default function ShopOrderBySno() {
       setRenewing(false);
     }
   };
+
 
   const cancelEstimate = cancelTarget ? estimateCancelRefund(cancelTarget) : null;
 
@@ -381,7 +388,7 @@ export default function ShopOrderBySno() {
       <section className="view active">
         <PageHeader title="구독 내역" description="매장을 선택하면 해당 매장에 연결된 현재 구독과 지난 이력을 확인할 수 있습니다." />
         <div
-          className="card card_pad_lg"
+          className="card card_pad_sm"
         >
           <div className='no_data'>
             <p className="b_title">먼저 확인할 매장을 선택해주세요.</p>
@@ -405,21 +412,22 @@ console.log(active)
         <p className="b_title">불러오는 중...</p>
       ) : active ? (
         <>
-        {active.pendingCcnt && (
+        {canRenew(active) && (
           <div className='alert_mode'>
             <div className="alert_banner">
               <div className="aicon">!</div>
               <div className="atext">
-                <div className="t1">관리자 승인 대기 중</div>
-                <div className="t2">승인 대기 중엔 구독권을 취소/변경 할 수 없습니다.</div>
+                <div className="t1">구독권이 곧 만료됩니다.</div>
+                <div className="t2">현재 구독권을 계속 이용하시려면 갱신버튼을 눌러 갱신해주세요.</div>
               </div>
-              <button type='button' className="abtn">자세히 보기</button>
+              <button type='button' className="abtn">갱신</button>
             </div>
           </div>
         )}
 
-        <div className='grid_2' style={{marginTop: 24}}>
-          <div className="card card_pad_lg" style={{ marginBottom: 24 }}>
+
+        <div className='order_top' style={{margin: '24px 0'}}>
+          <div className="card card_pad_lg">
             <div className='flex top both'>
               <div>
                 <div className="cell_sub" style={{ marginBottom: 4 }}>현재 이용중인 구독권</div>
@@ -427,7 +435,7 @@ console.log(active)
                 <p className='b_title' style={{margin:0}}>{active.no}</p>
               </div>
               
-              <span className={`title md badge danger`} style={{borderRadius: 4}}>
+              <span className={`title md badge info`} style={{borderRadius: 4}}>
                 구독 {getDaysFromStart(active.sdate || '')} 일째
               </span>
             </div>
@@ -442,52 +450,49 @@ console.log(active)
             
             <div className='flex center both' style={{borderTop:'1px solid var(--border)', paddingTop:20, marginTop:20 }}>
               <div className="cell_sub" style={{ margin: 0 }}>CCTV 대수</div>
-              <div className='b_title lg' style={{margin:0}}>{active.pendingCcnt ? '변경대기' : `${active.ccnt}대`}</div>
+              <div className='b_title lg' style={{margin:0}}>{active.ccnt} 대</div>
             </div>
 
             <div className='flex center both' style={{marginTop:4 }}>
               <div className="cell_sub" style={{ margin: 0 }}>구독기간</div>
               <p className='b_title lg mono' style={{margin:0}}>{active.sdate} ~ {active.edate} ({active.pmonth}개월)</p>
             </div>
-
           </div>
 
-          <div className="card card_pad_lg" style={{ marginBottom: 24 }}>
-            <div className='flex top both'>
-              <div>
-                <p className='title' style={{margin:0}}></p>
+          {active.pendingCcnt && (
+            <div className="card card_pad_lg primary">
+              <div className='flex both top' style={{marginTop:8 }}>
+                <div>
+                  <div className="cell_sub" style={{ marginBottom: 4 }}>변경될 구독권</div>
+                  <p className='title' style={{margin:0, color:'var(--text)'}}>{active.pno !== active.pendingPno ? '변경될 구독권 이름' : '-'}</p>
+                </div>
+
+                <span className='badge info'>관리자 승인 대기 중</span>
               </div>
-            </div>
 
-          </div>
-        </div>
+              <div className='flex both center' style={{marginTop:8 }}>
+                <div className='cell_sub' style={{margin:0}}>변경 신청일</div>
+                <div className='cell_title' style={{margin:0}}>{active.udate}</div>
+              </div>
 
-        <div className="card card_pad_lg" style={{ marginBottom: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-            <div>
-              <div className="cell_sub" style={{ marginBottom: 4 }}>현재 이용중인 구독권</div>
-              <h3 style={{ fontSize: 20, margin: 0 }}>{active.pname}</h3>
-            </div>
-            <span className={`badge ${ORDER_STATUS_MAP[active.status].className}`}>
-              {ORDER_STATUS_MAP[active.status].label}
-            </span>
-          </div>
+              
+              <div className='flex center both' style={{borderTop:'1px solid var(--border)', paddingTop:20, marginTop:20 }}>
+                <div className="cell_sub" style={{ margin: 0 }}>신청 CCTV 대수</div>
+                <div className='b_title lg' style={{margin:0}}>{active.pendingCcnt} 대</div>
+              </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-            <div>
+                <div className='flex center both' style={{marginTop:4 }}>
+                  <div className="cell_sub" style={{ margin: 0 }}>신청 구독개월 수</div>
+                  <p className='b_title lg mono' style={{margin:0}}>{active.pmonth !== active.pendingPmonth ? (`${active.pmonth}개월`): '-'}</p>
+                </div>
+
             </div>
-            <div>
-              <div className="cell_sub">이용 기간</div>
-              <div className="mono" style={{ fontSize: 16, fontWeight: 700 }}>{active.pmonth}개월</div>
-            </div>
-            <div>
-              <div className="cell_sub">CCTV 대수</div>
-              <div className="mono" style={{ fontSize: 16, fontWeight: 700 }}>{active.ccnt}대</div>
-            </div>
-            <div>
-              <div className="cell_sub">구독 종료일</div>
-              <div className="mono" style={{ fontSize: 16, fontWeight: 700 }}>{active.edate}</div>
-            </div>
+          )}
+
+          <div className='actions'>
+            <button type='button' className='btn btn_danger'>취소하기</button>
+            <button type='button' className='btn btn_ghost'>변경하기</button>
+            <button type='button' className='btn btn_outline_primary'>자세히 보기</button>
           </div>
         </div>
         </>
@@ -716,27 +721,36 @@ console.log(active)
           </>
         }
       >
-        {renewTarget && (
-          <div>
-            <p className="b_title">
-              동일 조건({renewTarget.ccnt}대, {renewTarget.pmonth}개월)으로 구독 기간이 연장됩니다.
-            </p>
-            <div className="order_lines">
-              <div className="order_line">
-                <span>구독권</span>
-                <span>{renewTarget.pname}</span>
-              </div>
-              <div className="order_line">
-                <span>현재 종료일</span>
-                <span>{renewTarget.edate}</span>
-              </div>
-              <div className="order_line">
-                <span>연장 개월수</span>
-                <span>{renewTarget.pmonth}개월</span>
-              </div>
+      {renewTarget && (
+        <div>
+          <p className="b_title">
+            동일 조건({renewTarget.ccnt}대, {renewTarget.pmonth}개월)으로 구독 기간이 연장됩니다.
+          </p>
+          <div className="order_lines">
+            <div className="order_line"><span>구독권</span><span>{renewTarget.pname}</span></div>
+            <div className="order_line"><span>현재 종료일</span><span>{renewTarget.edate}</span></div>
+            <div className="order_line"><span>연장 개월수</span><span>{renewTarget.pmonth}개월</span></div>
+          </div>
+
+          <div className="pmethod_filter_wrap" style={{ marginTop: 16 }}>
+            <div className="form_label" style={{ marginBottom: 10 }}>결제 수단</div>
+            <div className="pmethod_filter" role="radiogroup" aria-label="결제수단 선택">
+              {[0, 1, 2].map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  className={`pmethod_chip${renewPmethod === m ? ' on' : ''}`}
+                  onClick={() => setRenewPmethod(m as 0 | 1 | 2)}
+                  aria-pressed={renewPmethod === m}
+                >
+                  <span className="pmethod_chip_icon">{PMETHOD_ICON[m]}</span>
+                  {PMETHOD_MAP[m].label}
+                </button>
+              ))}
             </div>
           </div>
-        )}
+        </div>
+      )}
       </Modal>
 
       {/* 변경 신청 Modal */}

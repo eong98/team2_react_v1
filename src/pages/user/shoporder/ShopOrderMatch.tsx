@@ -99,22 +99,26 @@ export default function ShopOrderMatch() {
             <button type="button" className="btn btn_md btn_ghost" onClick={() => navigateWithQuery('../order')}>
               ← 목록으로
             </button>
-            <button type="button" className="btn btn_md btn_primary" onClick={() => navigate('/shopplan')}>
-              + 새 구독
-            </button>
+            {orders.length !== 0 && (
+              <button type="button" className="btn btn_md btn_primary" onClick={() => navigate('/shopplan')}>
+                + 새 구독
+              </button>
+            )}
           </div>
           
         }
       />
 
       {orders.length === 0 ? (
-        <div className="card card_pad_lg" style={{ textAlign: 'center' }}>
-          <p className="cell_sub" style={{ marginBottom: 16 }}>
-            이 매장의 CCTV 대수와 일치하는, 연결 가능한 구독권이 없습니다.
-          </p>
-          <button type="button" className="btn btn_md btn_primary" onClick={() => navigate('/shopplan')}>
-            + 새 구독
-          </button>
+        <div className="card card_pad_lg">
+          <div className='no_data' style={{padding:0}}>
+            <p className="b_title">
+              이 매장의 CCTV 대수와 일치하는, 연결 가능한 구독권이 없습니다.
+            </p>
+            <button type="button" className="btn btn_md btn_primary" onClick={() => navigate('/shopplan')}>
+              + 새 구독
+            </button>
+          </div>
         </div>
       ) : (
         <div className="plan_grid">
