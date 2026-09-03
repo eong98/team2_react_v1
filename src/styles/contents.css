@@ -453,7 +453,10 @@ body.alert_mode .sim_toggle .dot{background:var(--red-500);animation:blink 1s in
 
 
 
-
+/* .order_top {display:grid; grid-template-columns: minmax(150px, 1fr) minmax(0, 1fr); gap:14px;} */
+.order_top {display:flex; gap:14px;}
+.order_top .card {flex: 1 auto}
+.order_top .actions {display:flex; flex-direction: column;}
 
 
 

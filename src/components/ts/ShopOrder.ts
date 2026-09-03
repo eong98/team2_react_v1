@@ -92,6 +92,12 @@ export interface RenewResult {
   ccnt: number;
   totalprice: number;
   edate: string | null;
+  newPmonth?: number; // 안 보내면 동일조건 갱신
+  pmethod: number;
+}
+export interface RenewRequest  {
+  newPmonth?: number; // 안 보내면 동일조건 갱신
+  pmethod: number;
 }
 
 /* 취소 */
