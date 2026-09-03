@@ -11,6 +11,10 @@ import CctvIssueList from '../pages/dbms/cctv/CctvIssueList';
 import CctvVisitorList from '../pages/dbms/cctv/CctvVisitorList';
 import CctvList from '../pages/dbms/cctv/CctvList';
 import CctvForm from '../pages/dbms/cctv/CctvForm';
+import CctvIssueCodeList from '../pages/dbms/cctv/CctvIssueCodeList';
+import CctvIssueCodeForm from '../pages/dbms/cctv/CctvIssueCodeForm';
+import CctvStreamList from '../pages/dbms/cctv/CctvStreamList';
+import CctvStreamForm from '../pages/dbms/cctv/CctvStreamForm';
 import SurveyForm from '../pages/dbms/survey/SurveyForm';
 import SurveyList from '../pages/dbms/survey/SurveyList';
 import SurveyResponseList from '../pages/dbms/survey/SurveyResponseList';
@@ -73,6 +77,16 @@ export default function DbmsRoutes() {
       <Route path="cctv" element={<CctvList />} />
       <Route path="cctv/new" element={<CctvForm />} />
       <Route path="cctv/:no/edit" element={<CctvForm />} />
+
+      {/* 이상행동유형코드 관리 (CCTV_ISSUE_CODE) */}
+      <Route path="cctvissuecode" element={<CctvIssueCodeList />} />
+      <Route path="cctvissuecode/new" element={<CctvIssueCodeForm />} />
+      <Route path="cctvissuecode/:code/edit" element={<CctvIssueCodeForm />} />
+
+      {/* CCTV 스트림 연결정보 관리 (CCTV_STREAM) */}
+      <Route path="cctvstream" element={<CctvStreamList />} />
+      <Route path="cctvstream/new" element={<CctvStreamForm />} />
+      <Route path="cctvstream/:no/edit" element={<CctvStreamForm />} />
       
       
       <Route path="survey" element={<SurveyList />}/>

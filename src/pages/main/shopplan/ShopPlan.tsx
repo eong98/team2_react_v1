@@ -62,7 +62,7 @@ export default function ShopPlan() {
   const monthIndex = month !== null ? months.indexOf(month) : 0;
   const longestMonth = months.length > 0 ? Math.max(...months) : null;
 
-  const totalPrice = plan ? Number(plan.bprice) * qty : 0;
+  const totalPrice = plan && month ? Number(plan.bprice) * qty * month : 0;
 
   const selectPlan = (p: ShopPlanTypes) => {
     setPlan(p);

@@ -28,13 +28,13 @@ export interface ShopOrderTypes {
 
 /* 구독 상태 */
 export const ORDER_STATUS_MAP: Record<number, { label: string; className: string }> = {
-  0: { label: '대기', className: 'wait' }, /* 매장 매칭 전 */
+  0: { label: '연결대기', className: 'wait' }, /* 매장 매칭 전 */
   1: { label: '정상', className: 'success' },
   2: { label: '만료됨', className: 'orange' },
   3: { label: '취소', className: 'danger' },
 };
 
-export type RowType = ShopOrderTypes & { cnt: number, activeCount: number };
+export type RowType = ShopOrderTypes & { cnt: number, activeCount?: number };
 
 export const PAGE_SIZE = 6;
 
@@ -92,6 +92,12 @@ export interface RenewResult {
   ccnt: number;
   totalprice: number;
   edate: string | null;
+  newPmonth?: number; // 안 보내면 동일조건 갱신
+  pmethod: number;
+}
+export interface RenewRequest  {
+  newPmonth?: number; // 안 보내면 동일조건 갱신
+  pmethod: number;
 }
 
 /* 취소 */
@@ -157,3 +163,29 @@ export interface ChangeResult {
 export interface ChangeApprovalRequest {
   approve: boolean;
 }
+
+
+
+
+
+/**
+ * 시작일부터 오늘까지의 경과 일수를 계산합니다.
+ * @param {string | Date} startDate - 시작일 (예: "2026-01-01" 또는 Date 객체)
+ * @returns {number} 오늘까지의 일수 (당일 = 1일, 1일 경과 = 2일)
+ */
+export const getDaysFromStart = (startDate: string) => {
+  if (!startDate) return 0;
+
+  const start = new Date(startDate);
+  const today = new Date();
+
+  // 시간을 00:00:00으로 맞춰 순수 날짜(일수) 차이만 계산
+  start.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+
+  const diffTime = today.getTime() - start.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  // 당일을 1일로 취급하려면 + 1, 순수 경과 일수만 구하려면 diffDays 반환
+  return diffDays + 1; 
+};
