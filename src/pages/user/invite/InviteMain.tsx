@@ -49,7 +49,7 @@ export default function InviteMain() {
               초대코드 발급하기
             </button>
           ) : (
-            <p className="form_hint error">점주 계정만 초대코드를 발급할 수 있습니다.</p>
+            <p className="form_hint error">점주만 초대코드를 발급할 수 있습니다.</p>
           )}
         </div>
 
