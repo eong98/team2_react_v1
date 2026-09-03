@@ -32,6 +32,7 @@ import ShopMapUserList from '../pages/user/shopmap/ShopMapUserList';
 
 import MyPage from '../pages/main/mypage/MyPage';
 import ChangePassword from '../pages/main/mypage/ChangePassword';
+import InviteMain from '../pages/user/invite/InviteMain';
 
 import ShopMatch from '../pages/user/shoporder/ShopMatch';
 import ShopOrderList from '../pages/user/shoporder/ShopOrderList';
@@ -76,6 +77,7 @@ export default function UserRoutes() {
 
       <Route path="mypage" element={<MyPage />} />
       <Route path="mypage/change-password" element={<ChangePassword />} />
+      <Route path="invite" element={<InviteMain />} />
 
 
 
