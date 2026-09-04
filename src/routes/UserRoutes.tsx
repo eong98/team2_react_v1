@@ -44,6 +44,8 @@ import ShopOrderLog from '../pages/user/shoporder/ShopOrderLog';
 import ShopOrder from '../pages/user/shop/ShopOrder';
 import ShopOrderMatch from '../pages/user/shoporder/ShopOrderMatch';
 
+import Notification from '../pages/user/notification/Notification';
+
 export default function UserRoutes() {
   return (
     <Routes>
@@ -85,7 +87,7 @@ export default function UserRoutes() {
       <Route path="mypage/change-password" element={<ChangePassword />} />
       <Route path="invite" element={<InviteMain />} />
 
-
+      <Route path="notification" element={<Notification />} />
 
       {/* 예시용 */}
       <Route element={<DashboardLayout />}>{/* 대시보드용 레이아웃 적용 */}
