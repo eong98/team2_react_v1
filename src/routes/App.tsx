@@ -1,6 +1,7 @@
 /* --------------- css import --------------- */
 import '../styles/common.css'
 import '../styles/contents.css'
+import '../components/ui/chatbot/chatbot.css'
 /* ------------------------------------------- */
 
 import {BrowserRouter, Routes, Route, Navigate} from 'react-router-dom'
@@ -20,7 +21,7 @@ import RequireUserAuth from './RequireUserAuth';
 
 import Sidebar from '../components/layout/Sidebar';
 import Topbar from '../components/ui/common/Topbar';
-import ChatWidget from '../components/ui/user/ChatWidget';
+import ChatBotWidget from '../components/ui/chatbot/ChatBotWidget';
 
 
 /* 구독권 구매 */
@@ -74,7 +75,7 @@ function App() {
 
           {/* 서비스 영역 - 사용자 (로그인 + mno + grade 1~10 필요, 아니면 /login) */}
           <Route element={<RequireUserAuth />}>
-            <Route element={<BaseLayout Sidebar={Sidebar} Topbar={Topbar} ChatWidget={ChatWidget} />}>
+            <Route element={<BaseLayout Sidebar={Sidebar} Topbar={Topbar} ChatWidget={ChatBotWidget} />}>
               <Route path="/user/*" element={<UserRoutes />} />
             </Route>
           </Route>
