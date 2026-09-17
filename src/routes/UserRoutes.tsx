@@ -41,8 +41,11 @@ import ShopPaymentList from '../pages/user/shoporder/ShopPaymentList';
 import ShopPaymentDetail from '../pages/user/shoporder/ShopPaymentDetail';
 import ShopRefundDetail from '../pages/user/shoporder/ShopRefundDetail';
 import ShopOrderLog from '../pages/user/shoporder/ShopOrderLog';
-import ShopOrder from '../pages/user/shop/ShopOrder';
+import ShopOrder from '../pages/user/shop/ShopOrderList';
 import ShopOrderMatch from '../pages/user/shoporder/ShopOrderMatch';
+
+import Notification from '../pages/user/notification/Notification';
+import ShopOrderPendingnList from '../pages/user/shoporder/ShopOrderPendingList';
 
 export default function UserRoutes() {
   return (
@@ -67,10 +70,17 @@ export default function UserRoutes() {
       </Route>
       <Route path="shoporder/:ono/payment/:pno" element={<ShopPaymentDetail />} />
       <Route path="shoporder/:ono/payment/:pno/refund" element={<ShopRefundDetail />} />
+      <Route path="pending" element={<ShopOrderPendingnList />} />
 
       {/* 매장별 구독권 */}
       <Route path="order" element={<ShopOrder />} />
       <Route path="order/:sno/match" element={<ShopOrderMatch />} />
+      <Route path="order/:ono" element={<ShopOrderDetail />}>
+        <Route path="payment" element={<ShopPaymentList />} />
+        <Route path="history" element={<ShopOrderLog />} />
+      </Route>
+      <Route path="order/:ono/payment/:pno" element={<ShopPaymentDetail />} />
+      <Route path="order/:ono/payment/:pno/refund" element={<ShopRefundDetail />} />
 
 
       <Route path="shop" element={<ShopList />} />
@@ -85,7 +95,7 @@ export default function UserRoutes() {
       <Route path="mypage/change-password" element={<ChangePassword />} />
       <Route path="invite" element={<InviteMain />} />
 
-
+      <Route path="notification" element={<Notification />} />
 
       {/* 예시용 */}
       <Route element={<DashboardLayout />}>{/* 대시보드용 레이아웃 적용 */}

@@ -1,4 +1,6 @@
+/* font */
 .mono {font-family: var(--font-mono);}
+.disp {font-family: var(--font-disp);}
 
 /* align */
 .a-l {text-align:left !important;}
@@ -243,6 +245,8 @@ select::-ms-expand {display:none;}
 .cell_title{font-weight:600;font-size:13px;color:var(--text);}
 .cell_sub{font-size:11px;color:var(--text-faint);margin-top:2px;}
 
+.text_line {text-decoration: line-through; color:var(--red-400);}
+
 
 .no_data {
   display: flex;
@@ -344,6 +348,7 @@ table td {padding:0; word-break:break-all;}
 .card_pad_lg{padding:28px;}
 .card.danger {border-color:var(--danger)}
 .card.primary {border-color:var(--primary)}
+.card.wait {border-color:rgba(255,176,32,.5);}
 
 
 /* PrevNextNav.tsx — 이전글/다음글.*/
