@@ -75,7 +75,7 @@ function App() {
 
           {/* 서비스 영역 - 사용자 (로그인 + mno + grade 1~10 필요, 아니면 /login) */}
           <Route element={<RequireUserAuth />}>
-            <Route element={<BaseLayout Sidebar={Sidebar} Topbar={Topbar} ChatWidget={ChatBotWidget} />}>
+            <Route element={<BaseLayout Sidebar={Sidebar} Topbar={Topbar} ChatBotWidget={ChatBotWidget} />}>
               <Route path="/user/*" element={<UserRoutes />} />
             </Route>
           </Route>

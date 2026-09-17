@@ -126,7 +126,7 @@ const Home = () => {
               <Link to="/shopplan" className="btn btn_primary">
                 데모 신청하기
               </Link>
-              <a href="#flow" className="btn btn_ghost">
+              <a href="/index/#flow" className="btn btn_ghost">
                 작동 방식 보기
               </a>
             </div>

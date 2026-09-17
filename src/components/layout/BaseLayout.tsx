@@ -19,7 +19,7 @@ interface AppShellProps {
   Sidebar: ComponentType<SidebarProps>;
   Topbar: ComponentType<TopbarProps>;
   MobileTabbar?: ComponentType;
-  ChatWidget?: ComponentType;
+  ChatBotWidget?: ComponentType;
 }
 
 /**
@@ -30,7 +30,7 @@ export default function BaseLauout({
   Sidebar,
   Topbar,
   MobileTabbar,
-  ChatWidget,
+  ChatBotWidget,
 }: AppShellProps) {
   const [navOpen, setNavOpen] = useState(false);
 
@@ -48,7 +48,7 @@ export default function BaseLauout({
         <div className='copyright'>{getCopyright()}</div>
       </main>
 
-      {ChatWidget && <ChatWidget />}
+      {ChatBotWidget && <ChatBotWidget />}
     </div>
   );
 }

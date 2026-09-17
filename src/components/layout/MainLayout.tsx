@@ -7,6 +7,8 @@ import { getCopyright } from '../../utils/Tool'
 import { GlobalStoreSession } from '../../store/LoginStore';
 import { AlertModal } from '../ui';
 import { useState } from 'react';
+import ChatWidget from '../ui/user/ChatWidget';
+import ChatBotWidget from '../ui/chatbot/ChatBotWidget';
 
 const MainLayout = () => {
   const { pathname } = useLocation();
@@ -27,10 +29,10 @@ const MainLayout = () => {
           {!isAdmin ? (
             <>
               <div className="navlinks">
-                <a href="#features">감지 기능</a>
-                <a href="#flow">작동 방식</a>
+                <Link to="/index#features">감지 기능</Link>
+                <Link to="/index#flow">작동 방식</Link>
                 <Link to="/user/dashboard/test1">대시보드</Link>
-                <a href="#roadmap">확장 계획</a>
+                <Link to="/index#roadmap">확장 계획</Link>
                 <Link to={login ? '/user/notice' : '/board'}>고객센터</Link>
               </div>
 
@@ -62,10 +64,10 @@ const MainLayout = () => {
           
           {!isAdmin ? (
             <div className="foot_links">
-              <a href="#features">감지 기능</a>
-              <a href="#flow">작동 방식</a>
+              <Link to="/index#features">감지 기능</Link>
+              <Link to="/index#flow">작동 방식</Link>
               <Link to="/">대시보드</Link>
-              <a href="#roadmap">확장 계획</a>
+              <Link to="/index#roadmap">확장 계획</Link>
               <Link to={login ? '/user/notice' : '/board'}>고객센터</Link>
             </div>
           ): null}
@@ -75,6 +77,7 @@ const MainLayout = () => {
       </footer>
 
 
+      <ChatBotWidget />
     </div>
   )
 }

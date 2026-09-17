@@ -1,19 +1,24 @@
 import { useEffect, useState } from 'react';
+import { axiosInstance } from '../../../utils/Tool';
+import { GlobalStoreSession } from '../../../store/LoginStore';
+import { getOrCreateGno } from '../../ts/ChatGuest';
+import type { ChatSessionResponse } from '../../ts/ChatBot';
 import ChatRoomList from './ChatRoomList';
 import ChatRoom from './ChatRoom';
 
 type ChatView = 'LIST' | 'ROOM';
 
 interface ChatBotWidgetProps {
-  mode?: 'floating' | 'preview'; // 기본값 floating(기존 FAB 동작), preview는 관리자 미리보기용
+  mode?: 'floating' | 'preview';
 }
 
 export default function ChatBotWidget({ mode = 'floating' }: ChatBotWidgetProps) {
+  const { no: mno } = GlobalStoreSession();
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
   const [view, setView] = useState<ChatView>('LIST');
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null); // 목록에서 선택한 채팅방
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -31,29 +36,47 @@ export default function ChatBotWidget({ mode = 'floating' }: ChatBotWidgetProps)
   }, [open]);
 
   useEffect(() => {
-  if (mode === 'preview') {
-    setOpen(true);
-    setVisible(true);
-    setAnimating(true); // 애니메이션 없이 항상 열린 상태로 고정
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [mode]);
+    if (mode === 'preview') {
+      setOpen(true);
+      setVisible(true);
+      setAnimating(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
 
   const handleClose = () => setOpen(false);
-  const handleOpen = () => setOpen(true);
 
-  // 목록에서 "새 채팅 시작" 또는 기존 채팅방 클릭
+  /** 챗봇을 열 때, 진행 중인 세션이 있으면 그 채팅방으로 바로 이어서 열고,
+   *  없으면 목록 화면부터 보여줍니다. */
+  const handleOpen = () => {
+    setOpen(true);
+
+    const params = mno ? { mno } : { gno: getOrCreateGno() };
+    axiosInstance
+      .get<ChatSessionResponse>('/chat_session/active', { params })
+      .then((res) => {
+        if (res.data) {
+          setActiveSessionId(res.data.no);
+          setView('ROOM');
+        } else {
+          setView('LIST');
+        }
+      })
+      .catch(() => {
+        // 204(진행중 세션 없음) 등은 여기로도 떨어질 수 있음 — 목록으로
+        setView('LIST');
+      });
+  };
+
   const handleEnterRoom = (sessionId: string | null) => {
-    setActiveSessionId(sessionId); // null이면 새 채팅
+    setActiveSessionId(sessionId);
     setView('ROOM');
   };
 
-  // 채팅방에서 "목록으로" 버튼
   const handleBackToList = () => {
     setView('LIST');
     setActiveSessionId(null);
   };
-
 
   if (mode === 'floating') {
     return (
@@ -86,8 +109,7 @@ export default function ChatBotWidget({ mode = 'floating' }: ChatBotWidgetProps)
 
   return (
     <div className="chatbot_widget chatbot_widget_preview">
-      <ChatRoom onClose={handleClose} onBackToList={handleBackToList} sessionId={activeSessionId} mode='preview' />
+      <ChatRoom onClose={handleClose} onBackToList={handleBackToList} sessionId={activeSessionId} mode="preview" />
     </div>
-  )
-
+  );
 }
