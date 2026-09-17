@@ -377,7 +377,7 @@ export default function MyPage() {
         <div className="form_group">
           <label className="form_label" htmlFor="loginid">아이디</label>
           <div className="form_control">
-            <input id="loginid" className="form_input" value={info?.id ?? ''} disabled style={{ maxWidth: 240 }} />
+            <span className="b_title lg">{info?.id}</span>
           </div>
         </div>
 

@@ -117,7 +117,7 @@ export default function InviteCreate({ onBack }: InviteCreateProps) {
           </div>
 
           <p className="form_hint" style={{ marginTop: 16 }}>
-              : `발급 후 약 ${INVITE_CODE_VALID_MINUTES}분간 사용할 수 있습니다.`
+              발급 후 약 {INVITE_CODE_VALID_MINUTES}분간 사용할 수 있습니다.
           </p>
         </div>
 

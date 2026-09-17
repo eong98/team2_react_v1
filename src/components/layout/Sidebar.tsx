@@ -120,15 +120,26 @@ export default function Sidebar({ open, onNavigate }: SidebarProps) {
     };
   }, [no, isMyPageAdmin]);
 
-  const handleLogout = () => {
-    GlobalStoreSession.getState().setLogin(false);
-    GlobalStoreSession.getState().setNo(0);
-    GlobalStoreSession.getState().setGrade(99);
-    GlobalStoreSession.getState().setId('');
-    GlobalStoreSession.getState().setMname('');
-    onNavigate();
-    navigate('/login');
-  };
+  const handleLogout = async () => {
+
+    const { refreshToken } = GlobalStoreSession.getState();
+    
+    try {
+      if (refreshToken) {
+        await axiosInstance.post('/auth/logout', { refreshToken });
+      }
+    } catch (err) {
+      console.error('로그아웃 처리 중 오류(무시 가능):', err);
+    } finally {
+      GlobalStoreSession.getState().clearAuth();
+
+      onNavigate();
+      navigate('/login');
+    }
+  }
+
+
+
 
   return (
     <aside className={`sidebar${open ? ' open' : ''}`}>

@@ -33,6 +33,11 @@ interface SessionStore {
   setGrade: (value: number) => void;
   mname: string;
   setMname: (value: string) => void;
+
+  accessToken: string;
+  refreshToken: string;
+  setTokens: (accessToken: string, refreshToken: string) => void;
+  clearAuth:() => void;
 }
 
 export const GlobalStoreSession = create<SessionStore>()(
@@ -49,7 +54,21 @@ export const GlobalStoreSession = create<SessionStore>()(
       grade: 99,  
       setGrade: (value) => set({ grade: value}),
       mname: '',
-      setMname: (value) => set({ mname: value})
+      setMname: (value) => set({ mname: value}),
+
+      accessToken: '',
+      refreshToken: '',
+      setTokens: (accessToken, refreshToken) => set({ accessToken, refreshToken}),
+      clearAuth: () =>
+        set({
+          login: false,
+          no: 0,
+          id: '',
+          grade: 99,
+          mname: '',
+          accessToken: '',
+          refreshToken: '',
+        })
     }),
     {
       name: 'auth-cookie-store',
