@@ -11,7 +11,19 @@ export interface ChatBubble {
 
 export type ChatStage = 'INTRO' | 'OPTION' | 'AI';
 
-export type EndFlowStep = null | 'ASK_SATISFY' | 'ASK_ESCALATE_CONFIRM' | 'ASK_UNSATISFY_REASON' | 'ASK_UNSATISFY_MEMO';
+// export type EndFlowStep = null | 'ASK_SATISFY' | 'ASK_ESCALATE_CONFIRM' | 'ASK_UNSATISFY_REASON' | 'ASK_UNSATISFY_MEMO';
+
+/** 서버가 내려주는 숫자(ENDFLOW)를 프론트 문자열 상태로 변환 */
+export const numberToEndFlow = (n: number | null | undefined) => {
+  switch (n) {
+    case 0: return 'ASK_SATISFY';
+    case 1: return 'ASK_UNSATISFY_REASON';
+    case 2: return 'ASK_UNSATISFY_MEMO';
+    case 3: return 'ASK_ESCALATE_CONFIRM';
+    case 4: return 'FAIL_AI_ANSWER';
+    default: return null;
+  }
+};
 
 export const UNSATISFY_REASONS: { code: number; label: string }[] = [
   { code: 0, label: '답변이 부정확했어요' },
@@ -76,13 +88,17 @@ export interface ChatSessionResponse {
   sreason: number | null;
   smemo: string | null;
   cnoLabel?: string;
+  stitle?: string;
+  readat: string | null;
+  endflow: number | null;
 }
 
 export interface ChatSessionSummary {
   no: string;
-  title: string;
+  stitle: string;
   cmode: 0 | 1 | 2;
   udate: string;
+  readat: string | null;
 }
 
 export interface ChatActionResult {
@@ -123,4 +139,19 @@ export const isSameDate = (isoA: string, isoB: string): boolean => {
   const a = new Date(isoA);
   const b = new Date(isoB);
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+};
+
+/** 30분 미만이면 "N분 전", 그 이상이면 기존 절대시각(udate) 그대로 반환 */
+export const formatRelativeTime = (iso: string): string => {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  
+  const d = new Date(iso);
+  const day = d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+  const time = d.toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit', hour12: true });
+  
+  if (diffMin < 1) return `방금 전`;
+  if (diffMin < 30) return `${diffMin}분 전`;
+
+  return `${time}`;
 };

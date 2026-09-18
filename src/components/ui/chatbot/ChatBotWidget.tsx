@@ -2,23 +2,20 @@ import { useEffect, useState } from 'react';
 import { axiosInstance } from '../../../utils/Tool';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import { getOrCreateGno } from '../../ts/ChatGuest';
-import type { ChatSessionResponse } from '../../ts/ChatBot';
+import type { ChatSessionResponse, ChatSessionSummary } from '../../ts/ChatBot';
 import ChatRoomList from './ChatRoomList';
 import ChatRoom from './ChatRoom';
 
 type ChatView = 'LIST' | 'ROOM';
 
-interface ChatBotWidgetProps {
-  mode?: 'floating' | 'preview';
-}
-
-export default function ChatBotWidget({ mode = 'floating' }: ChatBotWidgetProps) {
+export default function ChatBotWidget() {
   const { no: mno } = GlobalStoreSession();
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
   const [view, setView] = useState<ChatView>('LIST');
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [hasUnread, setHasUnread] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -35,16 +32,28 @@ export default function ChatBotWidget({ mode = 'floating' }: ChatBotWidgetProps)
     }
   }, [open]);
 
-  useEffect(() => {
-    if (mode === 'preview') {
-      setOpen(true);
-      setVisible(true);
-      setAnimating(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
+  /** FAB 버튼이 닫혀있을 때도 안읽음 여부를 미리 확인 */
+  const checkUnread = () => {
+    const params = mno ? { mno } : { gno: getOrCreateGno() };
+    axiosInstance
+      .get<ChatSessionSummary[]>('/chat_session/list', { params })
+      .then((res) => {
+        const unread = res.data.some((room) => !room.readat || new Date(room.udate) > new Date(room.readat));
+        setHasUnread(unread);
+      })
+      .catch(() => setHasUnread(false));
+  };
 
-  const handleClose = () => setOpen(false);
+  useEffect(() => {
+    checkUnread(); // 위젯이 처음 뜰 때 한 번 확인
+  }, []);
+
+
+  const handleClose = () => {
+    setOpen(false);
+    checkUnread(); // 채팅방 닫을 때(=읽었을 수 있으니) 다시 확인
+  };
+
 
   /** 챗봇을 열 때, 진행 중인 세션이 있으면 그 채팅방으로 바로 이어서 열고,
    *  없으면 목록 화면부터 보여줍니다. */
@@ -76,40 +85,35 @@ export default function ChatBotWidget({ mode = 'floating' }: ChatBotWidgetProps)
   const handleBackToList = () => {
     setView('LIST');
     setActiveSessionId(null);
+    checkUnread(); // 목록으로 돌아올 때도 갱신
   };
 
-  if (mode === 'floating') {
-    return (
-      <>
-        <button
-          type="button"
-          className="chatbot_fab"
-          onClick={open ? handleClose : handleOpen}
-          aria-label={open ? '상담 챗봇 닫기' : '상담 챗봇 열기'}
-        >
-          {open ? '✕' : '💬'}
-        </button>
-
-        {visible && (
-          <>
-            <div className={`chatbot_overlay ${animating ? 'open' : 'closing'}`} onClick={handleClose} />
-
-            <div className={`chatbot_widget ${animating ? 'open' : 'closing'}`}>
-              {view === 'LIST' ? (
-                <ChatRoomList onClose={handleClose} onEnterRoom={handleEnterRoom} />
-              ) : (
-                <ChatRoom onClose={handleClose} onBackToList={handleBackToList} sessionId={activeSessionId} />
-              )}
-            </div>
-          </>
-        )}
-      </>
-    );
-  }
-
   return (
-    <div className="chatbot_widget chatbot_widget_preview">
-      <ChatRoom onClose={handleClose} onBackToList={handleBackToList} sessionId={activeSessionId} mode="preview" />
-    </div>
+    <>
+      <button
+        type="button"
+        className="chatbot_fab"
+        onClick={open ? handleClose : handleOpen}
+        aria-label={open ? '상담 챗봇 닫기' : '상담 챗봇 열기'}
+      >
+        {open ? '✕' : '💬'}
+        {!open && hasUnread && <span className="chatbot_fab_unread_dot" />}
+      </button>
+
+      {visible && (
+        <>
+          <div className={`chatbot_overlay ${animating ? 'open' : 'closing'}`} onClick={handleClose} />
+
+          <div className={`chatbot_widget ${animating ? 'open' : 'closing'}`}>
+            {view === 'LIST' ? (
+              <ChatRoomList onClose={handleClose} onEnterRoom={handleEnterRoom} />
+            ) : (
+              <ChatRoom onClose={handleClose} onBackToList={handleBackToList} sessionId={activeSessionId} />
+            )}
+          </div>
+        </>
+      )}
+    </>
   );
+
 }

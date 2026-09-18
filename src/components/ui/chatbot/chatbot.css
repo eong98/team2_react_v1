@@ -1,6 +1,30 @@
 /* ══════════════════════════════════════════════
    ChatBotWidget 전체 스타일
-   ══════════════════════════════════════════════ */
+══════════════════════════════════════════════ */
+.chatbot_fab {
+  position: relative; /* 점 위치 기준 */
+}
+
+.chatbot_fab_unread_dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--red-200, #ffa4ac);
+  border: 2px solid var(--bg, #0a0e13);
+}
+
+.chatbot_unread_dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--red-200, #ffa4ac);
+  margin-left: 6px;
+  vertical-align: top;
+}
 
 /* ── FAB 버튼 ── */
 .chatbot_fab {
@@ -212,13 +236,13 @@
 .chat_date_divider {
   display: flex;
   justify-content: center;
-  margin: 12px 0 4px;
+  margin: 12px 0;
 }
 .chat_date_divider span {
   padding: 4px 12px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-faint, #6b7684);
+  background: var(--primary);
+  color: var(--n-950, #6b7684);
   font-size: 11px;
 }
 
@@ -313,10 +337,6 @@
   flex-direction: column;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  overflow: hidden;
-  max-height: 260px;
-  min-height:100px;
-  overflow-y: auto;
 }
 
 .chat_option_list_item {
@@ -484,6 +504,9 @@
 }
 
 .chatbot_room_item_time {
+  margin-top:8px;
+  display:flex;
+  justify-content: space-between;
   font-size: 11px;
   color: var(--text-faint, #6b7684);
 }

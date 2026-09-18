@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { axiosInstance } from '../../../utils/Tool';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import { getOrCreateGno } from '../../ts/ChatGuest';
-import type { ChatSessionSummary } from '../../ts/ChatBot';
+import { formatMessageDate, formatRelativeTime, type ChatSessionSummary } from '../../ts/ChatBot';
 
 interface ChatRoomListProps {
   onClose: () => void;
@@ -42,6 +42,11 @@ export default function ChatRoomList({ onClose, onEnterRoom }: ChatRoomListProps
     }
   };
 
+  const hasUnread = (room: ChatSessionSummary): boolean => {
+    if (!room.readat) return true; // 한 번도 안 읽었으면 안읽음
+    return new Date(room.udate) > new Date(room.readat);
+  };
+
 
   return (
     <>
@@ -70,10 +75,15 @@ export default function ChatRoomList({ onClose, onEnterRoom }: ChatRoomListProps
                 onClick={() => onEnterRoom(room.no)}
               >
                 <div className="chatbot_room_item_top">
-                  <span className="chatbot_room_item_title">{room.title}</span>
+                  <span className="chatbot_room_item_title">{room.stitle} 
+                    {hasUnread(room) && <span className="chatbot_unread_dot" />}
+                  </span>
                   <span className={`badge ${room.cmode === 2 ? 'neutral' : 'success'}`}>{modeLabel(room.cmode)}</span>
                 </div>
-                <div className="chatbot_room_item_time">{room.udate}</div>
+                <div className="chatbot_room_item_time">
+                  <span>{formatMessageDate(room.udate)}</span>
+                  <span>{formatRelativeTime(room.udate)}</span>
+                </div>
               </button>
             ))}
           </div>

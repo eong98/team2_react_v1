@@ -8,13 +8,13 @@ import {
   isSameDate,
   type ChatBubble,
   type ChatStage,
-  type EndFlowStep,
   type ChatSessionResponse,
   type ChatLogEntry,
   type ChatActionResult,
   type ChatStepRequest,
   getMessage,
   SYSTEM_MESSAGES,
+  numberToEndFlow,
 } from '../../ts/ChatBot';
 import type { ChatMenuTypes } from '../../ts/ChatMenu';
 import { getOrCreateGno } from '../../ts/ChatGuest';
@@ -50,10 +50,9 @@ interface ChatRoomProps {
   onClose: () => void;
   onBackToList: () => void;
   sessionId: string | null;
-  mode?: 'floating' | 'preview';
 }
 
-export default function ChatRoom({ onClose, onBackToList, sessionId, mode = 'floating' }: ChatRoomProps) {
+export default function ChatRoom({ onClose, onBackToList, sessionId }: ChatRoomProps) {
   const { no: mno } = GlobalStoreSession();
 
   const sessionIdRef = useRef<string | null>(sessionId);
@@ -70,7 +69,7 @@ export default function ChatRoom({ onClose, onBackToList, sessionId, mode = 'flo
   const [bubbles, setBubbles] = useState<ChatBubble[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
-  const [endFlow, setEndFlow] = useState<EndFlowStep>(null);
+  const [endFlow, setEndFlow] = useState<string | null>(null);
 
   const [sessionEnded, setSessionEnded] = useState(false);
 
@@ -81,13 +80,12 @@ export default function ChatRoom({ onClose, onBackToList, sessionId, mode = 'flo
 
   /** 백엔드 액션 응답의 logs를 화면 말풍선으로 변환해서 이어붙임 */
   const appendLogs = (logs: ChatLogEntry[], lastNeedsAdmin?: boolean) => {
-    const newBubbles: ChatBubble[] = logs.map((log, idx) => ({
+    const newBubbles: ChatBubble[] = logs.map((log) => ({
       id: String(log.no),
       sender: log.sender,
       content: log.content,
       mtype: log.mtype,
       createdAt: log.cdate,
-      needsAdmin: lastNeedsAdmin && idx === logs.length - 1 ? true : undefined,
     }));
     setBubbles((prev) => [...prev, ...newBubbles]);
     scrollToBottom();
@@ -109,7 +107,7 @@ export default function ChatRoom({ onClose, onBackToList, sessionId, mode = 'flo
     if (!sessionIdRef.current) return null;
     try {
       const res = await axiosInstance.put<ChatActionResult>(`/chat_session/${sessionIdRef.current}/step`, payload);
-      appendLogs(res.data.logs, res.data.needsAdmin);
+      appendLogs(res.data.logs);
       return res.data;
     } catch (err) {
       console.error('상담 진행 처리 실패:', err);
@@ -121,7 +119,10 @@ export default function ChatRoom({ onClose, onBackToList, sessionId, mode = 'flo
     if (sessionId) {
       axiosInstance
         .get<ChatSessionResponse>(`/chat_session/${sessionId}`)
-        .then((res) => restoreFromSession(res.data))
+        .then((res) => {
+          restoreFromSession(res.data);
+          // axiosInstance.put(`/chat_session/${sessionId}/read`).catch((err) => console.error('읽음 처리 실패:', err));
+        })
         .catch((err) => console.error('세션 조회 실패:', err));
     } else {
       loadRootMenus();
@@ -138,7 +139,7 @@ export default function ChatRoom({ onClose, onBackToList, sessionId, mode = 'flo
 
     try {
       const logRes = await axiosInstance.get<ChatLogEntry[]>(`/chat_log/session/${session.no}`);
-      const restoredBubbles: ChatBubble[] = logRes.data.map((log) => ({
+      const restoredBubbles: ChatBubble[] = logRes.data.map((log, idx) => ({
         id: String(log.no),
         sender: log.sender,
         content: log.content,
@@ -149,6 +150,8 @@ export default function ChatRoom({ onClose, onBackToList, sessionId, mode = 'flo
     } catch (err) {
       console.error('대화 로그 조회 실패:', err);
     }
+
+    setEndFlow(numberToEndFlow(session.endflow)); // 텍스트 매칭 없이 바로 복원
 
     if (session.cmode === 1) {
       setStage('AI');
@@ -322,13 +325,17 @@ export default function ChatRoom({ onClose, onBackToList, sessionId, mode = 'flo
 
     const userMsg = inputValue;
     setInputValue('');
+    setEndFlow(null); // 새 질문 보내면 이전 관리자연결 버튼 사라짐
     setAiLoading(true);
 
     try {
       const actionRes = await axiosInstance.post<ChatActionResult>(`/chat_session/${sessionIdRef.current}/ai-chat`, {
         message: userMsg,
       });
-      appendLogs(actionRes.data.logs, actionRes.data.needsAdmin);
+      appendLogs(actionRes.data.logs);
+      if (actionRes.data.needsAdmin) {
+        setEndFlow('FAIL_AI_ANSWER');
+      }
     } catch (err) {
       console.error('AI 응답 실패:', err);
     } finally {
@@ -390,7 +397,7 @@ export default function ChatRoom({ onClose, onBackToList, sessionId, mode = 'flo
   };
 
   const headerTitle = stage === 'AI' ? 'AI 상담' : '알리미오 상담봇';
-  const inputEnabled = !sessionEnded && ((stage === 'AI' && endFlow === null) || endFlow === 'ASK_UNSATISFY_MEMO');
+  const inputEnabled = !sessionEnded && ((stage === 'AI' && endFlow !== 'ASK_ESCALATE_CONFIRM') || endFlow === 'ASK_UNSATISFY_MEMO');
 
   const renderBubbles = () => {
     const elements: JSX.Element[] = [];
@@ -406,7 +413,6 @@ export default function ChatRoom({ onClose, onBackToList, sessionId, mode = 'flo
         lastDate = b.createdAt;
       }
 
-      console.log(b)
       if ((SYSTEM_MESSAGES[7].label.includes(b.content) || SYSTEM_MESSAGES[8].label.includes(b.content)) && b.mtype === 5) {
         elements.push(
           <div key={b.id} className="chat_divider_line">
@@ -417,7 +423,6 @@ export default function ChatRoom({ onClose, onBackToList, sessionId, mode = 'flo
       }
 
       const senderLabel = b.sender === 1 ? 'AI' : b.sender === 2 ? '상담봇' : null;
-
       elements.push(
         <div key={b.id} className={`chat_bubble_row ${b.sender === 0 ? 'user' : 'system'}`}>
           {senderLabel && <span className="chat_sender_label">{senderLabel}</span>}
@@ -425,18 +430,13 @@ export default function ChatRoom({ onClose, onBackToList, sessionId, mode = 'flo
             <div className={`chat_bubble ${b.sender === 0 ? 'user' : b.sender === 1 ? 'ai' : 'system'}`}>{b.content}</div>
             <span className="chat_bubble_time">{formatMessageTime(b.createdAt)}</span>
           </div>
-          {b.needsAdmin && !sessionEnded && endFlow === null && (
-            <button type="button" className="chat_admin_btn" onClick={handleEscalateToAdmin}>
-              관리자에게 문의하기
-            </button>
-          )}
         </div>,
       );
     });
 
     return elements;
   };
-
+console.log(consultStarted)
   return (
     <>
       <div className="chatbot_header">
@@ -491,6 +491,12 @@ export default function ChatRoom({ onClose, onBackToList, sessionId, mode = 'flo
 
         {stage === 'OPTION' && optionLoading && <div className="chat_loading">불러오는 중...</div>}
 
+        {endFlow === 'FAIL_AI_ANSWER' && (
+          <button type="button" className="chat_admin_btn" onClick={handleEscalateToAdmin}>
+            관리자에게 문의하기
+          </button>
+        )}
+
         {stage === 'AI' && endFlow === 'ASK_ESCALATE_CONFIRM' && (
           <div className="chat_options">
             <button type="button" className="chat_option_btn" onClick={(e) => handleEscalateConfirm(e, true)}>
@@ -537,7 +543,7 @@ export default function ChatRoom({ onClose, onBackToList, sessionId, mode = 'flo
         <div ref={bottomRef} />
       </div>
 
-      {!sessionEnded && endFlow === null && consultStarted && (
+      {!sessionEnded && consultStarted && (!endFlow?.includes('SATISFY')) && (
         <div className="chatbot_fixed_actions">
           {stage !== 'INTRO' && (
             <button type="button" className="chat_option_btn" onClick={handleOtherQuestion}>
@@ -562,30 +568,28 @@ export default function ChatRoom({ onClose, onBackToList, sessionId, mode = 'flo
         </div>
       )}
 
-      {mode === 'floating' && (
-        <div className="chatbot_input_row">
-          <input
-            type="text"
-            className="chatbot_input"
-            placeholder={
-              sessionEnded
-                ? '상담이 종료되었습니다'
-                : endFlow === 'ASK_UNSATISFY_MEMO'
-                  ? '아쉬웠던 점을 입력해주세요'
-                  : stage !== 'AI'
-                    ? '옵션을 선택해주세요'
-                    : '메시지를 입력하세요'
-            }
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleSendText_Enter}
-            disabled={!inputEnabled}
-          />
-          <button type="button" className="chatbot_send_btn" onClick={handleSendText} disabled={!inputEnabled}>
-            전송
-          </button>
-        </div>
-      )}
+      <div className="chatbot_input_row">
+        <input
+          type="text"
+          className="chatbot_input"
+          placeholder={
+            sessionEnded
+              ? '상담이 종료되었습니다'
+              : endFlow === 'ASK_UNSATISFY_MEMO'
+                ? '아쉬웠던 점을 입력해주세요'
+                : stage !== 'AI'
+                  ? '옵션을 선택해주세요'
+                  : '메시지를 입력하세요'
+          }
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleSendText_Enter}
+          disabled={!inputEnabled}
+        />
+        <button type="button" className="chatbot_send_btn" onClick={handleSendText} disabled={!inputEnabled}>
+          전송
+        </button>
+      </div>
     </>
   );
 }

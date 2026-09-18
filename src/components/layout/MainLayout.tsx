@@ -7,7 +7,6 @@ import { getCopyright } from '../../utils/Tool'
 import { GlobalStoreSession } from '../../store/LoginStore';
 import { AlertModal } from '../ui';
 import { useState } from 'react';
-import ChatWidget from '../ui/user/ChatWidget';
 import ChatBotWidget from '../ui/chatbot/ChatBotWidget';
 
 const MainLayout = () => {
