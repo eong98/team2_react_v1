@@ -1,19 +1,21 @@
 import { useEffect, useState } from 'react';
+import { axiosInstance } from '../../../utils/Tool';
+import { GlobalStoreSession } from '../../../store/LoginStore';
+import { getOrCreateGno } from '../../ts/ChatGuest';
+import type { ChatSessionResponse, ChatSessionSummary } from '../../ts/ChatBot';
 import ChatRoomList from './ChatRoomList';
 import ChatRoom from './ChatRoom';
 
 type ChatView = 'LIST' | 'ROOM';
 
-interface ChatBotWidgetProps {
-  mode?: 'floating' | 'preview'; // 기본값 floating(기존 FAB 동작), preview는 관리자 미리보기용
-}
-
-export default function ChatBotWidget({ mode = 'floating' }: ChatBotWidgetProps) {
+export default function ChatBotWidget() {
+  const { no: mno } = GlobalStoreSession();
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
   const [view, setView] = useState<ChatView>('LIST');
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null); // 목록에서 선택한 채팅방
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [hasUnread, setHasUnread] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -30,64 +32,88 @@ export default function ChatBotWidget({ mode = 'floating' }: ChatBotWidgetProps)
     }
   }, [open]);
 
+  /** FAB 버튼이 닫혀있을 때도 안읽음 여부를 미리 확인 */
+  const checkUnread = () => {
+    const params = mno ? { mno } : { gno: getOrCreateGno() };
+    axiosInstance
+      .get<ChatSessionSummary[]>('/chat_session/list', { params })
+      .then((res) => {
+        const unread = res.data.some((room) => !room.readat || new Date(room.udate) > new Date(room.readat));
+        setHasUnread(unread);
+      })
+      .catch(() => setHasUnread(false));
+  };
+
   useEffect(() => {
-  if (mode === 'preview') {
+    checkUnread(); // 위젯이 처음 뜰 때 한 번 확인
+  }, []);
+
+
+  const handleClose = () => {
+    setOpen(false);
+    checkUnread(); // 채팅방 닫을 때(=읽었을 수 있으니) 다시 확인
+  };
+
+
+  /** 챗봇을 열 때, 진행 중인 세션이 있으면 그 채팅방으로 바로 이어서 열고,
+   *  없으면 목록 화면부터 보여줍니다. */
+  const handleOpen = () => {
     setOpen(true);
-    setVisible(true);
-    setAnimating(true); // 애니메이션 없이 항상 열린 상태로 고정
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [mode]);
 
-  const handleClose = () => setOpen(false);
-  const handleOpen = () => setOpen(true);
+    const params = mno ? { mno } : { gno: getOrCreateGno() };
+    axiosInstance
+      .get<ChatSessionResponse>('/chat_session/active', { params })
+      .then((res) => {
+        if (res.data) {
+          setActiveSessionId(res.data.no);
+          setView('ROOM');
+        } else {
+          setView('LIST');
+        }
+      })
+      .catch(() => {
+        // 204(진행중 세션 없음) 등은 여기로도 떨어질 수 있음 — 목록으로
+        setView('LIST');
+      });
+  };
 
-  // 목록에서 "새 채팅 시작" 또는 기존 채팅방 클릭
   const handleEnterRoom = (sessionId: string | null) => {
-    setActiveSessionId(sessionId); // null이면 새 채팅
+    setActiveSessionId(sessionId);
     setView('ROOM');
   };
 
-  // 채팅방에서 "목록으로" 버튼
   const handleBackToList = () => {
     setView('LIST');
     setActiveSessionId(null);
+    checkUnread(); // 목록으로 돌아올 때도 갱신
   };
 
-
-  if (mode === 'floating') {
-    return (
-      <>
-        <button
-          type="button"
-          className="chatbot_fab"
-          onClick={open ? handleClose : handleOpen}
-          aria-label={open ? '상담 챗봇 닫기' : '상담 챗봇 열기'}
-        >
-          {open ? '✕' : '💬'}
-        </button>
-
-        {visible && (
-          <>
-            <div className={`chatbot_overlay ${animating ? 'open' : 'closing'}`} onClick={handleClose} />
-
-            <div className={`chatbot_widget ${animating ? 'open' : 'closing'}`}>
-              {view === 'LIST' ? (
-                <ChatRoomList onClose={handleClose} onEnterRoom={handleEnterRoom} />
-              ) : (
-                <ChatRoom onClose={handleClose} onBackToList={handleBackToList} sessionId={activeSessionId} />
-              )}
-            </div>
-          </>
-        )}
-      </>
-    );
-  }
-
   return (
-    <div className="chatbot_widget chatbot_widget_preview">
-      <ChatRoom onClose={handleClose} onBackToList={handleBackToList} sessionId={activeSessionId} mode='preview' />
-    </div>
-  )
+    <>
+      <button
+        type="button"
+        className="chatbot_fab"
+        onClick={open ? handleClose : handleOpen}
+        aria-label={open ? '상담 챗봇 닫기' : '상담 챗봇 열기'}
+      >
+        {open ? '✕' : '💬'}
+        {!open && hasUnread && <span className="chatbot_fab_unread_dot" />}
+      </button>
+
+      {visible && (
+        <>
+          <div className={`chatbot_overlay ${animating ? 'open' : 'closing'}`} onClick={handleClose} />
+
+          <div className={`chatbot_widget ${animating ? 'open' : 'closing'}`}>
+            {view === 'LIST' ? (
+              <ChatRoomList onClose={handleClose} onEnterRoom={handleEnterRoom} />
+            ) : (
+              <ChatRoom onClose={handleClose} onBackToList={handleBackToList} sessionId={activeSessionId} />
+            )}
+          </div>
+        </>
+      )}
+    </>
+  );
 
 }
