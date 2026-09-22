@@ -5,7 +5,6 @@ import { GlobalStoreSession } from '../store/LoginStore';
 
 const getIP = () => {
   return "10.1.205.119"; // 학원
-  // return "1.201.122.84"; // 가비아
 }
 
 const getCopyright = () => {
@@ -185,7 +184,6 @@ function ScrollToTop() {
   // 화면에 아무것도 렌더링하지 않으므로 null 반환
   return null;
 }
-
 /**
  * jwt 발급 요청, 인증, 응답 
  */
@@ -263,8 +261,6 @@ axiosInstance.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-
 
 export { getIP, getCopyright, getNowDate, enter_chk, set_focus, axiosInstance, download, isImage, getAttachUrl, ScrollToTop };
 // import {getIP, getCopyright, getNowDate, enter_chk, set_focus} from 'Tool';

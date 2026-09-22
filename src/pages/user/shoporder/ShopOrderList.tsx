@@ -29,10 +29,12 @@ import { usePaging } from '../../../hooks/usePaging';
 import RenewModal from './modal/RenewModal';
 import CancelModal from './modal/CancelModal';
 import ChangeModal from './modal/ChangeModal';
+import { GlobalCurrentShop } from '../../../store/UserStore';
 
 export default function ShopOrderList() {
   const navigate = useNavigate();
   const { no: mno } = GlobalStoreSession();
+  const { clearShop } = GlobalCurrentShop();
   const { page, setPage } = usePaging({ basePath: '/user/shoporder' });
 
   // 상세로 이동할 때 현재 목록 page를 listPage로 실어 보냄
@@ -51,6 +53,18 @@ export default function ShopOrderList() {
   /* 페이징 설정 */
   const [totalPages, setTotalPages] = useState(1);
   const [totalElements, setTotalElements] = useState(0);
+
+  
+  /* 구독상태 변경으로 스토리지 grade 재설정 */
+  const setGrade = async () => {
+    const getGrade = await axiosInstance.get(`/shop_order/grade/${mno}`)
+    const res = getGrade.data
+    GlobalStoreSession.getState().setGrade(res);
+
+    // 점주 아니면 상단 매장 리셋
+    if (res !== 10) clearShop();
+  }
+
 
   const loadList = async () => {
     if (!mno) {
@@ -73,6 +87,8 @@ export default function ShopOrderList() {
       });
 
       const { content, totalElements: total, totalPages: pages, page: serverPage, size } = res.data;
+
+      console.log(res)
 
       if (content.length === 0 && page > 1) {
         setPage(page - 1);
@@ -142,9 +158,16 @@ export default function ShopOrderList() {
   const handleModalSuccess = (message: string) => {
     setAlert({ message, variant: 'success' });
     loadList();
+    setGrade();
   };
 
   console.log(activeCountsMap)
+
+  useEffect(() => {
+    setGrade();
+  }, [activeCountsMap])
+
+
 
 
   const columns: DataTableColumn<RowType>[] = [
@@ -192,7 +215,7 @@ export default function ShopOrderList() {
     },
     { header: '대수', width: '80px', mono: true, 
       render: (o) => 
-        o.status === 1 && o.pstatus != null ? ( // 승인대기 상태일 때
+        o.status === 1 && o.pstatus != null && o.pstatus === 0 ? ( // 승인대기 상태일 때
           <>
             <span style={{fontSize:11, color:'var(--danger)'}}>변경대기</span>
           </>
@@ -211,7 +234,11 @@ export default function ShopOrderList() {
         ) : <span className="cell_sub">-</span>
       ,
     },
-    { header: '결제금액(원)', width: '120px', mono: true, render: (o) => `${o.totalprice.toLocaleString('ko-KR')}` },
+    { header: '결제금액(원)', width: '120px', mono: true, 
+      render: (o) => (
+        <span className={o.status === 2 ? 'text_line' : ''}>{o.totalprice.toLocaleString('ko-KR')}</span>
+      )
+    },
     { header: '구매일', width: '120px', mono: true, render: (o) => o.cdate.split(' ')[0] },
     {
       header: '관리',

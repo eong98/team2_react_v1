@@ -36,14 +36,17 @@ import NoticeForm from '../pages/dbms/notice/NoticeForm';
 import AttachList from '../pages/dbms/attach/AttachList';
 import ShopPlanForm from '../pages/dbms/shopplan/ShopPlanForm';
 import ShopPlanList from '../pages/dbms/shopplan/ShopPlanList';
+import ShopOrderList from '../pages/dbms/shoporder/ShopOrderList';
 
 import NotificationAdmin from '../pages/dbms/notification/NotificationAdmin';
+import ShopOrderLogList from '../pages/dbms/shoporder/ShopOrderLogList';
+import ShopOrderPendingnList from '../pages/dbms/shoporder/ShopOrderPendingList';
+import ChatMenu from '../pages/dbms/chatbot/menu/ChatMenu';
 
 export default function DbmsRoutes() {
   return (
     <Routes>
 
-      {/* 참고해서 추가하시면 됩니다 / 페이지 추가 */}
       <Route path="notice" element={<NoticeList />} />
       <Route path="notice/:no" element={<NoticeDetail />} />
       <Route path="notice/new" element={<NoticeForm />} />
@@ -59,7 +62,11 @@ export default function DbmsRoutes() {
       <Route path="shopplan" element={<ShopPlanList />} />
       <Route path="shopplan/new" element={<ShopPlanForm />} />
       <Route path="shopplan/:no/edit" element={<ShopPlanForm />} />
+      <Route path="shoporder" element={<ShopOrderList />} />
+      <Route path="/order/history" element={<ShopOrderLogList />} />
+      <Route path="pending" element={<ShopOrderPendingnList />} />
 
+      <Route path="chatmenu" element={<ChatMenu />} />
 
       <Route path="inmenu" element={<InMenuList />} />
       <Route path="inmenu/new" element={<InMenuForm />} />

@@ -62,7 +62,7 @@ export default function Login() {
           password: input.password,
         }
       );
-      const { success, user } = loginResult.data;
+      const { success, user, accessToken, refreshToken } = loginResult.data;
 
       if (success) {
         GlobalStoreSession.getState().setLogin(true);
@@ -70,6 +70,7 @@ export default function Login() {
         GlobalStoreSession.getState().setGrade(user.grade);
         GlobalStoreSession.getState().setId(storeId ? input.id : '');
         GlobalStoreSession.getState().setMname(user.mname);
+        GlobalStoreSession.getState().setTokens(accessToken, refreshToken);
 
         alert('로그인에 성공했습니다!');
         navigate('/shopplan');
@@ -129,14 +130,15 @@ export default function Login() {
           </div>
 
           <div className="form_page_footer">
+            <div className="link_row">
+            <Link to="/">아이디/비밀번호 찾기</Link>
+            <Link to="/singup">회원가입</Link>
+            </div>
             <button type="button" className="btn btn_lg btn_ghost" onClick={test}>테스트</button>
             <button id="btnSend" type="submit" className="btn btn_lg btn_primary">로그인</button>
           </div>
 
-          <div className="link_row">
-            <Link to="/">아이디/비밀번호 찾기</Link>
-            <Link to="/">회원가입</Link>
-          </div>
+          
         </div>
       </form>
     </section>
