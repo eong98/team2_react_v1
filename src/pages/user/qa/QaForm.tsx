@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { AlertModal, AttachUploader, PageHeader, type AttachUploaderHandle } from '../../../components/ui';
 import { axiosInstance, cutByByte, getByteLength, getNowDate, set_focus } from '../../../utils/Tool';
@@ -16,6 +16,12 @@ import type { MyMemberInfo } from '../../../components/ts/MyPage';
  */
 
 export default function QaForm() {
+
+  /* 챗봇 상담 문의내용 요약정보 */
+  const location = useLocation();
+  const prefill = location.state as { title?: string; content?: string; type?: number } | null;
+
+
   const { no } = useParams<{ no: string }>(); // URL에 no가 있으면 수정 모드
   const { no: mno, grade } = GlobalStoreSession();
   const isEdit = Boolean(no);
@@ -39,7 +45,7 @@ export default function QaForm() {
       goToList();
     }
   };
-
+  
   const [input, setInput] = useState<QCRequest>({
     mno: mno,
     type: 0,
@@ -52,7 +58,17 @@ export default function QaForm() {
     guestEmail: ''
   });
 
-  
+  useEffect(() => {
+    if (prefill) {
+      setInput((prev) => ({
+        ...prev,
+        type: prefill?.type ?? 0,
+        title: prefill?.title ?? '',
+        content: prefill?.content ?? '',
+      }))
+    }
+  }, [location.state]);
+
   // 수정 모드일 때 기존 게시글 정보 조회
   const loadQaList = () => {
     axiosInstance

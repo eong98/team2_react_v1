@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, type JSX } from 'react';
-import { axiosInstance } from '../../../utils/Tool';
+import { axiosInstance, set_focus } from '../../../utils/Tool';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import {
   UNSATISFY_REASONS,
@@ -18,6 +18,9 @@ import {
 } from '../../ts/ChatBot';
 import type { ChatMenuTypes } from '../../ts/ChatMenu';
 import { getOrCreateGno } from '../../ts/ChatGuest';
+import { aiChat, endAiConsultDivider, startAiConsult, summarizeChat } from './ChatApi';
+import { useNavigate } from 'react-router-dom';
+import AlertModal from '../common/AlertModal';
 
 /* ---------------------------------------------------------------------
    챗봇 대화방
@@ -50,9 +53,13 @@ interface ChatRoomProps {
   onClose: () => void;
   onBackToList: () => void;
   sessionId: string | null;
+  refreshSignal: { sno: string; ts: number } | null; // 추가
+  onStartAiResponding: (sno: string) => void; // 추가
+  onAiRespondingDone: () => void;             // 추가
 }
 
-export default function ChatRoom({ onClose, onBackToList, sessionId }: ChatRoomProps) {
+export default function ChatRoom({ onClose, onBackToList, sessionId, refreshSignal, onStartAiResponding, onAiRespondingDone }: ChatRoomProps) {
+  const navigate = useNavigate();
   const { no: mno } = GlobalStoreSession();
 
   const sessionIdRef = useRef<string | null>(sessionId);
@@ -73,13 +80,38 @@ export default function ChatRoom({ onClose, onBackToList, sessionId }: ChatRoomP
 
   const [sessionEnded, setSessionEnded] = useState(false);
 
+  /* AI 요약 */
+  const [summarizing, setSummarizing] = useState(false);
+  const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollToBottom = () => {
     requestAnimationFrame(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }));
   };
 
+
+  useEffect(() => {
+    if (!refreshSignal || !sessionIdRef.current) return;
+    if (refreshSignal.sno !== sessionIdRef.current) return; // 다른 세션 알림이면 무시
+
+    // 지금 보고 있는 세션에 새 메시지가 왔다는 신호 → 로그 다시 불러오기
+    axiosInstance.get<ChatLogEntry[]>(`/chat_log/session/${sessionIdRef.current}`).then((res) => {
+      const restoredBubbles: ChatBubble[] = res.data.map((log) => ({
+        id: String(log.no),
+        sender: log.sender,
+        content: log.content,
+        mtype: log.mtype,
+        createdAt: log.cdate,
+      }));
+      setBubbles(restoredBubbles); // 전체를 다시 그림(간단하고 안전한 방식)
+      scrollToBottom();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshSignal]);
+
+
   /** 백엔드 액션 응답의 logs를 화면 말풍선으로 변환해서 이어붙임 */
-  const appendLogs = (logs: ChatLogEntry[], lastNeedsAdmin?: boolean) => {
+  const appendLogs = (logs: ChatLogEntry[]) => {
     const newBubbles: ChatBubble[] = logs.map((log) => ({
       id: String(log.no),
       sender: log.sender,
@@ -90,16 +122,6 @@ export default function ChatRoom({ onClose, onBackToList, sessionId }: ChatRoomP
     setBubbles((prev) => [...prev, ...newBubbles]);
     scrollToBottom();
   };
-
-  // /** 화면에만 구분선을 표시 (CHAT_LOG 저장 없음, 순수 화면 표시용) */
-  // const appendDivider = (content: string) => {
-  //   setBubbles((prev) => [
-  //     ...prev,
-  //     { id: `divider-${Date.now()}`, sender: 2, content, kind: 'divide', createdAt: new Date().toISOString() },
-  //   ]);
-  //   scrollToBottom();
-    
-  // };
 
   /** 종료/만족도/사유/메모/관리자연결 6가지를 전부 처리하는 통합 액션 호출.
    *  systemMessage는 SYSTEM_MESSAGES에서 code로 찾은 텍스트를 그대로 실어 보냄. */
@@ -127,15 +149,52 @@ export default function ChatRoom({ onClose, onBackToList, sessionId }: ChatRoomP
     } else {
       loadRootMenus();
       setBubbles([{ id: `intro`, sender: 2, content: '안녕하세요! 무엇을 도와드릴까요?', createdAt: new Date().toISOString() }]);
+      scrollToBottom();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
+
+  const aiPollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const pollForAiResponse = (sno: string) => {
+    if (aiPollIntervalRef.current) {
+      clearInterval(aiPollIntervalRef.current);
+    }
+
+    aiPollIntervalRef.current = setInterval(async () => {
+      const res = await axiosInstance.get<ChatSessionResponse>(`/chat_session/${sno}`);
+      if (res.data.endflow !== 6) {
+        clearInterval(aiPollIntervalRef.current!);
+        aiPollIntervalRef.current = null;
+        setAiLoading(false);
+
+        // 완료됐으니 최신 로그를 다시 불러와서 화면 갱신
+        const logRes = await axiosInstance.get<ChatLogEntry[]>(`/chat_log/session/${sno}`);
+        const restoredBubbles: ChatBubble[] = logRes.data.map((log) => ({
+          id: String(log.no), sender: log.sender, content: log.content, mtype: log.mtype, createdAt: log.cdate,
+        }));
+        setBubbles(restoredBubbles);
+        setEndFlow(numberToEndFlow(res.data.endflow));
+      }
+    }, 2000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (aiPollIntervalRef.current) {
+        clearInterval(aiPollIntervalRef.current);
+        aiPollIntervalRef.current = null;
+      }
+    };
+  }, []);
 
   /** 기존 세션 데이터를 화면 상태로 복원. CHAT_LOG 전체를 불러와서 bubbles를 채웁니다. */
   const restoreFromSession = async (session: ChatSessionResponse) => {
     sessionIdRef.current = session.no;
     setConsultStarted(session.cmode !== 2);
     setSessionEnded(session.cmode === 2);
+    setEndFlow(numberToEndFlow(session.endflow));
+
 
     try {
       const logRes = await axiosInstance.get<ChatLogEntry[]>(`/chat_log/session/${session.no}`);
@@ -147,11 +206,13 @@ export default function ChatRoom({ onClose, onBackToList, sessionId }: ChatRoomP
         createdAt: log.cdate,
       }));
       setBubbles(restoredBubbles); // 서버 로그를 있는 그대로 복원 — 여기서 임의로 인트로를 더 안 붙임
+      scrollToBottom();
     } catch (err) {
       console.error('대화 로그 조회 실패:', err);
     }
 
     setEndFlow(numberToEndFlow(session.endflow)); // 텍스트 매칭 없이 바로 복원
+    scrollToBottom();
 
     if (session.cmode === 1) {
       setStage('AI');
@@ -167,11 +228,52 @@ export default function ChatRoom({ onClose, onBackToList, sessionId }: ChatRoomP
       setCurrentOptions([]);
       setEndFlow(null);
       if (rootMenus.length === 0) loadRootMenus();
-      // 인트로 문구는 CHAT_LOG에 이미 저장돼 있다면 restoredBubbles에 포함되어 있음 —
-      // 여기서 또 붙이지 않음 (중복 방지)
     }
-    scrollToBottom();
+
+    if (session.endflow === 5) {
+      setSummarizing(true);
+      pollForSummaryResult(session.no); // 아래 함수, 완료될 때까지 주기적으로 확인
+    }
+
+    if (session.endflow === 6) {
+      setAiLoading(true);
+      onStartAiResponding(session.no); // 부모에게도 알림
+      pollForAiResponse(session.no);
+    }
+    
   };
+
+  /* AI 요약 */
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollForSummaryResult = (sno: string) => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current); // 혹시 이미 돌고 있던 폴링이 있으면 먼저 정리
+    }
+
+
+    pollIntervalRef.current = setInterval(async () => {
+      const res = await axiosInstance.get<ChatSessionResponse>(`/chat_session/${sno}`);
+      if (res.data.endflow !== 5) {
+        clearInterval(pollIntervalRef.current!);
+        pollIntervalRef.current = null;
+        setSummarizing(false);
+        if (res.data.stitle) {
+          const checkUrl = mno ? 'user' : 'board';
+          onClose();
+          navigate(`/${checkUrl}/qa/new`, { state: { title: res.data.stitle, content: '', type: 0 } });
+        }
+      }
+    }, 2000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, []);
 
   const loadRootMenus = () => {
     setLoadingRoot(true);
@@ -186,10 +288,14 @@ export default function ChatRoom({ onClose, onBackToList, sessionId }: ChatRoomP
   const ensureSession = async (
     cmode: 0 | 1,
     cno: number | null,
-    extra?: { startAi?: string },
+    withGreeting: boolean = true, // 인사말 저장 여부 선택 가능하게
   ): Promise<string> => {
     if (sessionIdRef.current) return sessionIdRef.current;
-    const greeting = getMessage(SYSTEM_MESSAGES, 5); // '안녕하세요! 무엇을 도와드릴까요?' — 항상 기본으로 들어감
+
+    const params: Record<string, string> = {};
+    if (withGreeting) {
+      params.greeting = getMessage(SYSTEM_MESSAGES, 5);
+    }
 
     const res = await axiosInstance.post<ChatActionResult>(
       '/chat_session',
@@ -199,7 +305,7 @@ export default function ChatRoom({ onClose, onBackToList, sessionId }: ChatRoomP
         cmode, 
         cno 
       },
-      { params: { greeting } }, // greeting은 항상 포함
+      { params }, 
     );
 
     sessionIdRef.current = res.data.no!;
@@ -249,61 +355,75 @@ export default function ChatRoom({ onClose, onBackToList, sessionId }: ChatRoomP
   // ── 화면1로 처음부터 다시 ──
   const handleOtherQuestion = async () => {
     const wasAi = stage === 'AI';
-    
+
     setStage('INTRO');
     setCurrentOptions([]);
     setEndFlow(null);
     setSessionEnded(false);
     if (rootMenus.length === 0) loadRootMenus();
-    
+
     const greeting = getMessage(SYSTEM_MESSAGES, 6); // '질문 옵션을 선택해주세요.'
 
     if (sessionIdRef.current) {
       try {
-        const endAi = wasAi ? getMessage(SYSTEM_MESSAGES, 8) : null; // '여기까지가 AI 상담입니다' (없으면 null)
-        const actionRes = await axiosInstance.put<ChatActionResult>(`/chat_session/${sessionIdRef.current}/back-intro`,
+        if (wasAi) {
+          showDividerNow('여기까지가 AI 상담입니다'); // 즉시 그림
+          endAiConsultDivider(sessionIdRef.current).catch((err) => console.error('구분선 저장 실패:', err));; // 저장은 기다리지 않고 요청만 보냄 (fire-and-forget)
+        }
+
+        const actionRes = await axiosInstance.put<ChatActionResult>(
+          `/chat_session/${sessionIdRef.current}/back-intro`,
           null,
-          { params: { ...(endAi ? { endAi } : {}), greeting } },
+          { params: { greeting } }, // endAi 파라미터 제거
         );
         appendLogs(actionRes.data.logs);
       } catch (err) {
         console.error('처음으로 전환 실패:', err);
       }
-    } else {
-      scrollToBottom();
+      
     }
+    scrollToBottom();
   };
 
+  /** 화면에만 구분선을 즉시 표시 (백엔드 저장은 별도로 요청만 보내고 기다리지 않음) */
+  const showDividerNow = (content: string) => {
+    setBubbles((prev) => [
+      ...prev,
+      { id: `divider-${Date.now()}`, sender: 2, content, mtype: 5, createdAt: new Date().toISOString() },
+    ]);
+    scrollToBottom();
+  };
+  
+  
   // ── AI 상담 진입 ──
   const handleAiConsult = async () => {
     setConsultStarted(true);
     setStage('AI');
     setEndFlow(null);
     setSessionEnded(false);
-    console.log(sessionIdRef.current)
+
+
+    // "AI 상담" 클릭 + 구분선을 즉시(낙관적으로) 화면에 그림
+    setBubbles((prev) => [
+      ...prev,
+      { id: `temp-click-${Date.now()}`, sender: 0, content: 'AI 상담', createdAt: new Date().toISOString() },
+    ]);
+    showDividerNow('여기부터 AI 상담입니다');
+    scrollToBottom();
+    setAiLoading(true); // 인사말 생성 중임을 타이핑 점으로 표시
 
     try {
-      const startAi = getMessage(SYSTEM_MESSAGES, 7);
-      const greeting = getMessage(SYSTEM_MESSAGES, 9);
-      if (sessionIdRef.current) {
-        const actionRes = await axiosInstance.put<ChatActionResult>(
-          `/chat_session/${sessionIdRef.current}/ai-start`,
-          null,
-          { params: { startAi, greeting } },
-        );
-        appendLogs(actionRes.data.logs);
-      } else {
-        await ensureSession(1, null); // greeting은 ensureSession 내부에서 자동으로 붙음
-        
-        const actionRes = await axiosInstance.put<ChatActionResult>(
-          `/chat_session/${sessionIdRef.current}/ai-start`,
-          null,
-          { params: { startAi, greeting } },
-        );
-        appendLogs(actionRes.data.logs);
+      if (!sessionIdRef.current) {
+        await ensureSession(1, null, false);
       }
+
+      const result = await startAiConsult(sessionIdRef.current!);
+      appendLogs(result.logs); // 이제 인사말만 이어서 붙음
+      scrollToBottom();
     } catch (err) {
       console.error('AI 상담 전환 실패:', err);
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -325,46 +445,111 @@ export default function ChatRoom({ onClose, onBackToList, sessionId }: ChatRoomP
 
     const userMsg = inputValue;
     setInputValue('');
-    setEndFlow(null); // 새 질문 보내면 이전 관리자연결 버튼 사라짐
+    setEndFlow(null);
+
+    // 사용자 메시지를 즉시(낙관적으로) 화면에 그림 — AI 응답을 기다리지 않음
+    setBubbles((prev) => [
+      ...prev,
+      { id: `temp-${Date.now()}`, sender: 0, content: userMsg, createdAt: new Date().toISOString() },
+    ]);
+    
     setAiLoading(true);
+    scrollToBottom();
+    onStartAiResponding(sessionIdRef.current!); // 부모(목록/FAB)에게도 알림
+
 
     try {
-      const actionRes = await axiosInstance.post<ChatActionResult>(`/chat_session/${sessionIdRef.current}/ai-chat`, {
-        message: userMsg,
-      });
-      appendLogs(actionRes.data.logs);
-      if (actionRes.data.needsAdmin) {
+      const result = await aiChat(sessionIdRef.current, userMsg);
+      appendLogs(result.logs); // 이제 AI 답변만 추가됨
+      if (result.needsAdmin) {
         setEndFlow('FAIL_AI_ANSWER');
       }
+      console.log(result.logs)
     } catch (err) {
       console.error('AI 응답 실패:', err);
     } finally {
       setAiLoading(false);
+      scrollToBottom();
+      onAiRespondingDone(); // 완료 알림
     }
+
   };
+  
+  // 1. 입력창 DOM 요소에 접근하기 위한 ref 생성
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    // aiLoading이 false로 바뀌고, disabled가 해제되었을 때 포커스 지정
+    if (!aiLoading) {
+      inputRef.current?.focus();
+    }
+  }, [aiLoading]);
+  // useEffect(() => {
+  //   if (!sessionId && aiLoading) return;
+
+  //   axiosInstance
+  //     .get<ChatSessionResponse>(`/chat_session/${sessionId}`)
+  //     .then((res) => {
+  //       restoreFromSession(res.data);
+  //       // axiosInstance.put(`/chat_session/${sessionId}/read`).catch((err) => console.error('읽음 처리 실패:', err));
+  //     })
+  //     .catch((err) => console.error('세션 조회 실패:', err));
+
+  //     console.log('loading 변화')
+    
+  // }, [aiLoading]);
 
   const handleEscalateToAdmin = async (e: React.MouseEvent) => {
-    const result = await callStep({ action: 4, label: e.currentTarget.textContent, systemMessage: getMessage(SYSTEM_MESSAGES, 3)});
+    if (sessionIdRef.current && stage === 'AI') {
+      showDividerNow('여기까지가 AI 상담입니다');
+      endAiConsultDivider(sessionIdRef.current).catch((err) => console.error('구분선 저장 실패:', err));; // fire-and-forget
+    }
+
+    const result = await callStep({ action: 4, label: e.currentTarget.textContent, systemMessage: getMessage(SYSTEM_MESSAGES, 3) });
     if (result) setEndFlow('ASK_ESCALATE_CONFIRM');
   };
 
+  const handleEnd = async (e: React.MouseEvent) => {
+    if (sessionIdRef.current && stage === 'AI') {
+      showDividerNow('여기까지가 AI 상담입니다');
+      endAiConsultDivider(sessionIdRef.current).catch((err) => console.error('구분선 저장 실패:', err));; // fire-and-forget
+    }
+
+    const result = await callStep({ action: 0, label: e.currentTarget.textContent, systemMessage: getMessage(SYSTEM_MESSAGES, 0) });
+    if (result) setEndFlow('ASK_SATISFY');
+  };
+  
   const handleEscalateConfirm = async (e: React.MouseEvent, goQa: boolean) => {
     const result = await callStep({ action: 5, goQa, label: e.currentTarget.textContent });
      if (!result) return;
 
-    setEndFlow(null);
+      if (goQa && sessionIdRef.current) {
+      
+        setSummarizing(true); // 로딩 시작
+        try {
+          const summary = await summarizeChat(sessionIdRef.current);
+          // TODO: QA 작성 페이지로 이동하면서 summary.title/content/type을 넘겨서 input 자동 채우기
+          const checkURl = mno ? 'user' : 'board';
+          onClose(); // 페이지 이동 전에 챗봇 닫기
+          navigate(`/${checkURl}/qa/new`, { state: { title: summary.title, content: summary.content, type: summary.type } });
+          return;
+
+        } catch (err) {
+          console.error('대화 요약 실패:', err);
+          setSummarizing(false); // 실패 시 로딩 해제
+          setEndFlow(null); // 요약 실패했으면 대화 계속할 수 있게 여기서 풀어줌
+          
+          setAlert({ message: '현재 AI 요약 서비스를 이용할 수 없습니다. 잠시 후 다시 시도해주세요.', variant: 'error' });
+        }
+      }
+
+    setEndFlow(null); // goQa === false(아니오 선택)일 때만 여기 옴
 
     if (result.sessionEnded) {
       setSessionEnded(true);
       setConsultStarted(false);
     }
-    // TODO: confirmed === true면 QA 등록화면 진입 연동
   };
 
-  const handleEnd = async (e: React.MouseEvent) => {
-    const result = await callStep({ action: 0, label: e.currentTarget.textContent, systemMessage: getMessage(SYSTEM_MESSAGES, 0) });
-    if (result) setEndFlow('ASK_SATISFY');
-  };
 
   const handleSatisfy = async (e: React.MouseEvent, value: 0 | 1) => {
     const systemMessage = value === 1 ? getMessage(SYSTEM_MESSAGES, 2) : getMessage(SYSTEM_MESSAGES, 1);
@@ -397,7 +582,7 @@ export default function ChatRoom({ onClose, onBackToList, sessionId }: ChatRoomP
   };
 
   const headerTitle = stage === 'AI' ? 'AI 상담' : '알리미오 상담봇';
-  const inputEnabled = !sessionEnded && ((stage === 'AI' && endFlow !== 'ASK_ESCALATE_CONFIRM') || endFlow === 'ASK_UNSATISFY_MEMO');
+  const inputEnabled = !sessionEnded && ((stage === 'AI' && endFlow !== 'ASK_ESCALATE_CONFIRM') || endFlow === 'ASK_UNSATISFY_MEMO') && !aiLoading;
 
   const renderBubbles = () => {
     const elements: JSX.Element[] = [];
@@ -422,7 +607,7 @@ export default function ChatRoom({ onClose, onBackToList, sessionId }: ChatRoomP
         return;
       }
 
-      const senderLabel = b.sender === 1 ? 'AI' : b.sender === 2 ? '상담봇' : null;
+      const senderLabel = b.sender === 1 ? '알리미' : b.sender === 2 ? '상담봇' : null;
       elements.push(
         <div key={b.id} className={`chat_bubble_row ${b.sender === 0 ? 'user' : 'system'}`}>
           {senderLabel && <span className="chat_sender_label">{senderLabel}</span>}
@@ -436,7 +621,7 @@ export default function ChatRoom({ onClose, onBackToList, sessionId }: ChatRoomP
 
     return elements;
   };
-console.log(consultStarted)
+
   return (
     <>
       <div className="chatbot_header">
@@ -534,7 +719,18 @@ console.log(consultStarted)
           </div>
         )}
 
-        {stage === 'AI' && aiLoading && <div className="chat_loading">답변을 생성하는 중...</div>}
+        {stage === 'AI' && aiLoading && (
+          <div className="chat_bubble_row system">
+            <span className="chat_sender_label">AI</span>
+            <div className="chat_bubble_wrap">
+              <div className="chat_bubble ai chat_typing_indicator">
+                <span className="chat_typing_dot" />
+                <span className="chat_typing_dot" />
+                <span className="chat_typing_dot" />
+              </div>
+            </div>
+          </div>
+        )}
 
         {sessionEnded && (
           <div className="chat_ended_notice">상담이 종료되었습니다. 다시 상담을 원하시면 채팅창을 새로 열어주세요.</div>
@@ -546,7 +742,7 @@ console.log(consultStarted)
       {!sessionEnded && consultStarted && (!endFlow?.includes('SATISFY')) && (
         <div className="chatbot_fixed_actions">
           {stage !== 'INTRO' && (
-            <button type="button" className="chat_option_btn" onClick={handleOtherQuestion}>
+            <button type="button" className="chat_option_btn" disabled={aiLoading} onClick={handleOtherQuestion}>
               다른 질문하기
             </button>
           )}
@@ -561,17 +757,19 @@ console.log(consultStarted)
             </button>
           )}
           {(consultStarted || stage !== 'INTRO') && (
-            <button type="button" className="chat_option_btn chat_option_end" onClick={handleEnd}>
+            <button type="button" className="chat_option_btn chat_option_end" disabled={aiLoading} onClick={handleEnd}>
               상담 종료
             </button>
           )}
         </div>
       )}
+      
 
       <div className="chatbot_input_row">
         <input
           type="text"
           className="chatbot_input"
+          id='chatbot_input'
           placeholder={
             sessionEnded
               ? '상담이 종료되었습니다'
@@ -579,17 +777,38 @@ console.log(consultStarted)
                 ? '아쉬웠던 점을 입력해주세요'
                 : stage !== 'AI'
                   ? '옵션을 선택해주세요'
-                  : '메시지를 입력하세요'
+                  : aiLoading 
+                    ? 'AI가 답변을 생성 중 입니다.'
+                    : '메시지를 입력하세요'
           }
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleSendText_Enter}
           disabled={!inputEnabled}
+          ref={inputRef} // 3. ref 연결
         />
         <button type="button" className="chatbot_send_btn" onClick={handleSendText} disabled={!inputEnabled}>
           전송
         </button>
       </div>
+
+      {summarizing && (
+        <div className="chatbot_summarizing_overlay">
+          <div className="chatbot_summarizing_spinner" />
+          <span>AI가 상담 내용을 요약하고 있습니다...</span>
+        </div>
+      )}
+
+
+      
+      {/* 안내 알림 모달 */}
+      <AlertModal
+        open={alert !== null}
+        onClose={() => setAlert(null)}
+        onConfirm={alert?.onConfirm}
+        message={alert?.message ?? ''}
+        variant={alert?.variant}
+      />
     </>
   );
 }

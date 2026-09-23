@@ -3,20 +3,25 @@ import { axiosInstance } from '../../../utils/Tool';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import { getOrCreateGno } from '../../ts/ChatGuest';
 import { formatMessageDate, formatRelativeTime, type ChatSessionSummary } from '../../ts/ChatBot';
+import { summarizeChat } from './ChatApi';
+import { useNavigate } from 'react-router-dom';
 
 interface ChatRoomListProps {
   onClose: () => void;
   onEnterRoom: (sessionId: string | null) => void;
+  refreshSignal: { sno: string; ts: number } | null; // 추가
+  aiRespondingSno: string | null; // 추가
 }
 
-export default function ChatRoomList({ onClose, onEnterRoom }: ChatRoomListProps) {
+export default function ChatRoomList({ onClose, onEnterRoom, refreshSignal, aiRespondingSno }: ChatRoomListProps) {
+  const navigate = useNavigate();
   const { no: mno } = GlobalStoreSession();
   const [rooms, setRooms] = useState<ChatSessionSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const params = mno ? { mno } : { gno: getOrCreateGno() };
 
+  const loadRooms = () => {
+    const params = mno ? { mno } : { gno: getOrCreateGno() };
     axiosInstance
       .get<ChatSessionSummary[]>('/chat_session/list', { params })
       .then((res) => setRooms(res.data))
@@ -25,9 +30,21 @@ export default function ChatRoomList({ onClose, onEnterRoom }: ChatRoomListProps
         setRooms([]);
       })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadRooms();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+
+  // 실시간 알림이 오면 목록을 다시 조회해서, udate/안읽음 표시가 최신으로 반영되게 함
+  useEffect(() => {
+    if (!refreshSignal) return;
+    loadRooms();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshSignal]);
+  
   const modeLabel = (cmode: 0 | 1 | 2) => (cmode === 2 ? '종료' : '진행중');
 
   // 진행중(cmode !== 2)인 방이 있는지 확인
@@ -68,15 +85,16 @@ export default function ChatRoomList({ onClose, onEnterRoom }: ChatRoomListProps
         ) : (
           <div className="chatbot_room_list">
             {rooms.map((room) => (
-              <button
-                key={room.no}
-                type="button"
-                className="chatbot_room_item"
-                onClick={() => onEnterRoom(room.no)}
-              >
+              <div key={room.no} className="chatbot_room_item" onClick={() => onEnterRoom(room.no)} role="button" tabIndex={0}>
                 <div className="chatbot_room_item_top">
-                  <span className="chatbot_room_item_title">{room.stitle} 
+                  <span className="chatbot_room_item_title">
+                    {room.stitle}
                     {hasUnread(room) && <span className="chatbot_unread_dot" />}
+                    {aiRespondingSno === room.no && (
+                      <span className="chatbot_typing_icon" title="AI가 답변을 작성 중입니다">
+                        💬
+                      </span>
+                    )}
                   </span>
                   <span className={`badge ${room.cmode === 2 ? 'neutral' : 'success'}`}>{modeLabel(room.cmode)}</span>
                 </div>
@@ -84,7 +102,8 @@ export default function ChatRoomList({ onClose, onEnterRoom }: ChatRoomListProps
                   <span>{formatMessageDate(room.udate)}</span>
                   <span>{formatRelativeTime(room.udate)}</span>
                 </div>
-              </button>
+
+              </div>
             ))}
           </div>
         )}
@@ -101,6 +120,8 @@ export default function ChatRoomList({ onClose, onEnterRoom }: ChatRoomListProps
           </button>
         )}
       </div>
+
+      
     </>
   );
 }
