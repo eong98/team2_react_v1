@@ -43,12 +43,26 @@ export interface QaTypes {
 
 
 // TYPE (접수 유형)
+
+// - 0: 기타
+// - 1: 관제신청
+// - 2: 영상요청
+// - 3: 장비장애
+// - 4: 구독권
+// - 5: 회원가입
+// - 6: 로그인
+// - 7: CCTV
+// - 8: 직원초대
 export const QA_TYPE_MAP: Record<number, { label: string; className: string }> = {
   0: { label: '기타', className: 'neutral_30' },
   1: { label: '관제신청',   className: 'badge_success' },
   2: { label: '영상요청', className: 'badge_info' },
   3: { label: '장비장애', className: 'orange' },
-  
+  4: { label: '구독권', className: 'orange' },
+  5: { label: '회원가입', className: 'orange' },
+  6: { label: '로그인', className: 'orange' },
+  7: { label: 'CCTV', className: 'orange' },
+  8: { label: '직원초대', className: 'orange' },
 };
 
 // STATUS (답변 상태)

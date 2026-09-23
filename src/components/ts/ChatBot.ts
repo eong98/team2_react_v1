@@ -21,6 +21,8 @@ export const numberToEndFlow = (n: number | null | undefined) => {
     case 2: return 'ASK_UNSATISFY_MEMO';
     case 3: return 'ASK_ESCALATE_CONFIRM';
     case 4: return 'FAIL_AI_ANSWER';
+    case 5: return 'SUMMARIZING';
+    case 6: return 'AI_RESPONDING';
     default: return null;
   }
 };
@@ -147,7 +149,6 @@ export const formatRelativeTime = (iso: string): string => {
   const diffMin = Math.floor(diffMs / 60000);
   
   const d = new Date(iso);
-  const day = d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
   const time = d.toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit', hour12: true });
   
   if (diffMin < 1) return `방금 전`;
