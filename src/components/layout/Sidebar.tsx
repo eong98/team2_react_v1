@@ -121,13 +121,8 @@ export default function Sidebar({ open, onNavigate }: SidebarProps) {
   }, [no, isMyPageAdmin]);
 
   const handleLogout = async () => {
-
-    const { refreshToken } = GlobalStoreSession.getState();
-    
     try {
-      if (refreshToken) {
-        await axiosInstance.post('/auth/logout', { refreshToken });
-      }
+        await axiosInstance.post('/auth/logout');
     } catch (err) {
       console.error('로그아웃 처리 중 오류(무시 가능):', err);
     } finally {
