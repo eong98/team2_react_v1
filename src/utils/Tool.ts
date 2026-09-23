@@ -4,8 +4,12 @@ import { useLocation } from 'react-router-dom';
 import { GlobalStoreSession } from '../store/LoginStore';
 
 const getIP = () => {
-  return "10.1.205.126"; // 학원
+<<<<<<< HEAD
+  return "10.1.205.120"; // 학원
   // return "1.201.122.84"; // 가비아
+=======
+  return "10.1.205.119"; // 학원
+>>>>>>> d61c065ab1e9dc96d91146d4bf6c43bc8b724baa
 }
 
 const getCopyright = () => {
@@ -262,8 +266,6 @@ axiosInstance.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-
 
 export { getIP, getCopyright, getNowDate, enter_chk, set_focus, axiosInstance, download, isImage, getAttachUrl, ScrollToTop };
 // import {getIP, getCopyright, getNowDate, enter_chk, set_focus} from 'Tool';
