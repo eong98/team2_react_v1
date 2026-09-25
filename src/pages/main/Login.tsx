@@ -62,7 +62,7 @@ export default function Login() {
           password: input.password,
         }
       );
-      const { success, user, accessToken, refreshToken } = loginResult.data;
+      const { success, user } = loginResult.data;
 
       if (success) {
         GlobalStoreSession.getState().setLogin(true);
@@ -70,7 +70,6 @@ export default function Login() {
         GlobalStoreSession.getState().setGrade(user.grade);
         GlobalStoreSession.getState().setId(storeId ? input.id : '');
         GlobalStoreSession.getState().setMname(user.mname);
-        GlobalStoreSession.getState().setTokens(accessToken, refreshToken);
 
         alert('로그인에 성공했습니다!');
         navigate('/shopplan');

@@ -62,7 +62,8 @@ const axiosInstance = axios.create({
   // npm run dev: import.meta.env.PROD -> false로 자동 설정
   // npm run build: import.meta.env.PROD -> true로 자동 설정
   // '': 같은 ip에 Backend 서버가 있다는 가정하에 상대경로로 요청을 보냄.
-  baseURL: import.meta.env.PROD ? `http://${getIP()}:9102` : `http://${getIP()}:9102`
+  baseURL: import.meta.env.PROD ? `http://${getIP()}:9102` : `http://${getIP()}:9102`,
+  withCredentials: true
 })
 
 /**
@@ -185,22 +186,15 @@ function ScrollToTop() {
   // 화면에 아무것도 렌더링하지 않으므로 null 반환
   return null;
 }
+
 /**
  * jwt 발급 요청, 인증, 응답 
  */
-// ---- 요청 인터셉터: accessToken 자동 첨부 ----
-axiosInstance.interceptors.request.use((config) => {
-  const { accessToken } = GlobalStoreSession.getState();
-  if (accessToken) {
-    config.headers = config.headers ?? {};
-    config.headers.Authorization = `Bearer ${accessToken}`;
-  }
-  return config;
-});
 
 // ---- 응답 인터셉터: 401이면 reissue 후 재시도 ----
 let isRefreshing = false;
-let refreshQueue: Array<(token: string) => void> = [];
+let isLoggingOut = false;
+let refreshQueue: Array<() => void> = [];
 
 const REISSUE_URL = '/auth/reissue'; // 백엔드 TokenController와 경로 일치시켜야 함
 
@@ -211,49 +205,58 @@ axiosInstance.interceptors.response.use(
 
     // reissue 요청 자체가 401이면(리프레시 토큰도 만료) 더 시도하지 않고 로그아웃 처리
     if (originalRequest.url?.includes(REISSUE_URL)) {
+
+      // 로그아웃 확인 플래그
+      if(!isLoggingOut) {
+        isLoggingOut = true;
+      }
+
+      refreshQueue = [];
+      isRefreshing = false;
+
       GlobalStoreSession.getState().clearAuth();
       window.location.href = '/login';
       return Promise.reject(error);
     }
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 || error.response?.status === 403 && !originalRequest._retry) {
       originalRequest._retry = true;
-
-      const { refreshToken } = GlobalStoreSession.getState();
-      if (!refreshToken) {
-        GlobalStoreSession.getState().clearAuth();
-        window.location.href = '/login';
-        return Promise.reject(error);
-      }
 
       // 이미 다른 요청이 reissue 중이면, 그 결과를 기다렸다가 재시도
       if (isRefreshing) {
         return new Promise((resolve) => {
-          refreshQueue.push((newToken: string) => {
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          refreshQueue.push(() => {
             resolve(axiosInstance(originalRequest));
           });
         });
       }
 
       isRefreshing = true;
+
       try {
-        const res = await axiosInstance.post(REISSUE_URL, { refreshToken });
-        const { accessToken, refreshToken: newRefreshToken } = res.data;
+        // Refresh Token은 HttpOnly Cookie로 자동 전송됨
+        // 새 Access Token과 Refresh Token도 Cookie로 자동 갱신됨
+        await axiosInstance.post(REISSUE_URL);
 
-        GlobalStoreSession.getState().setTokens(accessToken, newRefreshToken);
-
-        // 대기 중이던 요청들 전부 새 토큰으로 재시도
-        refreshQueue.forEach((cb) => cb(accessToken));
+        // 대기 중이던 요청들 전부 재시도
+        refreshQueue.forEach((cb) => cb());
         refreshQueue = [];
 
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        // Cookie에 새 Access Token이 저장되어 있으므로 그대로 재요청
         return axiosInstance(originalRequest);
+
       } catch (reissueError) {
         refreshQueue = [];
-        GlobalStoreSession.getState().clearAuth();
-        window.location.href = '/login';
+
+        if (!isLoggingOut){
+          isLoggingOut = true;
+
+          GlobalStoreSession.getState().clearAuth();
+          window.location.href = '/login';
+        }
+        
         return Promise.reject(reissueError);
+
       } finally {
         isRefreshing = false;
       }
