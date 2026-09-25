@@ -29,7 +29,6 @@ interface AppShellProps {
 export default function BaseLauout({
   Sidebar,
   Topbar,
-  MobileTabbar,
   ChatBotWidget,
 }: AppShellProps) {
   const [navOpen, setNavOpen] = useState(false);

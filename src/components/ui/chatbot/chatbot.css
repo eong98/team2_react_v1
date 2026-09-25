@@ -1,3 +1,520 @@
+
+/* ══════════════════════════════════════════════
+   관리자 화면 — 챗봇 옵션 메뉴 관리 (플로우차트 칼럼뷰)
+   ══════════════════════════════════════════════ */
+
+.flow_wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+  gap: 16px;
+  margin-top:20px;
+}
+@media (max-width: 900px) {
+  .flow_wrap {
+    grid-template-columns: 1fr;
+  }
+}
+
+.flow_columns {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+}
+
+.flow_column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 220px;
+  flex-shrink: 0;
+}
+
+.flow_column_title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--green-500, #33d68a);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-strong, #2a323c);
+  margin-bottom: 4px;
+}
+
+.flow_empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-faint, #6b7684);
+  font-size: 13px;
+  border: 1px dashed var(--border-strong, #2a323c);
+  border-radius: 10px;
+}
+
+.flow_node {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong, #2a323c);
+  background: var(--surface, #141b24);
+  color: var(--text, #e8ebed);
+  text-align: left;
+  cursor: pointer;
+}
+.flow_node:hover {
+  border-color: var(--green-500, #33d68a);
+}
+.flow_node.active {
+  border-color: var(--green-500, #33d68a);
+  background: rgba(51, 214, 138, 0.08);
+}
+
+.flow_node .badge {
+  flex-shrink: 0;
+}
+
+
+.flow_node_label {
+  flex: 1;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flow_node_arrow {
+  flex-shrink: 0;
+  color: var(--text-faint, #6b7684);
+}
+
+/* ── 하단: 상세 | 미리보기 2단 구성 ── */
+.flow_bottom {
+  display: grid;
+  grid-template-rows: auto-fill 1fr;
+  gap: 16px;
+}
+
+.flow_detail_panel,
+.flow_preview_panel {
+  border: 1px solid var(--border-strong, #2a323c);
+  border-radius: 12px;
+  padding: 16px;
+  background: var(--surface, #141b24);
+}
+
+.flow_detail_header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.flow_detail_label {
+  font-size: 12px;
+  color: var(--text-faint, #6b7684);
+  font-weight: 600;
+}
+
+.flow_detail_row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.flow_detail_title {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.flow_detail_answer {
+  font-size: 13px;
+  color: var(--text-dim, #adb7c0);
+  line-height: 1.5;
+  margin-bottom: 14px;
+  white-space: pre-wrap;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+}
+
+.flow_detail_actions {
+  display: flex;
+  gap: 6px;
+}
+
+.flow_preview_frame {
+  height: 450px;
+  display: flex;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg, #0a0e13);
+}
+
+.flow_preview_refresh_btn {
+  background: none;
+  border: none;
+  color: var(--text-dim, #adb7c0);
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+.flow_preview_refresh_btn:hover {
+  color: var(--green-500, #33d68a);
+}
+
+.chatmenu_step_badge {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(51, 214, 138, 0.12);
+  color: var(--green-500, #33d68a);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .flow_bottom {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   관리자 미리보기 프레임(브라우저 창 느낌) — ChatBotPreview.tsx 페이지용
+   ══════════════════════════════════════════════ */
+
+.chatbot_preview_readonly {
+  display: flex;
+  flex-direction: column;
+  width:100%;
+  height: 100%;
+}
+
+.chatbot_preview_readonly_badge {
+  padding: 8px 14px;
+  background: rgba(255, 164, 172, 0.08);
+  color: var(--red-200, #ffa4ac);
+  font-size: 11px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 164, 172, 0.2);
+}
+
+.chatbot_preview_readonly_footer {
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--text-faint, #6b7684);
+  font-size: 11px;
+  text-align: center;
+}
+
+.chatbot_preview_frame_wrap {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.chatbot_preview_frame {
+  width: 440px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--surface, #141b24);
+  border: 1px solid var(--border-strong, #2a323c);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+
+.chatbot_preview_frame_bar {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--bg, #0a0e13);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.chatbot_preview_dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.chatbot_preview_dot.red {
+  background: #ff5f57;
+}
+.chatbot_preview_dot.yellow {
+  background: #febc2e;
+}
+.chatbot_preview_dot.green {
+  background: #28c840;
+}
+
+.chatbot_preview_frame_body {
+  height: 640px;
+  display: flex;
+}
+
+/* ══════════════════════════════════════════════
+   관리자 화면 — 옵션형 메뉴 자동생성 (문서첨부/AI생성/미리보기)
+   ══════════════════════════════════════════════ */
+
+/* .flow_wrap은 grid(2단)라서, 이 섹션은 별도 래퍼로 감싸 폭 100%를 쓴다.
+   ChatMenu.tsx에서 이 블록을 <div className="flow_wrap">이 아니라
+   <div className="chatmenu_generate_section">으로 감싸도록 조정해서 쓴다. */
+.chatmenu_generate_section {
+  border: 1px solid var(--border-strong, #2a323c);
+  border-radius: 12px;
+  padding: 16px;
+  background: var(--surface, #141b24);
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.chatmenu_doc_upload_row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.chatmenu_doc_list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.chatmenu_doc_item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+}
+
+.chatmenu_doc_filename {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text, #e8ebed);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chatmenu_doc_item_actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ── 생성 결과 미리보기 ── */
+.chatmenu_generated_preview {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-strong, #2a323c);
+}
+
+.chatmenu_generated_top {
+  border: 1px solid rgba(51, 214, 138, 0.3);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+  background: rgba(51, 214, 138, 0.04);
+}
+
+.chatmenu_generated_top_header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.chatmenu_generated_top_header .flow_detail_title {
+  flex: 1;
+}
+
+.chatmenu_generated_mid {
+  margin-left: 8px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.chatmenu_generated_mid:first-of-type {
+  border-top: none;
+}
+
+.chatmenu_generated_mid_label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text, #e8ebed);
+  margin-bottom: 8px;
+}
+
+.chatmenu_generated_leaf {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 8px 16px;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.chatmenu_generated_leaf .form_input {
+  font-weight: 600;
+}
+.chatmenu_generated_leaf .form_textarea {
+  font-size: 13px;
+}
+
+/* ── 매뉴얼 첨부 드롭존 (common.css .file_drop 기반) ── */
+.chatmenu_file_drop {
+  margin-bottom: 12px;
+}
+.chatmenu_file_drop.is_dragover {
+  border-color: var(--primary);
+  background: var(--primary-dim);
+}
+.chatmenu_file_drop.is_dragover .file_upload {
+  background-image: url('../../../assets/images/icon/ico-upload-primary.png');
+}
+.chatmenu_file_drop.is_disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+/* ── 첨부문서 일괄선택 ── */
+/* 문서 항목 체크박스 — 공통 .form_check 사용, 파일명(label)이 남는 폭을 차지 */
+.chatmenu_doc_check {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+/* ── AI 옵션생성 진행률 ── */
+.chatmenu_progress {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(51, 214, 138, 0.3);
+  background: rgba(51, 214, 138, 0.04);
+}
+.chatmenu_progress_head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text, #e8ebed);
+  margin-bottom: 8px;
+}
+.chatmenu_progress_track {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.chatmenu_progress_bar {
+  height: 100%;
+  border-radius: 999px;
+  background: #33d68a;
+  transition: width 0.4s ease;
+}
+.chatmenu_progress_bar.running {
+  background-image: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.18) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.18) 50%,
+    rgba(255, 255, 255, 0.18) 75%,
+    transparent 75%
+  );
+  background-size: 16px 16px;
+  animation: chatmenu_progress_stripe 0.8s linear infinite;
+}
+@keyframes chatmenu_progress_stripe {
+  from { background-position: 0 0; }
+  to { background-position: 16px 0; }
+}
+.chatmenu_progress_bar.error {
+  background: #ef6461;
+}
+
+/* 진행 로그 — 스크롤바는 사이드바(.lnb)와 동일: 얇고, 평소엔 숨김, hover 시 표시.
+   트랙은 투명이라 진행 박스 배경색이 그대로 보인다(전역 ::-webkit-scrollbar의 --bg 트랙 덮어씀). */
+.chatmenu_progress_log {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0 4px 0 0;
+  font-size: 12px;
+  line-height: 1.7;
+  max-height: 132px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: 0.4s;
+}
+.chatmenu_progress_log:hover {
+  scrollbar-color: var(--border-strong) transparent;
+}
+.chatmenu_progress_log::-webkit-scrollbar {
+  width: 6px;
+}
+.chatmenu_progress_log::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chatmenu_progress_log::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 100px;
+  border: none;
+}
+.chatmenu_progress_log:hover::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+}
+.chatmenu_progress_log::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.chatmenu_progress_log li.is_done {
+  color: var(--text-faint, #6b7580);
+  text-decoration: line-through;
+}
+.chatmenu_progress_log li.is_running {
+  color: var(--text, #e8ebed);
+  font-weight: 600;
+}
+.chatmenu_progress_log li.is_running::after {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-left: 6px;
+  vertical-align: -1px;
+  border: 2px solid rgba(51, 214, 138, 0.3);
+  border-top-color: #33d68a;
+  border-radius: 50%;
+  animation: chatmenu_spin 0.8s linear infinite;
+}
+.chatmenu_progress_log li.is_failed {
+  color: #ef6461;
+}
+/* 오류가 아닌 안내 (예: 하위메뉴 5개 제한으로 제외된 섹션) */
+.chatmenu_progress_log li.is_info {
+  color: var(--warning, #f5b94a);
+}
+@keyframes chatmenu_spin {
+  to { transform: rotate(360deg); }
+}
+
+.chatmenu_generated_preview_head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+
 /* ══════════════════════════════════════════════
    ChatBotWidget 전체 스타일
 ══════════════════════════════════════════════ */
@@ -5,7 +522,7 @@
   position: relative; /* 점 위치 기준 */
 }
 
-.chatbot_fab_unread_dot {
+/* .chatbot_fab_unread_dot {
   position: absolute;
   top: 4px;
   right: 4px;
@@ -24,7 +541,7 @@
   background: var(--red-200, #ffa4ac);
   margin-left: 6px;
   vertical-align: top;
-}
+} */
 
 /* ── FAB 버튼 ── */
 .chatbot_fab {
@@ -425,10 +942,6 @@
   color: var(--text, #fff);
   font-size: 14px;
 }
-.chatbot_input:focus {
-  outline: none;
-  border-color: var(--green-500, #33d68a);
-}
 .chatbot_input::placeholder {
   color: var(--text-faint, #6b7684);
 }
@@ -509,253 +1022,6 @@
   justify-content: space-between;
   font-size: 11px;
   color: var(--text-faint, #6b7684);
-}
-
-/* ══════════════════════════════════════════════
-   관리자 화면 — 챗봇 옵션 메뉴 관리 (플로우차트 칼럼뷰)
-   ══════════════════════════════════════════════ */
-
-.flow_wrap {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
-  gap: 16px;
-  margin-top:20px;
-}
-@media (max-width: 900px) {
-  .flow_wrap {
-    grid-template-columns: 1fr;
-  }
-}
-
-.flow_columns {
-  display: flex;
-  gap: 16px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-  margin-bottom: 20px;
-}
-
-.flow_column {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 220px;
-  flex-shrink: 0;
-}
-
-.flow_column_title {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--green-500, #33d68a);
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--border-strong, #2a323c);
-  margin-bottom: 4px;
-}
-
-.flow_empty {
-  padding: 20px;
-  text-align: center;
-  color: var(--text-faint, #6b7684);
-  font-size: 13px;
-  border: 1px dashed var(--border-strong, #2a323c);
-  border-radius: 10px;
-}
-
-.flow_node {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 14px;
-  border-radius: 10px;
-  border: 1px solid var(--border-strong, #2a323c);
-  background: var(--surface, #141b24);
-  color: var(--text, #e8ebed);
-  text-align: left;
-  cursor: pointer;
-}
-.flow_node:hover {
-  border-color: var(--green-500, #33d68a);
-}
-.flow_node.active {
-  border-color: var(--green-500, #33d68a);
-  background: rgba(51, 214, 138, 0.08);
-}
-
-.flow_node_label {
-  flex: 1;
-  font-size: 13px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.flow_node_arrow {
-  flex-shrink: 0;
-  color: var(--text-faint, #6b7684);
-}
-
-/* ── 하단: 상세 | 미리보기 2단 구성 ── */
-.flow_bottom {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.flow_detail_panel,
-.flow_preview_panel {
-  border: 1px solid var(--border-strong, #2a323c);
-  border-radius: 12px;
-  padding: 16px;
-  background: var(--surface, #141b24);
-}
-
-.flow_detail_header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.flow_detail_label {
-  font-size: 12px;
-  color: var(--text-faint, #6b7684);
-  font-weight: 600;
-}
-
-.flow_detail_row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.flow_detail_title {
-  font-weight: 600;
-  font-size: 15px;
-}
-
-.flow_detail_answer {
-  font-size: 13px;
-  color: var(--text-dim, #adb7c0);
-  line-height: 1.5;
-  margin-bottom: 14px;
-  white-space: pre-wrap;
-  padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 8px;
-}
-
-.flow_detail_actions {
-  display: flex;
-  gap: 6px;
-}
-
-.flow_preview_frame {
-  height: 450px;
-  display: flex;
-  border-radius: 10px;
-  overflow: hidden;
-  background: var(--bg, #0a0e13);
-}
-
-.flow_preview_refresh_btn {
-  background: none;
-  border: none;
-  color: var(--text-dim, #adb7c0);
-  font-size: 12px;
-  cursor: pointer;
-  text-decoration: underline;
-  padding: 0;
-}
-.flow_preview_refresh_btn:hover {
-  color: var(--green-500, #33d68a);
-}
-
-.chatmenu_step_badge {
-  flex-shrink: 0;
-  padding: 2px 8px;
-  border-radius: 6px;
-  background: rgba(51, 214, 138, 0.12);
-  color: var(--green-500, #33d68a);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-@media (max-width: 900px) {
-  .flow_bottom {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ══════════════════════════════════════════════
-   관리자 미리보기 프레임(브라우저 창 느낌) — ChatBotPreview.tsx 페이지용
-   ══════════════════════════════════════════════ */
-
-.chatbot_preview_readonly {
-  display: flex;
-  flex-direction: column;
-  width:100%;
-  height: 100%;
-}
-
-.chatbot_preview_readonly_badge {
-  padding: 8px 14px;
-  background: rgba(255, 164, 172, 0.08);
-  color: var(--red-200, #ffa4ac);
-  font-size: 11px;
-  text-align: center;
-  border-bottom: 1px solid rgba(255, 164, 172, 0.2);
-}
-
-.chatbot_preview_readonly_footer {
-  padding: 12px 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  color: var(--text-faint, #6b7684);
-  font-size: 11px;
-  text-align: center;
-}
-
-.chatbot_preview_frame_wrap {
-  display: flex;
-  justify-content: center;
-  padding: 20px 0;
-}
-
-.chatbot_preview_frame {
-  width: 440px;
-  border-radius: 16px;
-  overflow: hidden;
-  background: var(--surface, #141b24);
-  border: 1px solid var(--border-strong, #2a323c);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
-}
-
-.chatbot_preview_frame_bar {
-  display: flex;
-  gap: 6px;
-  padding: 10px 14px;
-  background: var(--bg, #0a0e13);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.chatbot_preview_dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-.chatbot_preview_dot.red {
-  background: #ff5f57;
-}
-.chatbot_preview_dot.yellow {
-  background: #febc2e;
-}
-.chatbot_preview_dot.green {
-  background: #28c840;
-}
-
-.chatbot_preview_frame_body {
-  height: 640px;
-  display: flex;
 }
 
 /* ── 모바일 대응 ── */
@@ -874,4 +1140,130 @@
 @keyframes chatbot_typing_pulse {
   0%, 100% { opacity: 0.4; }
   50% { opacity: 1; }
+}
+
+/* 새로운 알림 */
+.chatbot_fab_unread_badge {
+  position: absolute;
+  top: -4px;
+  right: -2px;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 6px;
+  color: #1a0507;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: chatbot_badge_blink 1.2s infinite;
+}
+
+@keyframes chatbot_badge_blink {
+  0%, 100% {
+    /* opacity: 1; */
+    background: var(--amber-300, #ffcb53);
+  }
+  50% {
+    /* opacity: 0.8; */
+    background: var(--amber-100, #ffebb8);
+  }
+}
+
+.chatbot_room_unread_badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  margin-left: 6px;
+  border-radius: 8px;
+  background: var(--red-200, #ffa4ac);
+  color: #1a0507;
+  font-size: 10px;
+  font-weight: 700;
+  vertical-align: middle;
+  animation: chatbot_badge_blink 1.2s infinite;
+}
+/* ── AI 옵션생성 중 잠금 ── */
+.chatmenu_locked {
+  opacity: 0.5;
+  filter: grayscale(0.3);
+  transition: opacity 0.2s;
+}
+.chatmenu_lock_notice {
+  margin-bottom: 10px;
+  color: var(--warning, #f5b94a);
+}
+
+/* ── 라벨 글자수 표시 (LABEL 100 byte 제한) ── */
+.chatmenu_label_counter {
+  text-align: right;
+  font-size: 11px;
+  color: var(--text-faint, #a4aeb7);
+}
+.chatmenu_label_counter.is_full {
+  color: var(--danger, #ff4d5e);
+}
+
+/* ── 최상위 메뉴 AI 추천 ── */
+.chatmenu_suggest {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong, #2a323c);
+}
+.chatmenu_suggest_head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.chatmenu_suggest_list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.chatmenu_suggest_item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.chatmenu_suggest_item.is_checked {
+  border-color: rgba(51, 214, 138, 0.4);
+  background: rgba(51, 214, 138, 0.04);
+}
+.chatmenu_suggest_check {
+  margin: 10px 0 0;
+}
+.chatmenu_suggest_fields {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.chatmenu_suggest_actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.chatmenu_replace_plan p {
+  margin: 0 0 8px;
+}
+
+/* 제한 안내 문구 — 오류(빨강)와 구분 */
+.chatmenu_hint_info {
+  color: var(--warning, #f5b94a);
 }
