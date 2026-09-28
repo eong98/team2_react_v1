@@ -65,7 +65,7 @@ export default function DbmsLogin() {
 
     try {
       const loginResult = await axiosInstance.post(
-        `http://${getIP()}:9102/v1/dbms/login`,
+        `/v1/dbms/login`,
         {
           id: input.id,
           password: input.password,

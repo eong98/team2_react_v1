@@ -23,8 +23,8 @@ export default function MemberDetail() {
       setIsLoading(true);
       try {
         const endpoint = role === 'ADMIN'
-          ? `http://${getIP()}:9102/v1/dbms/find/${no}`
-          : `http://${getIP()}:9102/v1/user/find/${no}`;
+          ? `/v1/dbms/find/${no}`
+          : `/v1/user/find/${no}`;
 
         const res = await axiosInstance.get(endpoint);
         if (res.data) {
@@ -56,8 +56,8 @@ export default function MemberDetail() {
     e.preventDefault();
     try {
       const endpoint = role === 'ADMIN'
-        ? `http://${getIP()}:9102/v1/dbms/update/manager/${no}/${mnno}`
-        : `http://${getIP()}:9102/v1/user/update/manager/${no}/${mnno}`;
+        ? `/v1/dbms/update/manager/${no}/${mnno}`
+        : `/v1/user/update/manager/${no}/${mnno}`;
 
       await axiosInstance.put(endpoint, formData);
       setAlert({

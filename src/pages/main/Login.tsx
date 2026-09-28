@@ -63,7 +63,7 @@ export default function Login() {
 
     try {
       const loginResult = await axiosInstance.post(
-        `http://${getIP()}:9102/v1/user/login`,
+        `/v1/user/login`,
         {
           id: input.id,
           password: input.password,
@@ -79,7 +79,7 @@ export default function Login() {
         GlobalStoreSession.getState().setMname(user.mname);
 
         navigate('/shopplan');
-        
+
       } else {
         setAlert({ message: '아이디 또는 비밀번호가 일치하지 않습니다.', variant: 'error' });
       }

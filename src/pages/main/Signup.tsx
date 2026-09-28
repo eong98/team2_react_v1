@@ -65,7 +65,7 @@ export default function Register() {
     }
 
     try {
-      const res = await axiosInstance.get(`http://${getIP()}:9102/v1/user/check/${formData.id}`);
+      const res = await axiosInstance.get(`v1/user/check/${formData.id}`);
 
       if (res.data.available === true) {
         setAlert({ message: '사용 가능한 아이디입니다.', variant: 'success' });
@@ -180,7 +180,7 @@ export default function Register() {
     setIsSubmitting(true);
 
     try {
-      const endpoint = `http://${getIP()}:9102/v1/user/save`;
+      const endpoint = `/v1/user/save`;
 
       const payload = {
         id: formData.id,
