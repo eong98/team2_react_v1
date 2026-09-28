@@ -192,7 +192,9 @@ function ScrollToTop() {
  */
 
 const REISSUE_URL = '/auth/reissue'; // 백엔드 TokenController와 경로 일치시켜야 함
-const LOGIN_PATH = '/login';
+
+// 로그인 페이지 목록 (여기서는 절대 리다이렉트하지 않음)
+const LOGIN_PATHS = ['/login', '/dbms/login'];
 
 // 인터셉터가 reissue를 시도하면 안 되는 요청들 (실제 백엔드 경로 기준)
 const AUTH_URLS = ['/v1/user/login', '/v1/dbms/login', REISSUE_URL];
@@ -216,12 +218,17 @@ const processQueue = (error: unknown | null) => {
 const redirectToLogin = () => {
   GlobalStoreSession.getState().clearAuth();
 
-  // 이미 로그인 페이지면 이동하지 않음 → 무한 루프 차단
-  if (window.location.pathname.startsWith(LOGIN_PATH)) return;
+  const path = window.location.pathname;
+
+  // 이미 로그인 페이지(회원/관리자)면 이동하지 않음 → 무한 루프 및 튕김 차단
+  if (LOGIN_PATHS.some((p) => path.startsWith(p))) return;
   if (isRedirecting) return;
 
   isRedirecting = true;
-  window.location.replace(LOGIN_PATH);
+
+  // 관리자 화면에서 만료되면 관리자 로그인으로, 그 외에는 회원 로그인으로
+  const target = path.startsWith('/dbms') ? '/dbms/login' : '/login';
+  window.location.replace(target);
 };
 
 axiosInstance.interceptors.response.use(

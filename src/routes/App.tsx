@@ -11,6 +11,7 @@ import { ScrollToTop } from '../utils/Tool';
 import MainLayout from '../components/layout/MainLayout'
 import Home from '../pages/main/Home';
 import Login from '../pages/main/Login'
+import DbmsLogin from '../pages/main/DbmsLogin'
 import Signup from '../pages/main/Signup'
 
 /* 서비스페이지 import */
@@ -55,7 +56,8 @@ function App() {
             <Route path="/dbms" element={<Navigate to="/dbms/login" replace />} />
 
             <Route path='/index' element={<Home />} />
-            <Route path='/login' element={<Login />} />{/* 로그인 */}
+            <Route path='/login' element={<Login />} />{/* 회원 로그인 */}
+            <Route path='/dbms/login' element={<DbmsLogin />} />{/* 관리자 로그인 */}
 
             {/* 회원가입, 구독권, 아이디찾기, 비밀번호찾기 등.... */}
             <Route path='/signup' element={<Signup />} />
