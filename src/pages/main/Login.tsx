@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState, type ChangeEvent, type SyntheticEvent } from 'react'
 import { GlobalStoreCookie, GlobalStoreSession } from '../../store/LoginStore';
 import PageHeader from '../../components/ui/common/PageHeader';
+import AlertModal from '../../components/ui/common/AlertModal';
 import { axiosInstance, enter_chk, getIP, set_focus } from '../../utils/Tool';
 
 export default function Login() {
@@ -17,6 +18,12 @@ export default function Login() {
 
   type FormErrors = { id?: string; password?: string };
   const [errors, setErrors] = useState<FormErrors>({});
+
+  const [alert, setAlert] = useState<{
+    message: string;
+    variant?: 'success' | 'error';
+    onConfirm?: () => void;
+  } | null>(null);
 
   const onChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -72,12 +79,13 @@ export default function Login() {
         GlobalStoreSession.getState().setMname(user.mname);
 
         navigate('/shopplan');
+        
       } else {
-        alert('아이디 또는 비밀번호가 일치하지 않습니다');
+        setAlert({ message: '아이디 또는 비밀번호가 일치하지 않습니다.', variant: 'error' });
       }
     } catch (err) {
       console.error(err);
-      alert('서버 연결에 실패했습니다');
+      setAlert({ message: '서버 연결에 실패했습니다.\n잠시 후 다시 시도해주세요.', variant: 'error' });
     }
   };
 
@@ -129,16 +137,22 @@ export default function Login() {
 
           <div className="form_page_footer">
             <div className="link_row">
-            <Link to="/find">아이디/비밀번호 찾기</Link>
-            <Link to="/signup">회원가입</Link>
+              <Link to="/">아이디/비밀번호 찾기</Link>
+              <Link to="/singup">회원가입</Link>
             </div>
             <button type="button" className="btn btn_lg btn_ghost" onClick={test}>테스트</button>
             <button id="btnSend" type="submit" className="btn btn_lg btn_primary">로그인</button>
           </div>
-
-          
         </div>
       </form>
+
+      <AlertModal
+        open={alert !== null}
+        onClose={() => setAlert(null)}
+        onConfirm={alert?.onConfirm}
+        message={alert?.message ?? ''}
+        variant={alert?.variant}
+      />
     </section>
   );
 }
