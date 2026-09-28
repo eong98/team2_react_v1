@@ -101,6 +101,7 @@ export interface ChatSessionSummary {
   cmode: 0 | 1 | 2;
   udate: string;
   readat: string | null;
+  endflow: number | null;
 }
 
 export interface ChatActionResult {

@@ -4,7 +4,11 @@ import { useLocation } from 'react-router-dom';
 import { GlobalStoreSession } from '../store/LoginStore';
 
 const getIP = () => {
+<<<<<<< HEAD
   return "10.1.205.120"; // 학원
+=======
+  return "10.1.205.126"; // 학원
+>>>>>>> 8c549a38cc35aa1458f898ad3c7fbdc78b427225
   // return "1.201.122.84"; // 가비아
 }
 

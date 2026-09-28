@@ -77,7 +77,7 @@ a.btn,
 .btn_link {padding:0; text-align: left; transition:.3s;}
 .btn_link:hover {color:var(--primary); text-decoration: underline; text-underline-offset: 4px;}
 
-.btn[disabled]{background:var(--surface-2);color:var(--text-faint);cursor:not-allowed;}
+.btn[disabled]{background:var(--surface-2);color:var(--text-faint);border-color:var(--surface); cursor:not-allowed;}
 
 /* 버튼 묶음 */
 .actions{display:flex;gap:6px;}
@@ -93,7 +93,7 @@ a.btn,
 /* component
 ========================================================================== */
 select, optgroup {line-height:1.5;}
-:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:4px;}
+:focus-visible{outline:none;}
 
 /* placeholder */
 ::placeholder {color:var(--text-faint); opacity:1;}
@@ -139,7 +139,7 @@ select::-ms-expand {display:none;}
 
 .form_input:focus,
 .form_select:focus,
-.form_textarea:focus{outline:2px solid var(--primary);outline-offset:1px;border-color:var(--primary);}
+.form_textarea:focus{outline:2px solid var(--primary);outline-offset:-1px;border-color:var(--primary);}
 
 .form_input.is_error,
 .form_textarea.is_error,
@@ -576,6 +576,8 @@ table td {padding:0; word-break:break-all;}
 .file_drop{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:28px 20px; border:1.5px dashed var(--border-strong);border-radius:12px;background:var(--surface);cursor:pointer; transition:.3s;}
 .file_drop:hover{border-color:var(--primary);background:var(--primary-dim);}
 .file_drop:hover .file_upload {background-image:url('../assets/images/icon/ico-upload-primary.png');}
+.file_drop.is_disabled:hover{border-color:var(--border-strong);background:var(--surface);}
+.file_drop.is_disabled:hover .file_upload {background-image:url('../assets/images/icon/ico-upload.png');}
 .file_drop .b_title {margin:0; line-height:1.1}
 
 .sr_only_input{position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;}
