@@ -479,6 +479,15 @@ table td {padding:0; word-break:break-all;}
 
 .link_row a:hover{color:var(--primary);}
 
+.form_page_footer .link_row{
+  display:flex;
+  align-items:center;
+  gap:16px;            /* 링크 사이 간격 */
+  margin-right:auto;   /* 남는 공간을 오른쪽에 몰아서 → 링크는 왼쪽 끝, 버튼은 오른쪽 */
+  font-size:13px;
+  color:var(--text-dim);
+}
+
 /* ---------------------------------------------------------------------
    검색창 (filter_bar 안에서 select/input[date]와 같은 톤으로 사용)
 --------------------------------------------------------------------- */
