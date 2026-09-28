@@ -4,12 +4,8 @@ import { useLocation } from 'react-router-dom';
 import { GlobalStoreSession } from '../store/LoginStore';
 
 const getIP = () => {
-<<<<<<< HEAD
   return "10.1.205.120"; // 학원
   // return "1.201.122.84"; // 가비아
-=======
-  return "10.1.205.119"; // 학원
->>>>>>> 5cdaa8be376fa4f9e043ced27a8ac775be8e8321
 }
 
 const getCopyright = () => {
@@ -196,77 +192,72 @@ function ScrollToTop() {
  */
 
 // ---- 응답 인터셉터: 401이면 reissue 후 재시도 ----
-let isRefreshing = false;
-let isLoggingOut = false;
-let refreshQueue: Array<() => void> = [];
+const REISSUE_URL = '/auth/reissue';
+const LOGIN_PATH = '/login';
+// 인터셉터가 reissue를 시도하면 안 되는 요청들
+const AUTH_URLS = ['/auth/login', '/auth/logout', REISSUE_URL];
 
-const REISSUE_URL = '/auth/reissue'; // 백엔드 TokenController와 경로 일치시켜야 함
+let isRefreshing = false;
+let isRedirecting = false;
+
+type QueueItem = { resolve: () => void; reject: (e: unknown) => void };
+let refreshQueue: QueueItem[] = [];
+
+const processQueue = (error: unknown | null) => {
+  refreshQueue.forEach(({ resolve, reject }) => (error ? reject(error) : resolve()));
+  refreshQueue = [];
+};
+
+const redirectToLogin = () => {
+  GlobalStoreSession.getState().clearAuth();
+
+  // 이미 로그인 페이지면 이동하지 않음 → 무한 루프 차단
+  if (window.location.pathname.startsWith(LOGIN_PATH)) return;
+  if (isRedirecting) return;
+
+  isRedirecting = true;
+  window.location.replace(LOGIN_PATH); // 뒤로가기로 만료 페이지에 돌아가지 않도록 replace
+};
 
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const status = error.response?.status;
+    const url: string = originalRequest?.url ?? '';
 
-    // reissue 요청 자체가 401이면(리프레시 토큰도 만료) 더 시도하지 않고 로그아웃 처리
-    if (originalRequest.url?.includes(REISSUE_URL)) {
-
-      // 로그아웃 확인 플래그
-      if(!isLoggingOut) {
-        isLoggingOut = true;
-      }
-
-      refreshQueue = [];
-      isRefreshing = false;
-
-      GlobalStoreSession.getState().clearAuth();
-      window.location.href = '/login';
+    // 인증 관련 요청은 인터셉터가 개입하지 않음
+    // (reissue 실패는 아래 catch 블록에서 한 번만 처리)
+    if (AUTH_URLS.some((u) => url.includes(u))) {
       return Promise.reject(error);
     }
 
-    if (error.response?.status === 401 || error.response?.status === 403 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      // 이미 다른 요청이 reissue 중이면, 그 결과를 기다렸다가 재시도
-      if (isRefreshing) {
-        return new Promise((resolve) => {
-          refreshQueue.push(() => {
-            resolve(axiosInstance(originalRequest));
-          });
-        });
-      }
-
-      isRefreshing = true;
-
-      try {
-        // Refresh Token은 HttpOnly Cookie로 자동 전송됨
-        // 새 Access Token과 Refresh Token도 Cookie로 자동 갱신됨
-        await axiosInstance.post(REISSUE_URL);
-
-        // 대기 중이던 요청들 전부 재시도
-        refreshQueue.forEach((cb) => cb());
-        refreshQueue = [];
-
-        // Cookie에 새 Access Token이 저장되어 있으므로 그대로 재요청
-        return axiosInstance(originalRequest);
-
-      } catch (reissueError) {
-        refreshQueue = [];
-
-        if (!isLoggingOut){
-          isLoggingOut = true;
-
-          GlobalStoreSession.getState().clearAuth();
-          window.location.href = '/login';
-        }
-        
-        return Promise.reject(reissueError);
-
-      } finally {
-        isRefreshing = false;
-      }
+    // 괄호로 우선순위를 명확히 하고, 401만 reissue 대상으로
+    if (status !== 401 || originalRequest._retry) {
+      return Promise.reject(error);
     }
 
-    return Promise.reject(error);
+    originalRequest._retry = true;
+
+    if (isRefreshing) {
+      return new Promise<void>((resolve, reject) => {
+        refreshQueue.push({ resolve, reject });
+      }).then(() => axiosInstance(originalRequest));
+    }
+
+    isRefreshing = true;
+
+    try {
+      await axiosInstance.post(REISSUE_URL);
+      processQueue(null);
+      return axiosInstance(originalRequest);
+    } catch (reissueError) {
+      processQueue(reissueError);
+      redirectToLogin();
+      return Promise.reject(reissueError);
+    } finally {
+      isRefreshing = false;
+    }
   }
 );
 

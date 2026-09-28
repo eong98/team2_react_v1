@@ -71,7 +71,6 @@ export default function Login() {
         GlobalStoreSession.getState().setId(storeId ? input.id : '');
         GlobalStoreSession.getState().setMname(user.mname);
 
-        alert('로그인에 성공했습니다!');
         navigate('/shopplan');
       } else {
         alert('아이디 또는 비밀번호가 일치하지 않습니다');
@@ -130,7 +129,7 @@ export default function Login() {
 
           <div className="form_page_footer">
             <div className="link_row">
-            <Link to="/">아이디/비밀번호 찾기</Link>
+            <Link to="/find">아이디/비밀번호 찾기</Link>
             <Link to="/singup">회원가입</Link>
             </div>
             <button type="button" className="btn btn_lg btn_ghost" onClick={test}>테스트</button>

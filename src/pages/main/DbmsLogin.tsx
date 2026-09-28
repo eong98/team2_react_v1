@@ -73,7 +73,6 @@ export default function Login() {
         // ✅ "아이디 저장" 체크했을 때만 아이디를 기억하고, 해제했으면 비웁니다.
         GlobalStoreSession.getState().setId(storeId ? input.id : '');
 
-        alert('로그인에 성공했습니다!');
         navigate('/dbms/menus');
       } else {
         alert('아이디 또는 비밀번호가 일치하지 않습니다');
