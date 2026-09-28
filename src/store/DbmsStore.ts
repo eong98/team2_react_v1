@@ -2,7 +2,7 @@
 // 관리자 관련 store
 //===================================================
 import { create } from 'zustand';
-import { axiosInstance, getIP } from '../utils/Tool';
+import { axiosInstance } from '../utils/Tool';
 
 export interface TotalMemberUser {
   no: number;         // 고유 일련번호

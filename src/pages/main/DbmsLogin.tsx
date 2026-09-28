@@ -3,7 +3,7 @@ import { useState, type ChangeEvent, type SyntheticEvent } from 'react'
 import { GlobalStoreCookie, GlobalStoreSession } from '../../store/LoginStore';
 import PageHeader from '../../components/ui/common/PageHeader';
 import AlertModal from '../../components/ui/common/AlertModal';
-import { axiosInstance, enter_chk, getIP, set_focus } from '../../utils/Tool';
+import { axiosInstance, enter_chk, set_focus } from '../../utils/Tool';
 
 export default function DbmsLogin() {
   const navigate = useNavigate();

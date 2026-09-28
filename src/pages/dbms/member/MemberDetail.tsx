@@ -1,7 +1,7 @@
 import { useState, useEffect, type ChangeEvent, type SyntheticEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AlertModal, PageHeader } from '../../../components/ui';
-import { axiosInstance, getIP } from '../../../utils/Tool';
+import { axiosInstance } from '../../../utils/Tool';
 import type { TotalMemberUser } from '../../../store/DbmsStore';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 

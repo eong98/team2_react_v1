@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { PageHeader, DataTable, type DataTableColumn, UserPagination } from '../../../components/ui';
 import Filterbar from '../../../components/ui/user/Filterbar';
-import { axiosInstance, getIP } from '../../../utils/Tool';
+import { axiosInstance } from '../../../utils/Tool';
 
 import type { LoginHistory } from './LoginHistory';
 

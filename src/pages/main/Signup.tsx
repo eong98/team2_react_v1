@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertModal, PageHeader } from '../../components/ui';
-import { axiosInstance, getIP, set_focus } from '../../utils/Tool';
+import { axiosInstance, set_focus } from '../../utils/Tool';
 import { NATION_OPTIONS } from '../../components/ts/nation';
 
 type FieldKey =
@@ -65,7 +65,7 @@ export default function Register() {
     }
 
     try {
-      const res = await axiosInstance.get(`v1/user/check/${formData.id}`);
+      const res = await axiosInstance.get(`/v1/user/check/${formData.id}`);
 
       if (res.data.available === true) {
         setAlert({ message: '사용 가능한 아이디입니다.', variant: 'success' });
