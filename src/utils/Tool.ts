@@ -4,11 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { GlobalStoreSession } from '../store/LoginStore';
 
 const getIP = () => {
-<<<<<<< HEAD
   return "10.1.205.120"; // 학원
-=======
-  return "10.1.205.126"; // 학원
->>>>>>> 8c549a38cc35aa1458f898ad3c7fbdc78b427225
   // return "1.201.122.84"; // 가비아
 }
 
@@ -195,11 +191,16 @@ function ScrollToTop() {
  * jwt 발급 요청, 인증, 응답 
  */
 
-// ---- 응답 인터셉터: 401이면 reissue 후 재시도 ----
-const REISSUE_URL = '/auth/reissue';
+const REISSUE_URL = '/auth/reissue'; // 백엔드 TokenController와 경로 일치시켜야 함
 const LOGIN_PATH = '/login';
-// 인터셉터가 reissue를 시도하면 안 되는 요청들
-const AUTH_URLS = ['/auth/login', '/auth/logout', REISSUE_URL];
+
+// 인터셉터가 reissue를 시도하면 안 되는 요청들 (실제 백엔드 경로 기준)
+const AUTH_URLS = ['/v1/user/login', '/v1/dbms/login', REISSUE_URL];
+
+// 재발급을 시도할 상태 코드
+// Spring Security 기본 설정은 만료 토큰에 403을 반환하므로 403도 포함
+// 백엔드에서 만료 토큰 → 401로 바꾸면 [401]만 남기면 됨
+const REISSUE_STATUSES = [401, 403];
 
 let isRefreshing = false;
 let isRedirecting = false;
@@ -220,7 +221,7 @@ const redirectToLogin = () => {
   if (isRedirecting) return;
 
   isRedirecting = true;
-  window.location.replace(LOGIN_PATH); // 뒤로가기로 만료 페이지에 돌아가지 않도록 replace
+  window.location.replace(LOGIN_PATH);
 };
 
 axiosInstance.interceptors.response.use(
@@ -230,19 +231,19 @@ axiosInstance.interceptors.response.use(
     const status = error.response?.status;
     const url: string = originalRequest?.url ?? '';
 
-    // 인증 관련 요청은 인터셉터가 개입하지 않음
-    // (reissue 실패는 아래 catch 블록에서 한 번만 처리)
-    if (AUTH_URLS.some((u) => url.includes(u))) {
+    // 요청 설정이 없거나 인증 관련 요청이면 개입하지 않음
+    if (!originalRequest || AUTH_URLS.some((u) => url.includes(u))) {
       return Promise.reject(error);
     }
 
-    // 괄호로 우선순위를 명확히 하고, 401만 reissue 대상으로
-    if (status !== 401 || originalRequest._retry) {
+    // 재발급 대상 상태가 아니거나, 이미 한 번 재시도한 요청이면 그대로 실패 처리
+    if (!REISSUE_STATUSES.includes(status) || originalRequest._retry) {
       return Promise.reject(error);
     }
 
     originalRequest._retry = true;
 
+    // 이미 다른 요청이 reissue 중이면 결과를 기다렸다가 재시도
     if (isRefreshing) {
       return new Promise<void>((resolve, reject) => {
         refreshQueue.push({ resolve, reject });
@@ -252,6 +253,7 @@ axiosInstance.interceptors.response.use(
     isRefreshing = true;
 
     try {
+      // Refresh Token은 HttpOnly Cookie로 자동 전송, 새 토큰도 Cookie로 갱신됨
       await axiosInstance.post(REISSUE_URL);
       processQueue(null);
       return axiosInstance(originalRequest);

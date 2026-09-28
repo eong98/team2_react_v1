@@ -46,8 +46,7 @@ import ShopOrderMatch from '../pages/user/shoporder/ShopOrderMatch';
 
 import Notification from '../pages/user/notification/Notification';
 import ShopOrderPendingnList from '../pages/user/shoporder/ShopOrderPendingList';
-import FindAccount from '../pages/user/Find/FindAccount';
-import ResetPassword from '../pages/user/Find/ResetPassword';
+
 
 export default function UserRoutes() {
   return (
@@ -93,8 +92,7 @@ export default function UserRoutes() {
       <Route path="cctvvisitor" element={<CctvVisitorList />} />
       <Route path="calendar" element={<ShopCalendar />} />
 
-      <Route path="find" element={<FindAccount />} />
-      <Route path="reset/password" element={<ResetPassword />} />
+      
       <Route path="mypage" element={<MyPage />} />
       <Route path="mypage/change-password" element={<ChangePassword />} />
       <Route path="invite" element={<InviteMain />} />
