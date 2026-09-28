@@ -274,5 +274,45 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-export { getIP, getCopyright, getNowDate, enter_chk, set_focus, axiosInstance, download, isImage, getAttachUrl, ScrollToTop };
+/**
+ * 클립보드 복사.
+ * navigator.clipboard는 HTTPS 또는 localhost에서만 동작하므로,
+ * http://IP 로 접속한 환경에서는 textarea + execCommand 방식으로 대체합니다.
+ * @returns 복사 성공 여부
+ */
+const copyText = async (text: string): Promise<boolean> => {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // 권한 거부 등 → 아래 방식으로 재시도
+    }
+  }
+
+  const prevFocus = document.activeElement as HTMLElement | null;
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'fixed';
+  textarea.style.top = '0';
+  textarea.style.left = '0';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+
+  let ok = false;
+  try {
+    ok = document.execCommand('copy');
+  } catch {
+    ok = false;
+  }
+
+  document.body.removeChild(textarea);
+  prevFocus?.focus();
+  return ok;
+};
+
+export { getIP, getCopyright, getNowDate, enter_chk, set_focus, axiosInstance, download, isImage, getAttachUrl, ScrollToTop, copyText };
 // import {getIP, getCopyright, getNowDate, enter_chk, set_focus} from 'Tool';
