@@ -81,7 +81,7 @@ export default function DbmsLogin() {
         GlobalStoreSession.getState().setId(storeId ? input.id : '');
 
 
-        navigate('/dbms/menus');
+        navigate('/dbms/memberlist');
 
       } else {
         setAlert({ message: '아이디 또는 비밀번호가 일치하지 않습니다.', variant: 'error' });
@@ -143,9 +143,7 @@ export default function DbmsLogin() {
             <button id="btnSend" type="submit" className="btn btn_lg btn_primary">로그인</button>
           </div>
 
-          <div className="link_row">
-            <Link to="/">아이디/비밀번호 찾기</Link>
-          </div>
+
         </div>
       </form>
 
