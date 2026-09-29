@@ -262,5 +262,7 @@ axiosInstance.interceptors.response.use(
   }
 );
 
+
+
 export { getIP, getCopyright, getNowDate, enter_chk, set_focus, axiosInstance, download, isImage, getAttachUrl, ScrollToTop };
 // import {getIP, getCopyright, getNowDate, enter_chk, set_focus} from 'Tool';
