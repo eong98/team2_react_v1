@@ -49,7 +49,7 @@ export default function InviteAccept({ onClose }: InviteAcceptProps) {
 
     setSubmitting(true);
     try {
-      const payload: InviteAcceptRequest = { code, mno };
+      const payload: InviteAcceptRequest = { code };
       const res = await axiosInstance.post<InviteAcceptResult>('/invite/accept', payload);
 
       if (res.data.success) {
