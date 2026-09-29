@@ -17,7 +17,7 @@ export default function RequireUserAuth() {
   const no = GlobalStoreSession((state) => state.no);
   const grade = GlobalStoreSession((state) => state.grade);
 
-  const isAuthorized = login && no !== 0 && grade >= 1 && grade <= 10;
+  const isAuthorized = login && no !== 0 && grade >= 6 && grade <= 10;
 
   if (!isAuthorized) {
     return <Navigate to="/login" replace />;
