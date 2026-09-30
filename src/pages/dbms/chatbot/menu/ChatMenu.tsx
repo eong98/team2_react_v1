@@ -10,6 +10,7 @@ import {
   deleteManualDocs,
   isGenerateAvailable,
   startGenerateMenu,
+  regenerateAllMenus,
   getGenerateMenuStatus,
   clearGenerateMenu,
   retryVectorize,
@@ -156,6 +157,7 @@ export default function ChatMenu() {
   const [suggestions, setSuggestions] = useState<{ label: string; desc: string; checked: boolean }[]>([]);
   const [registering, setRegistering] = useState(false);
   const [replaceConfirmOpen, setReplaceConfirmOpen] = useState(false);
+  const [regenConfirmOpen, setRegenConfirmOpen] = useState(false);
   const [generateAvailable, setGenerateAvailable] = useState(false);
   const [generatedTree, setGeneratedTree] = useState<GeneratedMenuTop[] | null>(null);
   const [vectorizeFailedDocs, setVectorizeFailedDocs] = useState<{ no: number; filename: string }[]>([]);
@@ -724,9 +726,19 @@ export default function ChatMenu() {
     }
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = () => {
     if (!generateAvailable || generating) return;
+    runGenerate(startGenerateMenu);
+  };
 
+  /** 전체 다시 생성 — 모든 매뉴얼을 새 규칙(내부 정보 제외, 긴 제목 요약 등)으로 다시 만듦 */
+  const handleRegenerateAll = () => {
+    setRegenConfirmOpen(false);
+    if (generating) return;
+    runGenerate(regenerateAllMenus);
+  };
+
+  const runGenerate = async (start: () => Promise<GenerateJobStatus>) => {
     resultHandled.current = false;
     setGeneratedTree(null);
     setVectorizeFailedDocs([]);
@@ -738,7 +750,8 @@ export default function ChatMenu() {
     setJobStatus('running');
     try {
       // 서버가 백그라운드로 시작하고 즉시 응답 → 이후 진행은 폴링으로 받음
-      applyJobStatus(await startGenerateMenu());
+      applyJobStatus(await start());
+      loadDocs(); // 전체 다시 생성이면 문서들이 '미반영'으로 바뀐 것을 반영
     } catch (err) {
       console.error('AI 옵션생성 시작 실패:', err);
       setJobStatus('idle');
@@ -951,6 +964,14 @@ export default function ChatMenu() {
             disabled={!generateAvailable || generating || adminRoots.length === 0}
           >
             {generating && jobKind === 'generate' ? 'AI 옵션생성 중...' : docs.length > 0 && !generateAvailable ? '매뉴얼 수정' : 'AI 옵션생성'}
+          </button>
+          <button
+            type="button"
+            className="btn btn_sm btn_ghost"
+            onClick={() => setRegenConfirmOpen(true)}
+            disabled={generating || docs.length === 0 || adminRoots.length === 0}
+          >
+            매뉴얼 전체 다시 생성
           </button>
           <span className="cell_sub">
             {adminRoots.length === 0
@@ -1466,6 +1487,35 @@ export default function ChatMenu() {
         requirePassword={false}
         loading={docDeleting}
       />
+
+      {/* 매뉴얼 전체 다시 생성 확인 */}
+      <Modal
+        open={regenConfirmOpen}
+        onClose={() => setRegenConfirmOpen(false)}
+        titleId="chatMenuRegenTitle"
+        title="매뉴얼 전체를 다시 생성하시겠습니까?"
+        footer={
+          <>
+            <button type="button" className="btn btn_md btn_ghost" onClick={() => setRegenConfirmOpen(false)}>
+              취소
+            </button>
+            <button type="button" className="btn btn_md btn_primary" onClick={handleRegenerateAll}>
+              다시 생성
+            </button>
+          </>
+        }
+      >
+        <div className="chatmenu_replace_plan">
+          <p>첨부된 매뉴얼 {docs.length}개로 AI 옵션메뉴를 모두 다시 만듭니다.</p>
+          <p className="cell_sub">
+            회원 등급 같은 내부 정보 제외, 긴 제목 요약 등 바뀐 규칙이 기존 AI 메뉴에도 적용됩니다.
+            관리자가 직접 만든 메뉴는 그대로 유지됩니다.
+          </p>
+          <p className="form_hint chatmenu_hint_info">
+            다시 만든 메뉴는 비공개로 저장되므로, 생성이 끝나면 [일괄 공개]로 다시 공개해야 사용자 화면에 보입니다.
+          </p>
+        </div>
+      </Modal>
 
       {/* 최상위 메뉴 교체 확인 */}
       <Modal

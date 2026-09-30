@@ -71,7 +71,7 @@ export default function DbmsLogin() {
           password: input.password,
         }
       );
-      const { success, dbms } = loginResult.data;
+      const { success, dbms, accessToken, refreshToken } = loginResult.data;
 
       if (success) {
         GlobalStoreSession.getState().setLogin(true);
@@ -79,6 +79,7 @@ export default function DbmsLogin() {
         GlobalStoreSession.getState().setGrade(dbms.grade);
         // "아이디 저장" 체크했을 때만 아이디를 기억하고, 해제했으면 비웁니다.
         GlobalStoreSession.getState().setId(storeId ? input.id : '');
+        GlobalStoreSession.getState().setTokens(accessToken, refreshToken);
 
 
         navigate('/dbms/memberlist');

@@ -795,7 +795,11 @@
   color: var(--text, #e8ebed);
   font-size: 13px;
   cursor: pointer;
-  white-space: nowrap;
+  /* 긴 선택지 제목도 잘리지 않고 전체가 보이도록 줄바꿈 (한글은 단어 단위로) */
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-align: left;
 }
 .chat_option_btn:hover {
   background: rgba(255, 255, 255, 0.06);
@@ -912,6 +916,7 @@
 .chat_ended_notice {
   text-align: center;
   padding: 10px 14px;
+  margin-top:20px;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-faint, #6b7684);

@@ -4,8 +4,8 @@ import axios from 'axios';
  * H200 FastAPI 주소.
  * 설문 AI 분석 실행은 Spring이 아니라 FastAPI가 직접 담당한다.
  */
-// export const FASTAPI_BASE_URL = 'http://139.150.91.194:11200';
-export const FASTAPI_BASE_URL = 'http://localhost:11200';
+export const FASTAPI_BASE_URL = 'http://139.150.91.194:11200';
+// export const FASTAPI_BASE_URL = 'http://localhost:11200';
 
 
 /* ---------------------------------------------------------------------
@@ -140,6 +140,15 @@ export interface GenerateJobStatus {
 /** AI 옵션생성 시작 (백그라운드). 이미 진행 중이면 그 작업 상태를 그대로 반환. */
 export const startGenerateMenu = async (): Promise<GenerateJobStatus> => {
   const response = await axios.post<GenerateJobStatus>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/generate-menu/start`);
+  return response.data;
+};
+
+/**
+ * [매뉴얼 전체 다시 생성] — 모든 문서를 미반영으로 되돌리고 옵션생성 시작.
+ * 내부 정보 제외, 긴 제목 요약 같은 바뀐 규칙을 기존 AI 메뉴에 반영할 때 사용.
+ */
+export const regenerateAllMenus = async (): Promise<GenerateJobStatus> => {
+  const response = await axios.post<GenerateJobStatus>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/generate-menu/regenerate-all`);
   return response.data;
 };
 
