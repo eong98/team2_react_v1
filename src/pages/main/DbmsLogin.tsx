@@ -77,11 +77,11 @@ export default function DbmsLogin() {
         GlobalStoreSession.getState().setLogin(true);
         GlobalStoreSession.getState().setNo(dbms.no);
         GlobalStoreSession.getState().setGrade(dbms.grade);
-        // "아이디 저장" 체크했을 때만 아이디를 기억하고, 해제했으면 비웁니다.
+        // "아이디 저장" 체크했을 때만 아이디를 기억하고, 해제했으면 비웁니다. 
         GlobalStoreSession.getState().setId(storeId ? input.id : '');
 
 
-        navigate('/dbms/menus');
+        navigate('/dbms/memberlist');
 
       } else {
         setAlert({ message: '아이디 또는 비밀번호가 일치하지 않습니다.', variant: 'error' });
@@ -91,7 +91,6 @@ export default function DbmsLogin() {
       setAlert({ message: '서버 연결에 실패했습니다.\n잠시 후 다시 시도해주세요.', variant: 'error' });
     }
   };
-
   return (
     <section className="view active">
       <PageHeader title="로그인" title_size="xlg" description="allimio 관제 서비스에 오신 것을 환영합니다." />
@@ -143,9 +142,7 @@ export default function DbmsLogin() {
             <button id="btnSend" type="submit" className="btn btn_lg btn_primary">로그인</button>
           </div>
 
-          <div className="link_row">
-            <Link to="/">아이디/비밀번호 찾기</Link>
-          </div>
+
         </div>
       </form>
 

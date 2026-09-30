@@ -31,7 +31,6 @@ export interface InviteCreateRequest {
 
 export interface InviteAcceptRequest {
   code: string;
-  mno: number;
 }
 
 /** 수락 결과 - 성공 시 어느 매장에 소속되었는지 함께 내려줌 */
