@@ -2,12 +2,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { PageHeader, DataTable, type DataTableColumn, UserPagination } from '../../../components/ui';
 import Filterbar from '../../../components/ui/user/Filterbar';
-import { axiosInstance, getIP } from '../../../utils/Tool';
+import { axiosInstance } from '../../../utils/Tool';
 
 import type { LoginHistory } from './LoginHistory';
 
 const PAGE_SIZE = 10;
-const LOGIN_HISTORY_API = `http://${getIP()}:9102/history/login/list`;
+const LOGIN_HISTORY_API = `/history/login/list`;
 
 // LOGIN_RESULT: 0 실패, 1 성공
 const RESULT_LABELS: Record<number, string> = {

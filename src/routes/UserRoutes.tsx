@@ -7,6 +7,7 @@ import Test2 from '../pages/user/dashboard/Test2';
 import Test3 from '../pages/user/dashboard/Test3';
 import Test4 from '../pages/user/dashboard/Test4';
 import Test5 from '../pages/user/dashboard/Test5';
+import Dashboard from '../pages/user/dashboard/Dashboard'; // [추가] 매장 통계
 
 
 import QaList from '../pages/user/qa/QaList';
@@ -46,6 +47,7 @@ import ShopOrderMatch from '../pages/user/shoporder/ShopOrderMatch';
 
 import Notification from '../pages/user/notification/Notification';
 import ShopOrderPendingnList from '../pages/user/shoporder/ShopOrderPendingList';
+
 
 export default function UserRoutes() {
   return (
@@ -91,11 +93,15 @@ export default function UserRoutes() {
       <Route path="cctvvisitor" element={<CctvVisitorList />} />
       <Route path="calendar" element={<ShopCalendar />} />
 
+      
       <Route path="mypage" element={<MyPage />} />
       <Route path="mypage/change-password" element={<ChangePassword />} />
       <Route path="invite" element={<InviteMain />} />
 
       <Route path="notification" element={<Notification />} />
+
+      {/* [추가] 매장 통계 대시보드 - DashboardLayout(시뮬레이션 토글/목업 이벤트) 밖에 둠 */}
+      <Route path="dashboard" element={<Dashboard />} />
 
       {/* 예시용 */}
       <Route element={<DashboardLayout />}>{/* 대시보드용 레이아웃 적용 */}

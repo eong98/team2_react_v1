@@ -11,7 +11,8 @@ import { ScrollToTop } from '../utils/Tool';
 import MainLayout from '../components/layout/MainLayout'
 import Home from '../pages/main/Home';
 import Login from '../pages/main/Login'
-import Singup from '../pages/main/Signup'
+import DbmsLogin from '../pages/main/DbmsLogin'
+import Signup from '../pages/main/Signup'
 
 /* 서비스페이지 import */
 import BaseLayout from '../components/layout/BaseLayout';
@@ -23,6 +24,9 @@ import Sidebar from '../components/layout/Sidebar';
 import Topbar from '../components/ui/common/Topbar';
 import ChatBotWidget from '../components/ui/chatbot/ChatBotWidget';
 
+/** 아이디찾기, 비밀번호찾기 */
+import FindAccount from '../pages/user/Find/FindAccount';
+import ResetPassword from '../pages/user/Find/ResetPassword';
 
 /* 구독권 구매 */
 import ShopPlan from '../pages/main/shopplan/ShopPlan';
@@ -52,11 +56,14 @@ function App() {
             <Route path="/dbms" element={<Navigate to="/dbms/login" replace />} />
 
             <Route path='/index' element={<Home />} />
-            <Route path='/login' element={<Login />} />{/* 로그인 */}
+            <Route path='/login' element={<Login />} />{/* 회원 로그인 */}
+            <Route path='/dbms/login' element={<DbmsLogin />} />{/* 관리자 로그인 */}
 
-            {/* 회원가입, 구독권 등.... */}
-            <Route path='/singup' element={<Singup />} />
+            {/* 회원가입, 구독권, 아이디찾기, 비밀번호찾기 등.... */}
+            <Route path='/signup' element={<Signup />} />
             <Route path='/shopplan' element={<ShopPlan />} />
+            <Route path="find" element={<FindAccount />} />
+            <Route path="reset/password" element={<ResetPassword />} />
 
             {/* 고객센터(비회원 전용) */}
             <Route path='/board' element={<BoardLayout />}>

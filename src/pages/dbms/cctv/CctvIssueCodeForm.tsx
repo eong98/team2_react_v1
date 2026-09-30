@@ -102,7 +102,7 @@ export default function CctvIssueCodeFormView() {
 
     if (!validate()) return;
 
-    const payload: CctvIssueCodeType = {
+    const payload: Omit<CctvIssueCodeType, 'cdate'> = { // [수정] cdate는 서버에서 채움
       code: input.code.trim(),
       codeName: input.codeName.trim(),
       description: input.description?.trim() ?? '',

@@ -4,7 +4,8 @@ import { useLocation } from 'react-router-dom';
 import { GlobalStoreSession } from '../store/LoginStore';
 
 const getIP = () => {
-  return "10.1.205.119"; // 학원
+  return "10.1.205.107"; // 학원
+  // return "1.201.122.84"; // 가비아
 }
 
 const getCopyright = () => {
@@ -61,7 +62,8 @@ const axiosInstance = axios.create({
   // npm run dev: import.meta.env.PROD -> false로 자동 설정
   // npm run build: import.meta.env.PROD -> true로 자동 설정
   // '': 같은 ip에 Backend 서버가 있다는 가정하에 상대경로로 요청을 보냄.
-  baseURL: import.meta.env.PROD ? `http://${getIP()}:9102` : `http://${getIP()}:9102`
+  baseURL: import.meta.env.PROD ? `http://${getIP()}:9102` : `http://${getIP()}:9102`,
+  withCredentials: true
 })
 
 /**
@@ -184,85 +186,133 @@ function ScrollToTop() {
   // 화면에 아무것도 렌더링하지 않으므로 null 반환
   return null;
 }
+
 /**
  * jwt 발급 요청, 인증, 응답 
  */
-// ---- 요청 인터셉터: accessToken 자동 첨부 ----
-axiosInstance.interceptors.request.use((config) => {
-  const { accessToken } = GlobalStoreSession.getState();
-  if (accessToken) {
-    config.headers = config.headers ?? {};
-    config.headers.Authorization = `Bearer ${accessToken}`;
-  }
-  return config;
-});
-
-// ---- 응답 인터셉터: 401이면 reissue 후 재시도 ----
-let isRefreshing = false;
-let refreshQueue: Array<(token: string) => void> = [];
 
 const REISSUE_URL = '/auth/reissue'; // 백엔드 TokenController와 경로 일치시켜야 함
+
+// 로그인 페이지 목록 (여기서는 절대 리다이렉트하지 않음)
+const LOGIN_PATHS = ['/login', '/dbms/login'];
+
+// 인터셉터가 reissue를 시도하면 안 되는 요청들 (실제 백엔드 경로 기준)
+const AUTH_URLS = ['/v1/user/login', '/v1/dbms/login', REISSUE_URL];
+
+// 재발급을 시도할 상태 코드
+// Spring Security 기본 설정은 만료 토큰에 403을 반환하므로 403도 포함
+// 백엔드에서 만료 토큰 → 401로 바꾸면 [401]만 남기면 됨
+const REISSUE_STATUSES = [401, 403];
+
+let isRefreshing = false;
+let isRedirecting = false;
+
+type QueueItem = { resolve: () => void; reject: (e: unknown) => void };
+let refreshQueue: QueueItem[] = [];
+
+const processQueue = (error: unknown | null) => {
+  refreshQueue.forEach(({ resolve, reject }) => (error ? reject(error) : resolve()));
+  refreshQueue = [];
+};
+
+const redirectToLogin = () => {
+  GlobalStoreSession.getState().clearAuth();
+
+  const path = window.location.pathname;
+
+  // 이미 로그인 페이지(회원/관리자)면 이동하지 않음 → 무한 루프 및 튕김 차단
+  if (LOGIN_PATHS.some((p) => path.startsWith(p))) return;
+  if (isRedirecting) return;
+
+  isRedirecting = true;
+
+  // 관리자 화면에서 만료되면 관리자 로그인으로, 그 외에는 회원 로그인으로
+  const target = path.startsWith('/dbms') ? '/dbms/login' : '/login';
+  window.location.replace(target);
+};
 
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const status = error.response?.status;
+    const url: string = originalRequest?.url ?? '';
 
-    // reissue 요청 자체가 401이면(리프레시 토큰도 만료) 더 시도하지 않고 로그아웃 처리
-    if (originalRequest.url?.includes(REISSUE_URL)) {
-      GlobalStoreSession.getState().clearAuth();
-      window.location.href = '/login';
+    // 요청 설정이 없거나 인증 관련 요청이면 개입하지 않음
+    if (!originalRequest || AUTH_URLS.some((u) => url.includes(u))) {
       return Promise.reject(error);
     }
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      const { refreshToken } = GlobalStoreSession.getState();
-      if (!refreshToken) {
-        GlobalStoreSession.getState().clearAuth();
-        window.location.href = '/login';
-        return Promise.reject(error);
-      }
-
-      // 이미 다른 요청이 reissue 중이면, 그 결과를 기다렸다가 재시도
-      if (isRefreshing) {
-        return new Promise((resolve) => {
-          refreshQueue.push((newToken: string) => {
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            resolve(axiosInstance(originalRequest));
-          });
-        });
-      }
-
-      isRefreshing = true;
-      try {
-        const res = await axiosInstance.post(REISSUE_URL, { refreshToken });
-        const { accessToken, refreshToken: newRefreshToken } = res.data;
-
-        GlobalStoreSession.getState().setTokens(accessToken, newRefreshToken);
-
-        // 대기 중이던 요청들 전부 새 토큰으로 재시도
-        refreshQueue.forEach((cb) => cb(accessToken));
-        refreshQueue = [];
-
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-        return axiosInstance(originalRequest);
-      } catch (reissueError) {
-        refreshQueue = [];
-        GlobalStoreSession.getState().clearAuth();
-        window.location.href = '/login';
-        return Promise.reject(reissueError);
-      } finally {
-        isRefreshing = false;
-      }
+    // 재발급 대상 상태가 아니거나, 이미 한 번 재시도한 요청이면 그대로 실패 처리
+    if (!REISSUE_STATUSES.includes(status) || originalRequest._retry) {
+      return Promise.reject(error);
     }
 
-    return Promise.reject(error);
+    originalRequest._retry = true;
+
+    // 이미 다른 요청이 reissue 중이면 결과를 기다렸다가 재시도
+    if (isRefreshing) {
+      return new Promise<void>((resolve, reject) => {
+        refreshQueue.push({ resolve, reject });
+      }).then(() => axiosInstance(originalRequest));
+    }
+
+    isRefreshing = true;
+
+    try {
+      // Refresh Token은 HttpOnly Cookie로 자동 전송, 새 토큰도 Cookie로 갱신됨
+      await axiosInstance.post(REISSUE_URL);
+      processQueue(null);
+      return axiosInstance(originalRequest);
+    } catch (reissueError) {
+      processQueue(reissueError);
+      redirectToLogin();
+      return Promise.reject(reissueError);
+    } finally {
+      isRefreshing = false;
+    }
   }
 );
 
+/**
+ * 클립보드 복사.
+ * navigator.clipboard는 HTTPS 또는 localhost에서만 동작하므로,
+ * http://IP 로 접속한 환경에서는 textarea + execCommand 방식으로 대체합니다.
+ * @returns 복사 성공 여부
+ */
+const copyText = async (text: string): Promise<boolean> => {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // 권한 거부 등 → 아래 방식으로 재시도
+    }
+  }
 
+  const prevFocus = document.activeElement as HTMLElement | null;
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'fixed';
+  textarea.style.top = '0';
+  textarea.style.left = '0';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
 
-export { getIP, getCopyright, getNowDate, enter_chk, set_focus, axiosInstance, download, isImage, getAttachUrl, ScrollToTop };
+  let ok = false;
+  try {
+    ok = document.execCommand('copy');
+  } catch {
+    ok = false;
+  }
+
+  document.body.removeChild(textarea);
+  prevFocus?.focus();
+  return ok;
+};
+
+export { getIP, getCopyright, getNowDate, enter_chk, set_focus, axiosInstance, download, isImage, getAttachUrl, ScrollToTop, copyText };
 // import {getIP, getCopyright, getNowDate, enter_chk, set_focus} from 'Tool';

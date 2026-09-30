@@ -33,10 +33,6 @@ interface SessionStore {
   setGrade: (value: number) => void;
   mname: string;
   setMname: (value: string) => void;
-
-  accessToken: string;
-  refreshToken: string;
-  setTokens: (accessToken: string, refreshToken: string) => void;
   clearAuth:() => void;
 }
 
@@ -55,10 +51,7 @@ export const GlobalStoreSession = create<SessionStore>()(
       setGrade: (value) => set({ grade: value}),
       mname: '',
       setMname: (value) => set({ mname: value}),
-
-      accessToken: '',
-      refreshToken: '',
-      setTokens: (accessToken, refreshToken) => set({ accessToken, refreshToken}),
+      
       clearAuth: () =>
         set({
           login: false,
@@ -66,8 +59,6 @@ export const GlobalStoreSession = create<SessionStore>()(
           id: '',
           grade: 99,
           mname: '',
-          accessToken: '',
-          refreshToken: '',
         })
     }),
     {

@@ -4,7 +4,7 @@ import { GlobalStoreSession } from '../../../store/LoginStore';
 import InviteCreate from './InviteCreate'
 import InviteAccept from './InviteAccept';
 
-type InviteView = 'select' | 'create' | 'accept';
+type InviteModal = 'create' | 'accept' | null;
 
 /* ---------------------------------------------------------------------
    회원 초대(/user/invite) - 진입 화면.
@@ -22,15 +22,7 @@ export default function InviteMain() {
   const { grade } = GlobalStoreSession();
   const isShopOwner = grade === 10;
 
-  const [view, setView] = useState<InviteView>('select');
-
-  if (view === 'create') {
-    return <InviteCreate onBack={() => setView('select')} />;
-  }
-
-  if (view === 'accept') {
-    return <InviteAccept onBack={() => setView('select')} />;
-  }
+  const [openModal, setOpenModal] = useState<InviteModal>(null);
 
   return (
     <section className="view active">
@@ -45,7 +37,7 @@ export default function InviteMain() {
             보유한 매장 중 하나를 선택해 직원 초대코드를 발급합니다. 점주만 이용할 수 있습니다.
           </p>
           {isShopOwner ? (
-            <button type="button" className="btn btn_md btn_primary" onClick={() => setView('create')}>
+            <button type="button" className="btn btn_md btn_primary" onClick={() => setOpenModal('create')}>
               초대코드 발급하기
             </button>
           ) : (
@@ -60,11 +52,13 @@ export default function InviteMain() {
           <p className="b_title" style={{ marginBottom: 20 }}>
             점주에게 받은 6자리 초대코드를 입력하면 해당 매장의 직원으로 등록됩니다.
           </p>
-          <button type="button" className="btn btn_md btn_outline_primary" onClick={() => setView('accept')}>
+          <button type="button" className="btn btn_md btn_outline_primary" onClick={() => setOpenModal('accept')}>
             초대코드 입력하기
           </button>
         </div>
       </div>
+      {openModal === 'create' && <InviteCreate onClose={() => setOpenModal(null)} />}
+      {openModal === 'accept' && <InviteAccept onClose={() => setOpenModal(null)} />}
     </section>
   );
 }

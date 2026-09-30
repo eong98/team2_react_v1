@@ -2,9 +2,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState, type ChangeEvent, type SyntheticEvent } from 'react'
 import { GlobalStoreCookie, GlobalStoreSession } from '../../store/LoginStore';
 import PageHeader from '../../components/ui/common/PageHeader';
-import { axiosInstance, enter_chk, getIP, set_focus } from '../../utils/Tool';
+import AlertModal from '../../components/ui/common/AlertModal';
+import { axiosInstance, enter_chk, set_focus } from '../../utils/Tool';
 
-export default function Login() {
+export default function DbmsLogin() {
   const navigate = useNavigate();
 
   const storeId = GlobalStoreCookie((state) => state.storeId);
@@ -18,6 +19,12 @@ export default function Login() {
 
   type FormErrors = { id?: string; password?: string };
   const [errors, setErrors] = useState<FormErrors>({});
+
+  const [alert, setAlert] = useState<{
+    message: string;
+    variant?: 'success' | 'error';
+    onConfirm?: () => void;
+  } | null>(null);
 
   const onChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -58,7 +65,7 @@ export default function Login() {
 
     try {
       const loginResult = await axiosInstance.post(
-        `http://${getIP()}:9102/v1/dbms/login`,
+        `/v1/dbms/login`,
         {
           id: input.id,
           password: input.password,
@@ -70,18 +77,19 @@ export default function Login() {
         GlobalStoreSession.getState().setLogin(true);
         GlobalStoreSession.getState().setNo(dbms.no);
         GlobalStoreSession.getState().setGrade(dbms.grade);
-        // ✅ "아이디 저장" 체크했을 때만 아이디를 기억하고, 해제했으면 비웁니다.
+        // "아이디 저장" 체크했을 때만 아이디를 기억하고, 해제했으면 비웁니다.
         GlobalStoreSession.getState().setId(storeId ? input.id : '');
         GlobalStoreSession.getState().setTokens(accessToken, refreshToken);
 
-        alert('로그인에 성공했습니다!');
+
         navigate('/dbms/menus');
+
       } else {
-        alert('아이디 또는 비밀번호가 일치하지 않습니다');
+        setAlert({ message: '아이디 또는 비밀번호가 일치하지 않습니다.', variant: 'error' });
       }
     } catch (err) {
       console.error(err);
-      alert('서버 연결에 실패했습니다');
+      setAlert({ message: '서버 연결에 실패했습니다.\n잠시 후 다시 시도해주세요.', variant: 'error' });
     }
   };
 
@@ -141,6 +149,14 @@ export default function Login() {
           </div>
         </div>
       </form>
+
+      <AlertModal
+        open={alert !== null}
+        onClose={() => setAlert(null)}
+        onConfirm={alert?.onConfirm}
+        message={alert?.message ?? ''}
+        variant={alert?.variant}
+      />
     </section>
   );
 }

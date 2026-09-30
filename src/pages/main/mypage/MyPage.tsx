@@ -115,7 +115,8 @@ export default function MyPage() {
 
   const openPostcode = () => {
     if (!window.daum?.Postcode) {
-      alert('우편번호 검색 스크립트를 불러오지 못했습니다.\n잠시 후 다시 시도해주세요.');
+      setFormAlert({ message: '우편번호 검색 스크립트를 불러오지 못했습니다.\n잠시 후 다시 시도해주세요.', variant: 'error' });
+       return;
       return;
     }
     new window.daum.Postcode({

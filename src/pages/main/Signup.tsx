@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PageHeader } from '../../components/ui';
-import { axiosInstance, getIP, set_focus } from '../../utils/Tool';
+import { AlertModal, PageHeader } from '../../components/ui';
+import { axiosInstance, set_focus } from '../../utils/Tool';
 import { NATION_OPTIONS } from '../../components/ts/nation';
 
 type FieldKey =
@@ -35,6 +35,8 @@ export default function Register() {
   type FormErrors = Partial<Record<FieldKey | 'terms' | 'privacy', string>>;
   const [errors, setErrors] = useState<FormErrors>({});
 
+  const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
+
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { id, value } = e.target;
 
@@ -63,19 +65,19 @@ export default function Register() {
     }
 
     try {
-      const res = await axiosInstance.get(`http://${getIP()}:9102/v1/user/check/${formData.id}`);
+      const res = await axiosInstance.get(`/v1/user/check/${formData.id}`);
 
       if (res.data.available === true) {
-        alert('사용 가능한 아이디입니다.');
+        setAlert({ message: '사용 가능한 아이디입니다.', variant: 'success' });
         setIsIdChecked(true);
         setErrors((prev) => ({ ...prev, id: undefined }));
       } else {
-        alert('이미 사용 중인 아이디입니다. 다른 아이디를 입력해주세요.');
+        setAlert({ message: '이미 사용 중인 아이디입니다.\n다른 아이디를 입력해주세요.', variant: 'error' });
         setIsIdChecked(false);
       }
     } catch (error) {
       console.error('아이디 중복 확인 실패:', error);
-      alert('아이디 중복 확인 중 오류가 발생했습니다.');
+      setAlert({ message: '아이디 중복 확인 중 오류가 발생했습니다.', variant: 'error' });
       setIsIdChecked(false);
     }
   };
@@ -84,7 +86,7 @@ export default function Register() {
     const daum = (window as any).daum;
 
     if (!daum || !daum.Postcode) {
-      alert('우편번호 서비스 라이브러리가 로드되지 않았습니다.');
+      setAlert({ message: '우편번호 서비스 라이브러리가 로드되지 않았습니다.', variant: 'error' });
       return;
     }
 
@@ -178,7 +180,7 @@ export default function Register() {
     setIsSubmitting(true);
 
     try {
-      const endpoint = `http://${getIP()}:9102/v1/user/save`;
+      const endpoint = `/v1/user/save`;
 
       const payload = {
         id: formData.id,
@@ -198,11 +200,14 @@ export default function Register() {
 
       await axiosInstance.post(endpoint, payload);
 
-      alert('회원가입이 성공적으로 완료되었습니다.');
-      navigate('/');
+      setAlert({
+        message: '회원가입이 성공적으로 완료되었습니다.',
+        variant: 'success',
+        onConfirm: () => navigate('/'),
+      });
     } catch (error) {
       console.error('회원가입 처리 실패:', error);
-      alert('회원가입 중 오류가 발생했습니다. 입력 정보를 확인해주세요.');
+      setAlert({ message: '회원가입 중 오류가 발생했습니다.\n입력 정보를 확인해주세요.', variant: 'error' });
     } finally {
       setIsSubmitting(false);
     }
@@ -474,6 +479,13 @@ export default function Register() {
 
         </div>
       </form>
+      <AlertModal
+        open={alert !== null}
+        onClose={() => setAlert(null)}
+        onConfirm={alert?.onConfirm}
+        message={alert?.message ?? ''}
+        variant={alert?.variant}
+      />
     </section>
   );
 }

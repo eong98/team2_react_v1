@@ -1,7 +1,7 @@
 import { useState, useEffect, type ChangeEvent, type SyntheticEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PageHeader } from '../../../components/ui';
-import { axiosInstance, getIP } from '../../../utils/Tool';
+import { AlertModal, PageHeader } from '../../../components/ui';
+import { axiosInstance } from '../../../utils/Tool';
 import type { TotalMemberUser } from '../../../store/DbmsStore';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 
@@ -16,13 +16,15 @@ export default function MemberDetail() {
     zipcode: '', addr: '', addrDetail: '', nation: ''
   });
 
+  const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
+
   useEffect(() => {
     const fetchDetailData = async () => {
       setIsLoading(true);
       try {
         const endpoint = role === 'ADMIN'
-          ? `http://${getIP()}:9102/v1/dbms/find/${no}`
-          : `http://${getIP()}:9102/v1/user/find/${no}`;
+          ? `/v1/dbms/find/${no}`
+          : `/v1/user/find/${no}`;
 
         const res = await axiosInstance.get(endpoint);
         if (res.data) {
@@ -30,8 +32,11 @@ export default function MemberDetail() {
         }
       } catch (error) {
         console.error('상세 정보 로드 실패:', error);
-        alert('데이터를 불러오는 중 오류가 발생했습니다.');
-        navigate('/dbms/memberlist');
+        setAlert({
+          message: '데이터를 불러오는 중 오류가 발생했습니다.',
+          variant: 'error',
+          onConfirm: () => navigate('/dbms/memberlist'),
+        });
       } finally {
         setIsLoading(false);
       }
@@ -51,15 +56,18 @@ export default function MemberDetail() {
     e.preventDefault();
     try {
       const endpoint = role === 'ADMIN'
-        ? `http://${getIP()}:9102/v1/dbms/update/manager/${no}/${mnno}`
-        : `http://${getIP()}:9102/v1/user/update/manager/${no}/${mnno}`;
+        ? `/v1/dbms/update/manager/${no}/${mnno}`
+        : `/v1/user/update/manager/${no}/${mnno}`;
 
       await axiosInstance.put(endpoint, formData);
-      alert('수정이 정상적으로 완료되었습니다.');
-      navigate('/dbms/memberlist');
+      setAlert({
+        message: '수정이 정상적으로 완료되었습니다.',
+        variant: 'success',
+        onConfirm: () => navigate('/dbms/memberlist'),
+      });
     } catch (error) {
       console.error('데이터 수정 실패:', error);
-      alert('저장 중 오류가 발생했습니다.');
+      setAlert({ message: '저장 중 오류가 발생했습니다.', variant: 'error' });
     }
   };
 
@@ -180,6 +188,13 @@ export default function MemberDetail() {
 
         </div>
       </form>
+      <AlertModal
+        open={alert !== null}
+        onClose={() => setAlert(null)}
+        onConfirm={alert?.onConfirm}
+        message={alert?.message ?? ''}
+        variant={alert?.variant}
+      />
     </section>
   );
 }

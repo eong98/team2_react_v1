@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { PageHeader, DataTable, type DataTableColumn, UserPagination } from '../../../components/ui';
+import { DataTable, type DataTableColumn, PageHeader, UserPagination } from '../../../components/ui';
 import Filterbar from '../../../components/ui/user/Filterbar';
-import { axiosInstance, getIP } from '../../../utils/Tool';
+import { axiosInstance } from '../../../utils/Tool';
 
 import type { UpdateHistory } from './UpdateHistory';
 
 const PAGE_SIZE = 10;
-const UPDATE_LOG_API = `http://${getIP()}:9102/history/update/list`;
+const UPDATE_LOG_API = `/history/update/list`;
 
 type LogTargetType = 'USER' | 'DBMS';
 type TargetFilter = 'ALL' | LogTargetType;
