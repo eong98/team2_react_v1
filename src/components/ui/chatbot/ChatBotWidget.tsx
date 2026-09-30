@@ -42,6 +42,11 @@ export default function ChatBotWidget() {
     // 웹소켓 메시지 수신 처리
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
+      if (data.type === 'session_updated') {
+        // 상담 종료 후 제목 요약 완료 등 — 목록만 새로고침 (새 메시지가 아니므로 안읽음 표시 안 함)
+        setLastMessageSno({ sno: data.sno, ts: Date.now() });
+        return;
+      }
       if (data.type === 'new_message') {
         setHasUnread(true); // 안읽은 메시지 뱃지 표시
         setLastMessageSno({ sno: data.sno, ts: Date.now() }); // 타임스탬프와 함께 하위 컴포넌트에 알림

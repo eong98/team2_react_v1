@@ -19,7 +19,7 @@ import {
 } from '../../ts/ChatBot';
 import type { ChatMenuTypes } from '../../ts/ChatMenu';
 import { getOrCreateGno } from '../../ts/ChatGuest';
-import { aiChat, endAiConsultDivider, startAiConsult, summarizeChat } from './ChatApi';
+import { aiChat, endAiConsultDivider, startAiConsult, summarizeChat, summarizeTitle } from './ChatApi';
 import AlertModal from '../common/AlertModal';
 
 /* ---------------------------------------------------------------------
@@ -32,6 +32,22 @@ interface ChatRoomProps {
   refreshSignal: { sno: string; ts: number } | null; // 외부 신호(알림) 수신용
   onStartAiResponding: (sno: string) => void;        // 목록/FAB 표시용 — "이 세션이 응답 대기 중"임을 부모에게 알림
   onAiRespondingDone: () => void;                    // 목록/FAB 표시용 — 응답 완료를 부모에게 알림
+}
+
+/** 상대가 입력 중인 말풍선 (점 3개) — AI 답변 대기, 옵션 답변 불러오기 공용 */
+function TypingBubble({ label, variant }: { label: string; variant: 'ai' | 'system' }) {
+  return (
+    <div className="chat_bubble_row system" aria-live="polite" aria-label={`${label} 입력 중`}>
+      <span className="chat_sender_label">{label}</span>
+      <div className="chat_bubble_wrap">
+        <div className={`chat_bubble ${variant} chat_typing_indicator`}>
+          <span className="chat_typing_dot" />
+          <span className="chat_typing_dot" />
+          <span className="chat_typing_dot" />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function ChatRoom({
@@ -453,11 +469,7 @@ export default function ChatRoom({
       const smemo = inputValue;
       setInputValue('');
       const result = await callStep({ action: 3, smemo, systemMessage: getMessage(SYSTEM_MESSAGES, 2) });
-      if (result) {
-        setEndFlow(null);
-        setSessionEnded(true);
-        setConsultStarted(false);
-      }
+      if (result) markConsultEnded();
       return;
     }
 
@@ -484,6 +496,19 @@ export default function ChatRoom({
       }
     } catch (err) {
       console.error('AI 응답 실패:', err);
+      // 실패 이유를 채팅창에 안내 (서버가 보낸 detail이 있으면 함께 표시) — 화면만 보고도 원인 파악 가능
+      const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+      const reason = typeof detail === 'string' ? detail : '';
+      setBubbles((prev) => [
+        ...prev,
+        {
+          id: `ai-error-${Date.now()}`,
+          sender: 2,
+          content: `답변을 받지 못했습니다. 잠시 후 다시 시도해 주세요.${reason ? `\n(사유: ${reason})` : ''}`,
+          mtype: 5,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
     } finally {
       // 성공/실패 상관없이 항상 로딩을 해제하고 부모(목록/FAB)에도 완료를 알림
       setAiLoading(false);
@@ -544,25 +569,49 @@ export default function ChatRoom({
       }
     };
 
+  /** 상담 종료 공통 처리 — 화면 상태 전환 + 채팅 목록 제목을 AI 요약으로 변경(백그라운드) */
+  const markConsultEnded = () => {
+    setEndFlow(null);
+    setSessionEnded(true);
+    setConsultStarted(false);
+    const sno = sessionIdRef.current;
+    if (sno) {
+      summarizeTitle(sno).catch((err) => console.error('상담 종료 제목 요약 요청 실패:', err));
+    }
+  };
+
+  /** 대화 요약 후 문의 작성 화면으로 이동 (관리자 문의 · 이전 내용으로 다시 문의하기 공용) */
+  const goQaWithSummary = async (): Promise<boolean> => {
+    if (!sessionIdRef.current) return false;
+    setSummarizing(true);
+    try {
+      const summary = await summarizeChat(sessionIdRef.current);
+      const checkUrl = mno ? 'user' : 'board';
+      onClose();
+      navigate(`/${checkUrl}/qa/new`, { state: { title: summary.title, content: summary.content, type: summary.type } });
+      return true;
+    } catch (err) {
+      console.error('대화 요약 실패:', err);
+      setSummarizing(false);
+      setAlert({ message: '현재 AI 요약 서비스를 이용할 수 없습니다. 잠시 후 다시 시도해주세요.', variant: 'error' });
+      return false;
+    }
+  };
+
+  /** 종료된 상담방 — 이전 대화 내용을 다시 요약해서 문의 작성 화면으로 이동 */
+  const handleReInquiry = async () => {
+    if (summarizing) return;
+    await goQaWithSummary();
+  };
+
   /** 관리자 연결 확인(예/아니오) 및 게시판 작성 이동 처리 */
   const handleEscalateConfirm = async (e: React.MouseEvent, goQa: boolean) => {
     const result = await callStep({ action: 5, goQa, label: e.currentTarget.textContent });
     if (!result) return;
 
     if (goQa && sessionIdRef.current) {
-      setSummarizing(true);
-      try {
-        const summary = await summarizeChat(sessionIdRef.current);
-        const checkUrl = mno ? 'user' : 'board';
-        onClose();
-        navigate(`/${checkUrl}/qa/new`, { state: { title: summary.title, content: summary.content, type: summary.type } });
-        return;
-      } catch (err) {
-        console.error('대화 요약 실패:', err);
-        setSummarizing(false);
-        setEndFlow(null);
-        setAlert({ message: '현재 AI 요약 서비스를 이용할 수 없습니다. 잠시 후 다시 시도해주세요.', variant: 'error' });
-      }
+      if (await goQaWithSummary()) return;
+      setEndFlow(null);
     }
 
     setEndFlow(null);
@@ -580,9 +629,7 @@ export default function ChatRoom({
     if (!result) return;
 
     if (result.sessionEnded) {
-      setEndFlow(null);
-      setSessionEnded(true);
-      setConsultStarted(false);
+      markConsultEnded();
     } else {
       setEndFlow('ASK_UNSATISFY_REASON');
     }
@@ -597,9 +644,7 @@ export default function ChatRoom({
     if (code === 9) {
       setEndFlow('ASK_UNSATISFY_MEMO');
     } else {
-      setEndFlow(null);
-      setSessionEnded(true);
-      setConsultStarted(false);
+      markConsultEnded();
     }
   };
 
@@ -705,10 +750,11 @@ export default function ChatRoom({
           </>
         )}
 
-        {stage === 'INTRO' && loadingRoot && <div className="chat_loading">불러오는 중...</div>}
+        {/* 첫 선택지 불러오는 중 — 상담봇 입력 중 표시 */}
+        {stage === 'INTRO' && loadingRoot && <TypingBubble label="상담봇" variant="system" />}
 
         {/* OPTION 단계 하위 옵션 목록 */}
-        {stage === 'OPTION' && currentOptions.length > 0 && endFlow === null && !sessionEnded && (
+        {stage === 'OPTION' && currentOptions.length > 0 && endFlow === null && !sessionEnded && !optionLoading && (
           <div className="chat_option_list">
             {currentOptions.map((opt) => (
               <button key={opt.no} type="button" className="chat_option_list_item" onClick={() => handleSelectChild(opt)}>
@@ -719,7 +765,8 @@ export default function ChatRoom({
           </div>
         )}
 
-        {stage === 'OPTION' && optionLoading && <div className="chat_loading">불러오는 중...</div>}
+        {/* 옵션 선택 후 답변 불러오는 중 — AI 상담처럼 상담봇 입력 중 표시 (이전 선택지는 숨김) */}
+        {optionLoading && <TypingBubble label="상담봇" variant="system" />}
 
         {/* AI 답변 실패 시 관리자 문의 버튼 */}
         {endFlow === 'FAIL_AI_ANSWER' && (
@@ -770,16 +817,7 @@ export default function ChatRoom({
 
         {/* AI 타이핑 인디케이터 (로딩 중) */}
         {stage === 'AI' && aiLoading && (
-          <div className="chat_bubble_row system">
-            <span className="chat_sender_label">AI</span>
-            <div className="chat_bubble_wrap">
-              <div className="chat_bubble ai chat_typing_indicator">
-                <span className="chat_typing_dot" />
-                <span className="chat_typing_dot" />
-                <span className="chat_typing_dot" />
-              </div>
-            </div>
-          </div>
+          <TypingBubble label="AI" variant="ai" />
         )}
 
         {/* 상담 종료 상태 안내 */}
@@ -791,6 +829,15 @@ export default function ChatRoom({
         <div ref={bottomRef} />
       </div>
 
+      {/* 이전 대화 내용을 AI가 다시 요약해서 문의 작성 화면으로 이동 */}
+      {sessionEnded && sessionIdRef.current && (
+        <div className="chatbot_fixed_actions">
+          <button type="button" className="chat_option_btn" onClick={handleReInquiry} disabled={summarizing}>
+            이전 내용으로 다시 문의하기
+          </button>
+        </div>
+      )}
+      
       {/* 고정 액션 버튼 하단 바 (다른 질문하기, 상담 종료 등) */}
       {!sessionEnded && consultStarted && !endFlow?.includes('SATISFY') && (
         <div className="chatbot_fixed_actions">
