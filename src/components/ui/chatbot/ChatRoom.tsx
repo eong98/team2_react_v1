@@ -817,7 +817,7 @@ export default function ChatRoom({
 
         {/* AI 타이핑 인디케이터 (로딩 중) */}
         {stage === 'AI' && aiLoading && (
-          <TypingBubble label="AI" variant="ai" />
+          <TypingBubble label="알리미" variant="ai" />
         )}
 
         {/* 상담 종료 상태 안내 */}
