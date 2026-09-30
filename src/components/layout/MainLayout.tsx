@@ -30,7 +30,7 @@ const MainLayout = () => {
               <div className="navlinks">
                 <Link to="/index#features">감지 기능</Link>
                 <Link to="/index#flow">작동 방식</Link>
-                <Link to="/user/dashboard/test1">대시보드</Link>
+                <Link to="/user/dashboard">대시보드</Link>
                 <Link to="/index#roadmap">확장 계획</Link>
                 <Link to={login ? '/user/notice' : '/board'}>고객센터</Link>
               </div>

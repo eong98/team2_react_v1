@@ -109,6 +109,8 @@ export default function Dashboard() {
 
   const [shops, setShops] = useState<DashboardShop[]>([]);
   const [shopsLoading, setShopsLoading] = useState(true);
+  // [추가] 매장 목록 요청 실패 사유 - "매장 0개"와 "요청 실패"를 구분해서 보여주기 위함
+  const [shopsError, setShopsError] = useState<string | null>(null);
 
   const [days, setDays] = useState<PeriodDays>(7);
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -129,15 +131,33 @@ export default function Dashboard() {
   useEffect(() => {
     let alive = true;
     setShopsLoading(true);
+    setShopsError(null);
     axiosInstance
       .get<DashboardShop[]>('/dashboard/shops')
       .then((res) => {
         if (!alive) return;
+        // [수정] 배열이 아닌 응답(HTML 등)이 오면 목록 0개로 오인하지 않도록 오류로 처리
+        if (!Array.isArray(res.data)) {
+          setShopsError('서버 응답 형식이 올바르지 않습니다. 백엔드에 /dashboard API가 배포됐는지 확인해주세요.');
+          return;
+        }
         setShops(res.data);
       })
       .catch((err) => {
         console.error('매장 목록 조회 실패:', err);
-        if (alive) setAlert({ message: '매장 목록을 불러오지 못했습니다.', variant: 'error' });
+        if (!alive) return;
+        // [수정] 상태코드별로 원인을 화면에 표시 (서버가 내려준 message가 있으면 우선 사용)
+        const status: number | undefined = err?.response?.status;
+        const serverMsg: string | undefined = err?.response?.data?.message;
+        const reason =
+          status === 403
+            ? '회원(점주/직원) 로그인 쿠키가 아닙니다. 같은 브라우저에서 관리자로 로그인했다면 로그아웃 후 회원으로 다시 로그인해주세요.'
+            : status === 401
+              ? '로그인이 만료되었습니다. 다시 로그인해주세요.'
+              : status === 404
+                ? '백엔드에 /dashboard API가 없습니다. 백엔드 서버를 최신 코드로 재시작해주세요.'
+                : '서버에 연결하지 못했습니다.';
+        setShopsError(`${status === 403 ? reason : (serverMsg ?? reason)}${status ? ` (HTTP ${status})` : ''}`);
       })
       .finally(() => {
         if (alive) setShopsLoading(false);
@@ -238,6 +258,23 @@ export default function Dashboard() {
       <section className="view active dashboard_page">
         <PageHeader title="매장 통계" description="매장 정보를 확인하고 있습니다." />
         <div className="card card_pad_lg chart_empty">불러오는 중...</div>
+      </section>
+    );
+  }
+
+  // [추가] 요청 실패 - "매장 없음" 화면과 구분
+  if (shopsError) {
+    return (
+      <section className="view active dashboard_page">
+        <PageHeader title="매장 통계" description="매장 목록을 불러오지 못했습니다." />
+        <div className="card card_pad_lg dash_empty_state">
+          <p className="b_title">{shopsError}</p>
+          <div className="dash_empty_actions">
+            <button type="button" className="btn btn_md btn_primary" onClick={() => window.location.reload()}>
+              다시 시도
+            </button>
+          </div>
+        </div>
       </section>
     );
   }
