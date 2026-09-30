@@ -213,6 +213,12 @@ export default function Dashboard() {
     summary && summary.issueCount > 0 ? Math.round((summary.falseIssues / summary.issueCount) * 100) : null;
   const periodLabel = PERIODS.find((p) => p.days === days)?.label ?? '';
 
+  // [추가] 기간 내 이슈가 없을 때 "차트가 고장났다"로 오해하지 않도록 마지막 감지 시각을 같이 안내
+  const lastIssueAt = stats?.recentIssues[0]?.cdate;
+  const emptyIssueMsg = lastIssueAt
+    ? `기간 내 감지된 이상행동이 없습니다. (마지막 감지 ${lastIssueAt.slice(0, 10)} · 기간을 늘려보세요)`
+    : '기간 내 감지된 이상행동이 없습니다.';
+
   // 표 보기용: 날짜별 방문객 + 이슈를 한 줄로 합침 (차트를 못 보는 경우 / 정확한 숫자 확인용)
   const dailyRows = useMemo(() => {
     if (!stats) return [];
@@ -229,7 +235,7 @@ export default function Dashboard() {
   /* ---- 매장 목록 로딩 / 매장 없음 ---- */
   if (shopsLoading) {
     return (
-      <section className="view active">
+      <section className="view active dashboard_page">
         <PageHeader title="매장 통계" description="매장 정보를 확인하고 있습니다." />
         <div className="card card_pad_lg chart_empty">불러오는 중...</div>
       </section>
@@ -238,7 +244,7 @@ export default function Dashboard() {
 
   if (shops.length === 0) {
     return (
-      <section className="view active">
+      <section className="view active dashboard_page">
         <PageHeader title="매장 통계" description="소속된 매장이 있어야 통계를 확인할 수 있습니다." />
         <div className="card card_pad_lg dash_empty_state">
           <p className="b_title">소유하거나 소속된 매장이 없습니다.</p>
@@ -309,7 +315,8 @@ export default function Dashboard() {
       {!stats || !summary ? (
         <div className="card card_pad_lg chart_empty">{loading ? '통계를 불러오는 중...' : '표시할 통계가 없습니다.'}</div>
       ) : (
-        <div className={loading ? 'dash_body is_loading' : 'dash_body'}>
+        // [수정] dash_body → stat_dash_body : 랜딩(home.css)의 .dash_body(grid 3열)와 이름이 겹쳐 레이아웃이 깨졌음
+        <div className={loading ? 'stat_dash_body is_loading' : 'stat_dash_body'}>
           {/* ---- KPI 1행: 기간 지표 ---- */}
           <div className="stats_grid">
             <div className="card kpi">
@@ -459,7 +466,7 @@ export default function Dashboard() {
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <EmptyChart message="기간 내 감지된 이상행동이 없습니다." />
+                  <EmptyChart message={emptyIssueMsg} />
                 )}
               </div>
             </div>
@@ -490,7 +497,7 @@ export default function Dashboard() {
                   })}
                 </ul>
               ) : (
-                <EmptyChart message="기간 내 감지된 이상행동이 없습니다." />
+                <EmptyChart message={emptyIssueMsg} />
               )}
             </div>
           </div>

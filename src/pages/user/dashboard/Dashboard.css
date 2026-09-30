@@ -3,76 +3,83 @@
    KPI/차트 카드 뼈대는 contents.css "6. 통계 리포트"
    (.period_tabs / .stats_grid / .kpi / .chart_row / .chart_card)를 그대로 재사용하고,
    여기엔 대시보드에만 필요한 것만 추가합니다.
+
+   [수정] Vite에서 import한 CSS는 "그 페이지에만" 적용되는 게 아니라 앱 전체 전역입니다.
+   랜딩 페이지 home.css의 .dash_body(grid 3열)가 이 화면까지 덮어써서 레이아웃이 깨졌으므로
+   - 래퍼 클래스명을 stat_dash_body로 변경
+   - 이 파일의 모든 규칙을 .dashboard_page 하위로 한정
 ========================================================= */
 
 .dashboard_page .mono { font-family: var(--font-mono); }
 
 /* 상단 우측: 매장 선택 + 새로고침 */
-.dash_toolbar { display: flex; gap: 8px; align-items: center; }
-.dash_toolbar .form_select { min-width: 180px; }
+.dashboard_page .dash_toolbar { display: flex; gap: 8px; align-items: center; }
+.dashboard_page .dash_toolbar .form_select { min-width: 180px; }
 
 /* 조회기간 탭 + 기간 표시 */
-.dash_period_row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
-.dash_period_row .period_tabs { margin-bottom: 0; }
-.dash_period_row .period_tab { cursor: pointer; font-family: var(--font-disp); }
-.dash_range { font-size: 11.5px; color: var(--text-faint); }
+.dashboard_page .dash_period_row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.dashboard_page .dash_period_row .period_tabs { margin-bottom: 0; }
+.dashboard_page .dash_period_row .period_tab { cursor: pointer; font-family: var(--font-disp); }
+.dashboard_page .dash_range { font-size: 11.5px; color: var(--text-faint); }
 
 /* 새로고침 중에는 기존 데이터를 살짝 흐리게 (깜빡임 없이 유지) */
-.dash_body { transition: opacity .2s ease; }
-.dash_body.is_loading { opacity: .55; pointer-events: none; }
+.dashboard_page .stat_dash_body { transition: opacity .2s ease; }
+.dashboard_page .stat_dash_body.is_loading { opacity: .55; pointer-events: none; }
 
 /* KPI 보조 텍스트 - contents.css는 mono 폰트라 한글 자간이 벌어져서 본문 폰트로 */
 .dashboard_page .kpi .delta { font-family: var(--font-disp); }
-.kpi .delta.neutral { color: var(--text-faint); }
-.kpi_link { background: none; border: none; padding: 0; margin-top: 6px; font-size: 11.5px; color: var(--secondary); cursor: pointer; font-family: var(--font-disp); }
-.kpi_link:hover { text-decoration: underline; }
+.dashboard_page .kpi .delta.neutral { color: var(--text-faint); }
+.dashboard_page .kpi_link { background: none; border: none; padding: 0; margin-top: 6px; font-size: 11.5px; color: var(--secondary); cursor: pointer; font-family: var(--font-disp); }
+.dashboard_page .kpi_link:hover { text-decoration: underline; }
 
 /* 차트 행 간격 */
-.dash_chart_row { margin-bottom: 16px; }
-.chart_card .b_title.lg { margin-bottom: 14px; }
-.chart_box { width: 100%; height: 240px; }
-.chart_empty { display: flex; align-items: center; justify-content: center; min-height: 200px; color: var(--text-faint); font-size: 13px; text-align: center; }
+/* grid 자식은 기본 min-width:auto라 내용물(SVG) 때문에 칸이 안 줄어듦 → 0으로 풀어서 차트가 칸 폭에 맞게 리사이즈되게 */
+.dashboard_page .chart_card, .dashboard_page .kpi { min-width: 0; }
+.dashboard_page .dash_chart_row { margin-bottom: 16px; }
+.dashboard_page .chart_card .b_title.lg { margin-bottom: 14px; }
+.dashboard_page .chart_box { width: 100%; height: 240px; }
+.dashboard_page .chart_empty { display: flex; align-items: center; justify-content: center; min-height: 200px; color: var(--text-faint); font-size: 13px; text-align: center; }
 
-.dash_card_head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.dash_card_head .b_title.lg { margin-bottom: 0; }
-.dash_card_head .kpi_link { margin-top: 0; }
+.dashboard_page .dash_card_head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.dashboard_page .dash_card_head .b_title.lg { margin-bottom: 0; }
+.dashboard_page .dash_card_head .kpi_link { margin-top: 0; }
 
 /* 툴팁 */
-.dash_tooltip { background: var(--bg-elevated); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 8px 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, .35); }
-.dash_tooltip .tt_label { font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); margin-bottom: 4px; }
-.dash_tooltip .tt_value { font-size: 12.5px; color: var(--text-dim); }
-.dash_tooltip .tt_value b { font-family: var(--font-mono); color: var(--text); margin: 0 2px 0 4px; }
+.dashboard_page .dash_tooltip { background: var(--bg-elevated); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 8px 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, .35); }
+.dashboard_page .dash_tooltip .tt_label { font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); margin-bottom: 4px; }
+.dashboard_page .dash_tooltip .tt_value { font-size: 12.5px; color: var(--text-dim); }
+.dashboard_page .dash_tooltip .tt_value b { font-family: var(--font-mono); color: var(--text); margin: 0 2px 0 4px; }
 
 /* 유형별 이상행동 목록 (라벨 + 비율 막대) */
-.type_list, .recent_list { list-style: none; margin: 0; padding: 0; }
-.type_list { display: flex; flex-direction: column; gap: 14px; }
-.type_head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-.type_name { font-size: 13px; color: var(--text); }
-.type_val { margin-left: auto; font-size: 12px; color: var(--text-dim); }
-.type_track { height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
-.type_fill { height: 100%; border-radius: 4px; min-width: 2px; transition: width .4s ease; }
+.dashboard_page .type_list, .dashboard_page .recent_list { list-style: none; margin: 0; padding: 0; }
+.dashboard_page .type_list { display: flex; flex-direction: column; gap: 14px; }
+.dashboard_page .type_head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.dashboard_page .type_name { font-size: 13px; color: var(--text); }
+.dashboard_page .type_val { margin-left: auto; font-size: 12px; color: var(--text-dim); }
+.dashboard_page .type_track { height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+.dashboard_page .type_fill { height: 100%; border-radius: 4px; min-width: 2px; transition: width .4s ease; }
 
 /* 최근 이슈 / CCTV 상태 목록 */
-.recent_list { display: flex; flex-direction: column; }
-.recent_row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
-.recent_row:last-child { border-bottom: none; }
-.recent_name { color: var(--text); }
-.recent_meta { font-size: 11.5px; color: var(--text-faint); }
-.recent_time { margin-left: auto; font-size: 11.5px; color: var(--text-faint); }
+.dashboard_page .recent_list { display: flex; flex-direction: column; }
+.dashboard_page .recent_row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.dashboard_page .recent_row:last-child { border-bottom: none; }
+.dashboard_page .recent_name { color: var(--text); }
+.dashboard_page .recent_meta { font-size: 11.5px; color: var(--text-faint); }
+.dashboard_page .recent_time { margin-left: auto; font-size: 11.5px; color: var(--text-faint); }
 
 /* 표로 보기 */
-.dash_table { padding: 14px 16px; }
-.dash_table summary { cursor: pointer; font-size: 13px; color: var(--text-dim); }
-.dash_table[open] summary { margin-bottom: 12px; }
-.dash_table .table_wrap { max-height: 320px; overflow-y: auto; }
+.dashboard_page .dash_table { padding: 14px 16px; }
+.dashboard_page .dash_table summary { cursor: pointer; font-size: 13px; color: var(--text-dim); }
+.dashboard_page .dash_table[open] summary { margin-bottom: 12px; }
+.dashboard_page .dash_table .table_wrap { max-height: 320px; overflow-y: auto; }
 
 /* 매장 없음 */
-.dash_empty_state { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 60px 20px; text-align: center; }
-.dash_empty_actions { display: flex; gap: 8px; margin-top: 6px; }
+.dashboard_page .dash_empty_state { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 60px 20px; text-align: center; }
+.dashboard_page .dash_empty_actions { display: flex; gap: 8px; margin-top: 6px; }
 
 @media (max-width: 900px) {
-  .dash_toolbar { width: 100%; }
-  .dash_toolbar .form_select { flex: 1; min-width: 0; }
-  .recent_row { flex-wrap: wrap; }
-  .recent_time { margin-left: 0; width: 100%; }
+  .dashboard_page .dash_toolbar { width: 100%; }
+  .dashboard_page .dash_toolbar .form_select { flex: 1; min-width: 0; }
+  .dashboard_page .recent_row { flex-wrap: wrap; }
+  .dashboard_page .recent_time { margin-left: 0; width: 100%; }
 }
