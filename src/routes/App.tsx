@@ -40,6 +40,9 @@ import QaList from '../pages/main/board/QaList';
 import QaDetail from '../pages/main/board/QaDetail';
 import QaForm from '../pages/user/qa/QaForm';
 
+/* 손님용 매장 설문 응답 (QR 접속, 비로그인) */
+import ShopSurveyPublic from '../pages/public/ShopSurveyPublic';
+
 
 import DesignGuide from '../pages/guide/DesignGuide';
 
@@ -99,6 +102,9 @@ function App() {
           <Route element={<BaseLayout Sidebar={Sidebar} Topbar={Topbar} />}>
             <Route path="/guide" element={<DesignGuide />} />
           </Route>
+
+          {/* 손님용 매장 설문 응답 - QR로 접속. 로그인/레이아웃 없이 단독 화면 (/user·/dbms와 분리) */}
+          <Route path="/s/:qrid" element={<ShopSurveyPublic />} />
           
         </Routes>
       </div>

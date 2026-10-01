@@ -1,0 +1,285 @@
+/* =====================================================================
+   매장 설문 (/shopsurvey) 전용 스타일
+   색상/간격은 index.css 토큰(--primary, --surface-2, --text-dim ...)만 사용합니다.
+===================================================================== */
+
+/* ---- 공통 빈 상태 ---- */
+.shop-survey-page .shop_survey_empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text-faint);
+}
+
+/* ---- 목록: 제목 셀 ---- */
+.shop_survey_link {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.shop_survey_link_title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shop_survey_link:hover .shop_survey_link_title { color: var(--primary); }
+.shop_survey_link_desc {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- QR 모달 ---- */
+.shop_survey_qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.shop_survey_qr_title {
+  font-weight: 600;
+  text-align: center;
+  word-break: keep-all;
+}
+.shop_survey_qr_box {
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: #ffffff; /* QR 인식을 위해 다크모드에서도 흰 배경 고정 */
+}
+.shop_survey_qr_box canvas {
+  display: block;
+  width: 220px !important;
+  height: 220px !important;
+}
+.shop_survey_qr_notice {
+  font-size: 12.5px;
+  color: var(--amber-400);
+  text-align: center;
+  line-height: 1.5;
+}
+.shop_survey_qr_url {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 360px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.shop_survey_qr_url .mono {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+/* ---- 상세: 요약 KPI ---- */
+.shop_survey_kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.shop_survey_kpi_date { font-size: 16px; }
+@media (max-width: 720px) {
+  .shop_survey_kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ---- 상세: 문항 헤더 (집계/문항 탭 공통) ---- */
+.shop_survey_stat_head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.shop_survey_q_no {
+  font-size: 12px;
+  color: var(--primary);
+  font-weight: 700;
+}
+.shop_survey_q_title {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  word-break: keep-all;
+}
+
+/* ---- 집계 탭 ---- */
+.shop_survey_stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.shop_survey_stat_sub {
+  margin: 6px 0 14px;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+.shop_survey_stat_hint {
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+.shop_survey_scale {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.shop_survey_scale_val {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+}
+.shop_survey_scale_max {
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+/* 보기별 선택 수 - 단일 계열 가로 막대 (색은 --primary 하나, 값/라벨은 텍스트 색) */
+.shop_survey_bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.shop_survey_bar_row {
+  display: grid;
+  grid-template-columns: minmax(80px, 180px) 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 2px 0; /* hover 영역을 막대보다 넓게 */
+}
+.shop_survey_bar_label {
+  font-size: 13px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shop_survey_bar_track {
+  position: relative;
+  height: 12px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.shop_survey_bar_fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 0 4px 4px 0;
+  background: var(--primary);
+  transition: width .3s ease;
+}
+.shop_survey_bar_row:hover .shop_survey_bar_fill { filter: brightness(1.15); }
+.shop_survey_bar_val {
+  min-width: 84px;
+  font-size: 12.5px;
+  color: var(--text);
+  text-align: right;
+}
+.shop_survey_bar_val em {
+  margin-left: 4px;
+  font-style: normal;
+  color: var(--text-faint);
+}
+@media (max-width: 720px) {
+  .shop_survey_bar_row { grid-template-columns: 1fr auto; }
+  .shop_survey_bar_track { grid-column: 1 / -1; grid-row: 2; }
+}
+
+/* ---- 응답 목록 탭 ---- */
+.shop_survey_responses {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.shop_survey_response_head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+.shop_survey_answers {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+}
+.shop_survey_answer dt {
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+.shop_survey_answer dd {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text);
+}
+.shop_survey_answer_text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+}
+.shop_survey_photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.shop_survey_photos a {
+  display: block;
+  width: 72px;
+  height: 72px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.shop_survey_photos img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ---- 문항 탭 ---- */
+.shop_survey_questions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.shop_survey_q_badges { margin-top: 10px; }
+.shop_survey_q_options {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.8;
+  list-style: disc;
+}

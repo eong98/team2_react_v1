@@ -91,6 +91,7 @@ export default function DbmsLogin() {
       setAlert({ message: '서버 연결에 실패했습니다.\n잠시 후 다시 시도해주세요.', variant: 'error' });
     }
   };
+
   return (
     <section className="view active">
       <PageHeader title="로그인" title_size="xlg" description="allimio 관제 서비스에 오신 것을 환영합니다." />
