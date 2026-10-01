@@ -451,3 +451,83 @@
 .pmethod_chip_icon {
   font-size: 18px;
 }
+
+/* ── 결제 시 로그인 안내 모달 ── */
+.login_confirm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 4px 0 2px;
+}
+.login_confirm_icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 16px;
+  border-radius: 50%;
+  background: var(--cyan-dim, rgba(51, 214, 192, 0.14));
+  color: var(--cyan, #33d6c0);
+}
+.login_confirm_icon svg,
+.login_confirm_join_btn svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.login_confirm_icon svg {
+  width: 26px;
+  height: 26px;
+}
+.login_confirm_title {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 700;
+}
+.login_confirm_desc {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-dim, #adb7c0);
+}
+/* 회원가입 안내 — 구분선 아래 한 줄, 링크는 청록 */
+.login_confirm_join {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border, #2a323c);
+  font-size: 13px;
+  color: var(--text-faint, #a4aeb7);
+}
+.login_confirm_join_btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--cyan, #33d6c0);
+  cursor: pointer;
+}
+.login_confirm_join_btn svg {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s ease;
+}
+.login_confirm_join_btn:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.login_confirm_join_btn:hover svg {
+  transform: translateX(2px);
+}

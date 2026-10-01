@@ -19,7 +19,7 @@ interface AppShellProps {
   Sidebar: ComponentType<SidebarProps>;
   Topbar: ComponentType<TopbarProps>;
   MobileTabbar?: ComponentType;
-  ChatBotWidget?: ComponentType;
+  ChatBotWidget?: ComponentType<{ corner?: boolean }>;
 }
 
 /**
@@ -47,7 +47,8 @@ export default function BaseLauout({
         <div className='copyright'>{getCopyright()}</div>
       </main>
 
-      {ChatBotWidget && <ChatBotWidget />}
+      {/* 관리자·관제 화면은 챗봇을 오른쪽 하단에 둠 (메인 화면은 오른쪽 가운데) */}
+      {ChatBotWidget && <ChatBotWidget corner />}
     </div>
   );
 }

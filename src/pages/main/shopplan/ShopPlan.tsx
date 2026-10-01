@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PageHeader, AlertModal } from '../../../components/ui';
+import { PageHeader, AlertModal, Modal } from '../../../components/ui';
 import { axiosInstance, getNowDate } from '../../../utils/Tool';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import { GlobalCurrentShop } from '../../../store/UserStore';
@@ -43,6 +43,7 @@ export default function ShopPlan() {
 
   const [paying, setPaying] = useState(false);
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error', onConfirm?: () => void } | null>(null);
+  const [loginConfirmOpen, setLoginConfirmOpen] = useState(false); // 비로그인 결제 시도 시 로그인 안내 모달
 
   useEffect(() => {
     axiosInstance
@@ -83,7 +84,7 @@ export default function ShopPlan() {
 
   const handlePay = async () => {
     if (!mno) {
-      setAlert({ message: '로그인이 필요합니다.', variant: 'error' });
+      setLoginConfirmOpen(true);
       return;
     }
     if (!plan || !month) return;
@@ -392,6 +393,45 @@ export default function ShopPlan() {
         message={alert?.message ?? ''}
         variant={alert?.variant}
       />
+
+      
+      {/* 결제시도 로그인 확인 모달 */}
+      <Modal
+        open={loginConfirmOpen}
+        onClose={() => setLoginConfirmOpen(false)}
+        titleId="loginConfirmTitle"
+        title="알림"
+        footer={
+          <>
+            <button type="button" className="btn btn_md btn_ghost" onClick={() => setLoginConfirmOpen(false)}>
+              취소
+            </button>
+            <button type="button" className="btn btn_md btn_primary" onClick={() => navigate('/login')}>
+              로그인
+            </button>
+          </>
+        }
+      >
+        <div className="login_confirm">
+          <span className="login_confirm_icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <rect x="5" y="10.5" width="14" height="10" rx="2.5" />
+              <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
+              <path d="M12 14.5v2.5" />
+            </svg>
+          </span>
+          <p className="login_confirm_title">로그인이 필요합니다</p>
+          <p className="login_confirm_desc">구독권을 구매하시려면 로그인 후 다시 시도해주세요.</p>
+
+          <div className="login_confirm_join">
+            <span>회원이 아니신가요?</span>
+            <button type="button" className="login_confirm_join_btn" onClick={() => navigate('/signup')}>
+              회원가입하러가기
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+            </button>
+          </div>
+        </div>
+      </Modal>
     </>
 
   );

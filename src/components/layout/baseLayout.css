@@ -8,7 +8,11 @@
 .sidebar{display:flex; flex-direction: column; flex-shrink:0; position:sticky; top:0; width:220px; height:100vh; padding:20px 0; background:var(--n-850);border-right:1px solid var(--border);}
 .sidebar_backdrop{display:none;position:fixed;inset:0;background:rgba(3,5,8,.6);z-index:58;}
 
-.sidebar .logo {display:flex; padding:6px 14px 22px; border-bottom:1px solid var(--border)}
+.sidebar .header {display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 14px 22px; border-bottom:1px solid var(--border)}
+/* 메인 페이지 이동 — 로고 옆 집 모양 아이콘 버튼, 마우스 올리면 청록 */
+.sidebar .header .go_main{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:28px;height:28px;border:1px solid var(--border-strong);border-radius:8px;color:var(--text-dim);transition:.2s;}
+.sidebar .header .go_main svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.sidebar .header .go_main:hover{border-color:var(--cyan);background:var(--cyan-dim);color:var(--cyan);}
 
 /* 스크롤바는 평소엔 숨겨져 있다가 마우스를 올렸을 때만 살짝 보이게 (스크롤 동작 자체는 항상 그대로 유지되므로
    키보드 탐색·휠·터치 스크롤에는 영향 없습니다 — 시각적으로만 숨김/표시). 위아래 화살표 버튼은 제거. */
@@ -129,4 +133,4 @@
 
 .clock{font-family:var(--font-mono);font-size:12px;color:var(--text-dim);}
 
-.views{width:100%; padding:22px 26px 40px;}
+.views{width:100%; padding:22px 26px 48px;}

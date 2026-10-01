@@ -49,18 +49,6 @@ const ROAD = [
   { stage: '향후', title: '다국어 자동 회신', text: '지금은 번역해서 보여주는 수준이지만, 정형화된 문의는 AI가 현지어로 자동 회신하도록 넓혀갑니다.', now: false },
 ];
 
-
-const LINKS = [
-  { href: '/user/dashboard', stage: 'LIVE', title: '실시간 관제 대시보드', text: 'CCTV 화면, 이벤트 이력, 통계 리포트를 한 화면에서 확인합니다.', now: true },
-  { href: '/user/mypage', stage: '회원', title: '로그인 · 마이페이지 · 문의사항', text: '회원가입, 정보수정, 로그인 이력, 문의 접수까지.', now: true },
-  { href: '/user/shop', stage: '매장', title: '매장 · CCTV 관리', text: '매장 등록, CCTV·오디오 센서 등록, 이상행동 유형코드 관리.', now: true },
-  { href: '/user/survey', stage: '알림', title: '알림 · 메일 · AI 생성 · 설문참여', text: 'SMS·메일 발송, 웹메일함 번역, 생성이미지·AI 도면 관리.', now: true },
-  { href: '/user/notice', stage: '고객지원', title: '게시판 · 챗봇 · 구독', text: '공지사항, 1:1문의, 챗봇 상담, 구독권 결제까지.', now: true },
-  { href: '/guide', stage: 'DESIGN', title: '공통 디자인 가이드', text: '컬러·타이포·버튼·폼 등 실무 퍼블리싱 클래스 레퍼런스.', now: false },
-];
-
-
-
 interface RevealSectionProps {
   id?: string;
   className?: string;
@@ -123,10 +111,10 @@ const Home = () => {
               감지하고 관리자에게 알립니다.
             </p>
             <div className="hero_actions">
-              <Link to="/shopplan" className="btn btn_primary">
-                데모 신청하기
+              <Link to="/shopplan" className="btn btn_lg btn_primary">
+                구독 하러가기
               </Link>
-              <a href="/index/#flow" className="btn btn_ghost">
+              <a href="#flow" className="btn btn_lg btn_ghost">
                 작동 방식 보기
               </a>
             </div>
@@ -242,7 +230,7 @@ const Home = () => {
       <RevealSection id="dashboard">
         <div className="wrap">
           <div className="section_head">
-            <span className="eyebrow">관리자 대시보드</span>
+            <span className="eyebrow">대시보드</span>
             <h2>매장 상태를 한 화면에서 확인하세요</h2>
             <p>여러 매장의 CCTV, 이벤트 이력, 통계를 하나의 화면에서 관리합니다.</p>
           </div>
@@ -308,36 +296,16 @@ const Home = () => {
         </div>
       </RevealSection>
 
-      
-      <RevealSection>
-        <div className="wrap">
-          <div className="section_head">
-            <span className="eyebrow">바로가기</span>
-            <h2>이미 만들어진 관리 화면을 둘러보세요</h2>
-            <p>영업 준비 중인 목업이 아니라, 실제로 동작하는 관리자 화면입니다.</p>
-          </div>
-          <div className="road">
-            {LINKS.map((l) => (
-              <Link to={l.href} className={`road_card${l.now ? ' now' : ''}`} style={{ display: 'block' }} key={l.href}>
-                <div className="stage mono">{l.stage}</div>
-                <h4>{l.title}</h4>
-                <p>{l.text}</p>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </RevealSection>
-      
       <RevealSection className="cta border_top">
         <div className="wrap">
           <h2>지금, 매장에 눈을 달아주세요</h2>
-          <p>도입 상담과 데모 시연을 신청하시면 담당자가 안내해드립니다.</p>
+          <p>도입 상담과 구독을 신청하시면 담당자가 안내해드립니다.</p>
           <div className="cta_actions">
-            <Link to="/shopplan" className="btn btn_primary">
-              데모 신청하기
+            <Link to="/shopplan" className="btn btn_lg btn_primary">
+              구독하러 가기
             </Link>
-            <Link to={login ? '/user/qa/new' : '/board/qa/new'} className="btn btn_ghost">
-              문의하기
+            <Link to={login ? '/user/qa/new' : '/board/qa/new'} className="btn btn_lg btn_ghost">
+              문의 상담하러 가기
             </Link>
           </div>
         </div>

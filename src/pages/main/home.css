@@ -99,7 +99,7 @@
 .main section{padding:104px 0;position:relative;z-index:1;}
 .main .login section{padding:0;}
 .main .section_head{max-width:620px;margin-bottom:56px;}
-.main .section_head .eyebrow{background:transparent;border-color:var(--border-strong);color:var(--text-dim);}
+.main .section_head .eyebrow{font-family:var(--font-disp); background:transparent;border-color:var(--border-strong);color:var(--text-dim);}
 .main .section_head h2{font-size:30px;font-weight:800;letter-spacing:-0.02em;margin-bottom:14px;}
 .main .section_head p{color:var(--text-dim);font-size:15.5px;}
 .main .border_top{border-top:1px solid var(--n-600);}
