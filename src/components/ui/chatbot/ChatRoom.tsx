@@ -20,6 +20,7 @@ import {
 import type { ChatMenuTypes } from '../../ts/ChatMenu';
 import { getOrCreateGno } from '../../ts/ChatGuest';
 import { aiChat, endAiConsultDivider, startAiConsult, summarizeChat, summarizeTitle } from './ChatApi';
+import { apiErrorMessage, backoffDelay } from './aiServer';
 import AlertModal from '../common/AlertModal';
 
 /* ---------------------------------------------------------------------
@@ -32,7 +33,12 @@ interface ChatRoomProps {
   refreshSignal: { sno: string; ts: number } | null; // 외부 신호(알림) 수신용
   onStartAiResponding: (sno: string) => void;        // 목록/FAB 표시용 — "이 세션이 응답 대기 중"임을 부모에게 알림
   onAiRespondingDone: () => void;                    // 목록/FAB 표시용 — 응답 완료를 부모에게 알림
+  aiOnline?: boolean;                                // AI 서버(FastAPI) 연결 여부 — false면 AI 기능만 잠금
 }
+
+/** AI 답변 대기 폴링: 기본 간격 / 최대 대기 시간 */
+const AI_POLL_INTERVAL_MS = 2000;
+const AI_POLL_MAX_WAIT_MS = 3 * 60 * 1000;
 
 /** 상대가 입력 중인 말풍선 (점 3개) — AI 답변 대기, 옵션 답변 불러오기 공용 */
 function TypingBubble({ label, variant }: { label: string; variant: 'ai' | 'system' }) {
@@ -57,6 +63,7 @@ export default function ChatRoom({
   refreshSignal,
   onStartAiResponding,
   onAiRespondingDone,
+  aiOnline = true,
 }: ChatRoomProps) {
   const navigate = useNavigate();
   const { no: mno } = GlobalStoreSession(); // 로그인 사용자 회원번호 (비회원이면 null)
@@ -73,7 +80,7 @@ export default function ChatRoom({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const aiPollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const aiPollTimerRef = useRef<number | null>(null);
 
   /* ---------------------------------------------------------------------
      State 관리
@@ -140,7 +147,7 @@ export default function ChatRoom({
   useEffect(() => {
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-      if (aiPollIntervalRef.current) clearInterval(aiPollIntervalRef.current);
+      if (aiPollTimerRef.current) window.clearTimeout(aiPollTimerRef.current);
     };
   }, []);
 
@@ -280,15 +287,18 @@ export default function ChatRoom({
      폴링 로직 (AI 답변 생성 및 대화 요약 상태)
   --------------------------------------------------------------------- */
   /** AI 답변 생성이 완료될 때까지 주기적으로 상태 확인 (재진입 시 로딩/화면 복원용) */
+  // 실패하면 간격을 늘리고(최대 30초), 3분이 지나도 답이 없으면 멈추고 안내 (AI 서버가 꺼진 경우 대비)
   const pollForAiResponse = (sno: string) => {
-    if (aiPollIntervalRef.current) clearInterval(aiPollIntervalRef.current);
+    if (aiPollTimerRef.current) window.clearTimeout(aiPollTimerRef.current);
+    const startedAt = Date.now();
+    let fails = 0;
 
-    aiPollIntervalRef.current = setInterval(async () => {
+    const tick = async () => {
       try {
         const res = await axiosInstance.get<ChatSessionResponse>(`/chat_session/${sno}`);
+        fails = 0;
         if (res.data.endflow !== 6) {
-          if (aiPollIntervalRef.current) clearInterval(aiPollIntervalRef.current);
-          aiPollIntervalRef.current = null;
+          aiPollTimerRef.current = null;
           setAiLoading(false);
           onAiRespondingDone();
 
@@ -304,11 +314,32 @@ export default function ChatRoom({
           setBubbles(restoredBubbles);
           setEndFlow(numberToEndFlow(res.data.endflow));
           scrollToBottom();
+          return;
         }
       } catch (err) {
-        console.error('AI 폴링 확인 실패:', err);
+        fails += 1;
+        console.warn('AI 폴링 확인 실패:', err);
       }
-    }, 2000);
+      if (Date.now() - startedAt > AI_POLL_MAX_WAIT_MS) {
+        aiPollTimerRef.current = null;
+        setAiLoading(false);
+        onAiRespondingDone();
+        addNoticeBubble('AI 답변이 지연되고 있습니다. 잠시 후 다시 질문해 주시거나 다른 질문하기를 이용해 주세요.');
+        return;
+      }
+      aiPollTimerRef.current = window.setTimeout(tick, fails ? backoffDelay(fails) : AI_POLL_INTERVAL_MS);
+    };
+
+    aiPollTimerRef.current = window.setTimeout(tick, AI_POLL_INTERVAL_MS);
+  };
+
+  /** 화면에만 보이는 안내 말풍선 (저장 안 함) — 오류·지연 안내용 */
+  const addNoticeBubble = (content: string) => {
+    setBubbles((prev) => [
+      ...prev,
+      { id: `notice-${Date.now()}`, sender: 2, content, mtype: 5, createdAt: new Date().toISOString() },
+    ]);
+    scrollToBottom();
   };
 
   /** AI 대화 요약이 완료될 때까지 주기적으로 상태 확인 */
@@ -454,6 +485,7 @@ export default function ChatRoom({
       scrollToBottom();
     } catch (err) {
       console.error('AI 상담 전환 실패:', err);
+      addNoticeBubble(`AI 상담을 시작하지 못했습니다.\n(${apiErrorMessage(err, '잠시 후 다시 시도해 주세요.')})`);
     } finally {
       setAiLoading(false);
       onAiRespondingDone();
@@ -496,19 +528,8 @@ export default function ChatRoom({
       }
     } catch (err) {
       console.error('AI 응답 실패:', err);
-      // 실패 이유를 채팅창에 안내 (서버가 보낸 detail이 있으면 함께 표시) — 화면만 보고도 원인 파악 가능
-      const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
-      const reason = typeof detail === 'string' ? detail : '';
-      setBubbles((prev) => [
-        ...prev,
-        {
-          id: `ai-error-${Date.now()}`,
-          sender: 2,
-          content: `답변을 받지 못했습니다. 잠시 후 다시 시도해 주세요.${reason ? `\n(사유: ${reason})` : ''}`,
-          mtype: 5,
-          createdAt: new Date().toISOString(),
-        },
-      ]);
+      // 실패 이유를 채팅창에 안내 — 서버 꺼짐("AI 서버에 연결할 수 없습니다")과 서버가 보낸 사유를 구분
+      addNoticeBubble(`답변을 받지 못했습니다.\n(${apiErrorMessage(err, '잠시 후 다시 시도해 주세요.')})`);
     } finally {
       // 성공/실패 상관없이 항상 로딩을 해제하고 부모(목록/FAB)에도 완료를 알림
       setAiLoading(false);
@@ -593,7 +614,7 @@ export default function ChatRoom({
     } catch (err) {
       console.error('대화 요약 실패:', err);
       setSummarizing(false);
-      setAlert({ message: '현재 AI 요약 서비스를 이용할 수 없습니다. 잠시 후 다시 시도해주세요.', variant: 'error' });
+      setAlert({ message: apiErrorMessage(err, '현재 AI 요약 서비스를 이용할 수 없습니다. 잠시 후 다시 시도해주세요.'), variant: 'error' });
       return false;
     }
   };
@@ -664,7 +685,7 @@ export default function ChatRoom({
   const inputEnabled =
     !sessionEnded &&
     !aiLoading &&
-    ((stage === 'AI' && (endFlow === null || endFlow === 'FAIL_AI_ANSWER')) || endFlow === 'ASK_UNSATISFY_MEMO');
+    ((stage === 'AI' && aiOnline && (endFlow === null || endFlow === 'FAIL_AI_ANSWER')) || endFlow === 'ASK_UNSATISFY_MEMO');
 
   /** 전체 말풍선 및 날짜 구분선 렌더링 */
   const renderBubbles = () => {
@@ -744,7 +765,7 @@ export default function ChatRoom({
             <div className="chat_ai_divider">
               <span>또는</span>
             </div>
-            <button type="button" className="chat_ai_entry_btn" onClick={handleAiConsult}>
+            <button type="button" className="chat_ai_entry_btn" onClick={handleAiConsult} disabled={!aiOnline}>
               ✨ AI에게 바로 물어보기
             </button>
           </>
@@ -825,6 +846,15 @@ export default function ChatRoom({
           <div className="chat_ended_notice">상담이 종료되었습니다. 다시 상담을 원하시면 채팅창을 새로 열어주세요.</div>
         )}
 
+        {/* AI 서버(FastAPI) 꺼짐 안내 — 메뉴(옵션형) 상담은 Spring이라 계속 이용 가능 */}
+        {!aiOnline && (
+          <div className="chat_ai_offline_notice" role="status">
+            AI 상담 서버에 연결할 수 없습니다. 메뉴 상담은 계속 이용할 수 있어요.
+            <br />
+            (자동으로 다시 연결을 시도하며, 챗봇을 닫았다 다시 열면 바로 재시도합니다)
+          </div>
+        )}
+
         {/* 자동 스크롤을 위한 바닥 타겟 요소를 스크롤 영역 가장 하단에 배치 */}
         <div ref={bottomRef} />
       </div>
@@ -832,7 +862,7 @@ export default function ChatRoom({
       {/* 이전 대화 내용을 AI가 다시 요약해서 문의 작성 화면으로 이동 */}
       {sessionEnded && sessionIdRef.current && (
         <div className="chatbot_fixed_actions">
-          <button type="button" className="chat_option_btn" onClick={handleReInquiry} disabled={summarizing}>
+          <button type="button" className="chat_option_btn" onClick={handleReInquiry} disabled={summarizing || !aiOnline}>
             이전 내용으로 다시 문의하기
           </button>
         </div>
@@ -847,12 +877,12 @@ export default function ChatRoom({
             </button>
           )}
           {stage === 'INTRO' && consultStarted && (
-            <button type="button" className="chat_option_btn" onClick={handleAiConsult}>
+            <button type="button" className="chat_option_btn" onClick={handleAiConsult} disabled={!aiOnline}>
               AI 상담
             </button>
           )}
           {stage === 'OPTION' && (
-            <button type="button" className="chat_option_btn" onClick={handleAiConsult}>
+            <button type="button" className="chat_option_btn" onClick={handleAiConsult} disabled={!aiOnline}>
               AI 상담
             </button>
           )}
@@ -877,6 +907,8 @@ export default function ChatRoom({
                 ? '아쉬웠던 점을 입력해주세요'
                 : stage !== 'AI'
                   ? '옵션을 선택해주세요'
+                  : !aiOnline
+                    ? 'AI 상담 서버에 연결할 수 없습니다'
                   : aiLoading
                     ? 'AI가 답변을 생성 중 입니다.'
                     : '메시지를 입력하세요'

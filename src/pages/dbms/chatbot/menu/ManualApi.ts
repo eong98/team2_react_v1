@@ -1,11 +1,5 @@
 import axios from 'axios';
-
-/**
- * H200 FastAPI 주소.
- * 설문 AI 분석 실행은 Spring이 아니라 FastAPI가 직접 담당한다.
- */
-export const FASTAPI_BASE_URL = 'http://139.150.91.194:11200';
-// export const FASTAPI_BASE_URL = 'http://localhost:11200';
+import { FASTAPI_BASE_URL } from '../../../../components/ui/chatbot/ChatApi';
 
 
 /* ---------------------------------------------------------------------

@@ -129,7 +129,7 @@ export default function Sidebar({ open, onNavigate }: SidebarProps) {
       GlobalStoreSession.getState().clearAuth();
 
       onNavigate();
-      navigate('/login');
+      navigate(isDbms ? '/dbms/login' : '/login');
     }
   }
 
@@ -138,11 +138,23 @@ export default function Sidebar({ open, onNavigate }: SidebarProps) {
 
   return (
     <aside className={`sidebar${open ? ' open' : ''}`}>
-      <h1 className='logo'>
-        <Link to={isDbms ? '/dbms' : '/user'}>
-          {isDbms ? 'allimio 관리자' : 'allimio'}
+      <div className='header'>
+        <h1 className='logo'>
+          <Link to={isDbms ? '/dbms/memberlist' : '/user'}>
+            {isDbms ? 'allimio 관리자' : 'allimio'}
+          </Link>
+        </h1>
+
+        {/* 메인 페이지(서비스 소개) 이동 — 로고 옆 집 모양 아이콘 버튼 */}
+        <Link to="/index" className="go_main" onClick={onNavigate} title="메인 페이지로 이동" aria-label="메인 페이지로 이동">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 10.5 12 3l9 7.5" />
+            <path d="M5.5 9v11h13V9" />
+            <path d="M10 20v-6h4v6" />
+          </svg>
         </Link>
-      </h1>
+
+      </div>
 
       <nav className="lnb">
         {loading ? (
@@ -195,10 +207,6 @@ export default function Sidebar({ open, onNavigate }: SidebarProps) {
       </nav>
 
       <div className="sidebar_foot">
-        <a className="nav_item" href="/" style={{ marginBottom: 10 }}>
-          <span className="ic">🏠</span>랜딩 페이지로
-        </a>
-
         <div className="user_chip">
           <div className="avatar">
             {avatarUrl ? (

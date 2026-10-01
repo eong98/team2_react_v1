@@ -18,6 +18,9 @@
   opacity:.5;
 }
 
+/* #섹션으로 스크롤할 때 상단 고정 헤더에 제목이 가려지지 않게 */
+.home section[id]{scroll-margin-top:80px;}
+
 .home::selection{background:var(--cyan-dim);color:var(--cyan);} /* 마우스 드래그 배경 */
 
 .home .wrap{max-width:var(--maxw);margin:0 auto;padding:0 32px;}
@@ -39,14 +42,54 @@
 
 .home .navlinks{display:flex;gap:36px;font-size:14px;color:var(--text-dim);}
 .home .navlinks a:hover{color:var(--text);}
-.home .nav_cta{
-  display:flex;gap:18px;
+.home .nav_cta {
+  display:flex; align-items:center; gap:8px;
+}
+.home .nav_utils {
+  display:flex; align-items:center; gap:18px;
+}
+/* 로그인 / 관리자 로그인 — 동그란 아이콘 버튼 */
+.home .nav_icon_btn{
+  display:inline-block; flex-shrink:0;
+  width:30px; height:30px; border-radius:50%;
+  border:1px solid var(--border-strong);
+  background-repeat:no-repeat; background-position:center; background-size:16px;
+  transition:.2s;
+}
+/* 로그인 — 흰색 사람 / 마우스 올리면 청록 */
+.home .nav_icon_btn.login{background-image:url('../../assets/images/icon/ico-login.png');}
+.home .nav_icon_btn.login:hover{
+  border-color:var(--cyan); background-color:var(--cyan-dim);
+  background-image:url('../../assets/images/icon/ico-login-primary.png');
+}
+/* 로그아웃 — 흰색 문+화살표 / 마우스 올리면 청록 */
+.home .nav_icon_btn.logout{
+  padding:0; cursor:pointer; background-color:transparent;
+  background-image:url('../../assets/images/icon/ico-logout.png');
+}
+.home .nav_icon_btn.logout:hover{
+  border-color:var(--cyan); background-color:var(--cyan-dim);
+  background-image:url('../../assets/images/icon/ico-logout-primary.png');
+}
+/* 관제 사이트 이동 — 흰색 모니터 / 마우스 올리면 청록 */
+.home .nav_icon_btn.console{background-image:url('../../assets/images/icon/ico-console.svg');}
+.home .nav_icon_btn.console:hover{
+  border-color:var(--cyan); background-color:var(--cyan-dim);
+  background-image:url('../../assets/images/icon/ico-console-primary.svg');
+}
+/* 관리자 로그인 — 청록 사람+톱니바퀴로 일반 로그인과 구분 / 마우스 올리면 청록 배경에 어두운 아이콘 */
+.home .nav_icon_btn.admin{
+  border-radius:8px;
+  border-color:var(--cyan); background-size:18px;
+  background-image:url('../../assets/images/icon/ico-admin-primary.png');
+}
+.home .nav_icon_btn.admin:hover{
+  background-color:var(--cyan);
+  background-image:url('../../assets/images/icon/ico-admin-dark.png');
 }
 
 .home .btn{
   gap:8px;
-  padding:10px 20px;
-  font-size:14px;font-weight:600;
   text-decoration: none;
 }
 .home .btn_primary:hover{background:#4EE3CE;transform:translateY(-1px);}

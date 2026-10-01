@@ -78,7 +78,7 @@ export default function Login() {
         GlobalStoreSession.getState().setId(storeId ? input.id : '');
         GlobalStoreSession.getState().setMname(user.mname);
 
-        navigate('/shopplan');
+        navigate('/index');
 
       } else {
         setAlert({ message: '아이디 또는 비밀번호가 일치하지 않습니다.', variant: 'error' });

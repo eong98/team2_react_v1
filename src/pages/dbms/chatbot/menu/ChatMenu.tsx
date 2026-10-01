@@ -25,6 +25,7 @@ import {
   type GeneratedMenuTop,
 } from './ManualApi';
 import ChatBotPreview, { type ChatBotPreviewHandle } from './ChatBotPreview';
+import { backoffDelay, checkAiServer, isNetworkError } from '../../../../components/ui/chatbot/aiServer';
 
 /* ---------------------------------------------------------------------
    챗봇 옵션 메뉴 관리 (/dbms/chat_menu) — 트리 구조 CRUD + 옵션형 메뉴 자동생성.
@@ -176,6 +177,11 @@ export default function ChatMenu() {
   const [jobKind, setJobKind] = useState<'generate' | 'suggest'>('generate');
   // 옵션생성이든 최상위 메뉴 추천이든 작업이 돌고 있으면 화면을 잠근다(generating = 작업 진행 중)
   const generating = jobStatus === 'running';
+  // AI 서버(FastAPI) 꺼짐 여부 — 요청이 서버까지 닿지 못하면 true, 상태 확인으로 자동 복구
+  const [aiServerDown, setAiServerDown] = useState(false);
+  const markIfServerDown = (err: unknown) => {
+    if (isNetworkError(err)) setAiServerDown(true);
+  };
   const suggesting = generating && jobKind === 'suggest';
   const jobTitle = jobKind === 'suggest' ? '최상위 메뉴 추천' : 'AI 옵션생성';
   // 생성 중에는 화면의 다른 작업을 막는다(inert: 클릭·포커스·키보드 모두 차단). 진행 패널만 조작 가능
@@ -205,14 +211,20 @@ export default function ChatMenu() {
     setDocsLoading(true);
     getManualDocs()
       .then((res) => setDocs(res))
-      .catch((err) => console.error('첨부문서 목록 조회 실패:', err))
+      .catch((err) => {
+        console.error('첨부문서 목록 조회 실패:', err);
+        markIfServerDown(err);
+      })
       .finally(() => setDocsLoading(false));
   };
 
   const loadGenerateAvailable = () => {
     isGenerateAvailable()
       .then((available) => setGenerateAvailable(available))
-      .catch((err) => console.error('AI생성 가능여부 조회 실패:', err));
+      .catch((err) => {
+        console.error('AI생성 가능여부 조회 실패:', err);
+        markIfServerDown(err);
+      });
   };
 
   /** 생성 결과 반영 — 벡터화 실패가 있으면 미리보기 대신 재시도 안내 */
@@ -285,21 +297,83 @@ export default function ChatMenu() {
         if (st.status === 'running') setDisplayPercent(st.percent ?? 0);
         applyJobStatus(st, true);
       })
-      .catch((err) => console.error('AI 옵션생성 상태 조회 실패:', err));
+      .catch((err) => {
+        console.error('AI 옵션생성 상태 조회 실패:', err);
+        markIfServerDown(err);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 진행 중이면 1초마다 서버 상태 폴링
+  // 진행 중이면 1초마다 서버 상태 폴링 — 실패하면 간격을 늘려(최대 30초) 오류가 쌓이지 않게 함
   useEffect(() => {
     if (!generating) return;
-    const timer = window.setInterval(() => {
+    let timer: number | undefined;
+    let fails = 0;
+    let stopped = false;
+    const tick = () => {
       getGenerateMenuStatus()
-        .then((st) => applyJobStatus(st))
-        .catch((err) => console.error('AI 옵션생성 상태 조회 실패:', err));
-    }, 1000);
-    return () => window.clearInterval(timer);
+        .then((st) => {
+          fails = 0;
+          setAiServerDown(false);
+          applyJobStatus(st);
+        })
+        .catch((err) => {
+          fails += 1;
+          console.warn(`AI 옵션생성 상태 조회 실패 (${fails}회 연속):`, err);
+          markIfServerDown(err);
+        })
+        .finally(() => {
+          if (!stopped) timer = window.setTimeout(tick, fails ? backoffDelay(fails) : 1000);
+        });
+    };
+    timer = window.setTimeout(tick, 1000);
+    return () => {
+      stopped = true;
+      window.clearTimeout(timer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [generating]);
+
+  // AI 서버가 꺼져 있으면 상태 확인(health)을 간격을 늘려가며 재시도 → 켜지면 목록·상태 자동 새로고침
+  useEffect(() => {
+    if (!aiServerDown) return;
+    let timer: number | undefined;
+    let retry = 0;
+    let stopped = false;
+    const check = async () => {
+      if (await checkAiServer()) {
+        if (stopped) return;
+        setAiServerDown(false);
+        reconnectAiServer();
+        return;
+      }
+      if (!stopped) timer = window.setTimeout(check, backoffDelay(++retry));
+    };
+    timer = window.setTimeout(check, backoffDelay(0));
+    return () => {
+      stopped = true;
+      window.clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aiServerDown]);
+
+  /** AI 서버 재연결 후(또는 [지금 다시 연결]) — 문서 목록·생성 가능 여부·작업 상태 다시 불러오기 */
+  const reconnectAiServer = () => {
+    loadDocs();
+    loadGenerateAvailable();
+    getGenerateMenuStatus()
+      .then((st) => applyJobStatus(st, true))
+      .catch((err) => markIfServerDown(err));
+  };
+
+  const handleRetryAiServer = async () => {
+    if (await checkAiServer()) {
+      setAiServerDown(false);
+      reconnectAiServer();
+    } else {
+      setAlert({ message: 'AI 서버(FastAPI)가 아직 응답하지 않습니다. 서버가 켜져 있는지 확인해주세요.', variant: 'error' });
+    }
+  };
 
   // 진행 로그가 늘어나면 맨 아래(최신)로 스크롤
   useEffect(() => {
@@ -910,6 +984,19 @@ export default function ChatMenu() {
           <span className="flow_detail_label">옵션형 메뉴 자동생성</span>
         </div>
 
+        {/* AI 서버(FastAPI) 꺼짐 안내 — 자동으로 재연결을 시도하고, 켜지면 목록·상태를 다시 불러옴 */}
+        {aiServerDown && (
+          <div className="chatmenu_server_down" role="status">
+            <span>
+              AI 서버(FastAPI)에 연결할 수 없습니다. 매뉴얼 첨부·AI 추천·옵션생성은 서버가 다시 켜지면 자동으로 복구됩니다.
+              {generating && ' 진행 중이던 작업 상태도 다시 확인합니다.'}
+            </span>
+            <button type="button" className="btn btn_xsm btn_ghost" onClick={handleRetryAiServer}>
+              지금 다시 연결
+            </button>
+          </div>
+        )}
+
         {/* 매뉴얼 첨부 — 클릭 또는 끌어다놓기, 여러 개 가능 (AttachUploader의 file_drop 디자인 재사용) */}
         <label
           className={`file_drop chatmenu_file_drop${dragOver ? ' is_dragover' : ''}${uploading || generating ? ' is_disabled' : ''}`}
@@ -996,6 +1083,7 @@ export default function ChatMenu() {
               </span>
               <span>
                 {Math.floor(displayPercent)}% · {generating ? `${formatElapsed(elapsedSec)} 경과` : `소요 ${formatElapsed(elapsedSec)}`}
+                {generating && aiServerDown && ' · 서버 연결 끊김, 재연결 중'}
               </span>
             </div>
             <div

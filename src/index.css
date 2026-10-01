@@ -126,7 +126,7 @@ button {cursor:pointer; border:0; vertical-align:middle; background:none; color:
 
 
 .logo {
-  display:block;
+  display:flex;
 }
 .logo a {
   display:inline-flex;align-items:center;gap:9px;
