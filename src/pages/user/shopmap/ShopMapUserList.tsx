@@ -98,12 +98,45 @@ export default function ShopMapUserList() {
         useState(false);
 
     /* =========================================================
-       등록된 도면 보기
-    ========================================================= */
+   등록된 도면 보기
+========================================================= */
 
     const [viewTarget, setViewTarget] =
         useState<ShopMapRow | null>(null);
 
+    const [viewImageUrl, setViewImageUrl] =
+        useState<string | null>(null);
+
+    const openViewModal = async (row: ShopMapRow) => {
+
+        if (!row.shopMap) return;
+
+        setViewTarget(row);
+        setViewImageUrl(null);
+
+        try {
+            const response = await axiosInstance.get(
+                `/api/shopmaps/view/${row.shopMap.no}`,
+                {
+                    responseType: 'blob',
+                }
+            );
+
+            const imageUrl = URL.createObjectURL(response.data);
+
+            setViewImageUrl(imageUrl);
+
+        } catch (error) {
+            console.error('도면 이미지 조회 실패:', error);
+
+            setViewTarget(null);
+
+            setAlert({
+                message: '도면 이미지를 불러오지 못했습니다.',
+                variant: 'error',
+            });
+        }
+    };
     /* =========================================================
        삭제
     ========================================================= */
@@ -127,12 +160,16 @@ export default function ShopMapUserList() {
        매장 + 도면 목록 조회
     ========================================================= */
 
+    /* =========================================================
+    매장 + 도면 목록 조회
+ ========================================================= */
+
     const loadList = async () => {
         setLoading(true);
 
         try {
             /*
-             * 로그인 회원의 매장 조회
+             * 1. 로그인 회원의 매장 목록 조회
              */
             const res =
                 await axiosInstance.get<ShopSearchResult>(
@@ -155,34 +192,46 @@ export default function ShopMapUserList() {
                 totalPages: pages,
             } = res.data;
 
-            /*
-             * 매장별 도면 존재 여부 조회
-             */
-            const result: ShopMapRow[] =
-                await Promise.all(
-                    content.map(async (shop) => {
-                        try {
-                            const mapRes =
-                                await axiosInstance.get<ShopMap>(
-                                    `/api/shopmaps/shop/${shop.no}`
-                                );
 
-                            return {
-                                ...shop,
-                                shopMap: mapRes.data,
-                            };
-                        } catch {
-                            /*
-                             * 404 = 아직 도면 없음
-                             */
-                            return {
-                                ...shop,
-                                shopMap: null,
-                            };
-                        }
-                    })
+            /*
+             * 2. 등록되어 있는 전체 도면 목록 조회
+             *
+             * 매장별로 /api/shopmaps/shop/{sno}를
+             * 각각 호출하지 않고 한 번만 조회한다.
+             */
+            const mapRes =
+                await axiosInstance.get<ShopMap[]>(
+                    '/api/shopmaps'
                 );
 
+            const shopMaps = mapRes.data;
+
+
+            /*
+             * 3. 매장 목록과 도면 목록을
+             * sno 기준으로 매칭
+             *
+             * 도면이 없는 매장은 shopMap = null
+             */
+            const result: ShopMapRow[] =
+                content.map((shop) => {
+
+                    const shopMap =
+                        shopMaps.find(
+                            (map) =>
+                                map.sno === shop.no
+                        ) ?? null;
+
+                    return {
+                        ...shop,
+                        shopMap,
+                    };
+                });
+
+
+            /*
+             * 4. 화면 목록 / 페이징 정보 적용
+             */
             setRows(result);
 
             setTotalElements(total);
@@ -190,7 +239,9 @@ export default function ShopMapUserList() {
             setTotalPages(
                 Math.max(1, pages)
             );
+
         } catch (error) {
+
             console.error(
                 '매장 도면 목록 조회 실패:',
                 error
@@ -205,10 +256,12 @@ export default function ShopMapUserList() {
                     '매장 도면 목록을 불러오지 못했습니다.',
                 variant: 'error',
             });
+
         } finally {
             setLoading(false);
         }
     };
+
 
     useEffect(() => {
         loadList();
@@ -722,9 +775,7 @@ export default function ShopMapUserList() {
                                             type="button"
                                             className="btn btn_sm btn_ghost"
                                             onClick={() =>
-                                                setViewTarget(
-                                                    row
-                                                )
+                                                openViewModal(row)
                                             }
                                         >
                                             도면 보기
@@ -1014,10 +1065,14 @@ export default function ShopMapUserList() {
                             </div>
 
                             <div className="shopmap_preview shopmap_view_preview">
-                                <img
-                                    src={`${axiosInstance.defaults.baseURL}/api/shopmaps/view/${viewTarget.shopMap.no}`}
-                                    alt={`${viewTarget.title} 도면`}
-                                />
+                                {viewImageUrl ? (
+                                    <img
+                                        src={viewImageUrl}
+                                        alt={`${viewTarget.title} 도면`}
+                                    />
+                                ) : (
+                                    <span>도면 이미지를 불러오는 중입니다.</span>
+                                )}
                             </div>
                         </div>
 
