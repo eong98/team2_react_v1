@@ -32,6 +32,8 @@ import './shopSurvey.css';
    - 상태 필터: 칩(전체/진행중/작성중/종료). 칩 클릭 시 바로 조회
    - QR: 고객 응답 URL을 QR코드로 보여주고 PNG로 저장
    - 보기: 설문 상세(/user/shopsurvey/{svno}) - 집계 / 응답 목록 / 문항
+            작성중(DRAFT)은 바로 작성 화면(/user/shopsurvey/{svno}/edit)으로 이동
+   - + 설문 만들기: /user/shopsurvey/new
 
    API (ShopSurveyCont, /shop_survey)
    GET /shop_survey/list/{sno}?status=&page=&size=
@@ -119,7 +121,11 @@ export default function ShopSurveyList() {
       header: '설문제목',
       width: '34%',
       render: (r) => (
-        <button type="button" className="shop_survey_link" onClick={() => navigate(`${SHOP_SURVEY_BASE}/${r.no}`)}>
+        <button
+          type="button"
+          className="shop_survey_link"
+          onClick={() => navigate(r.status === 'DRAFT' ? `${SHOP_SURVEY_BASE}/${r.no}/edit` : `${SHOP_SURVEY_BASE}/${r.no}`)}
+        >
           <span className="shop_survey_link_title">{r.title}</span>
           {r.description && <span className="cell_sub shop_survey_link_desc">{r.description}</span>}
         </button>
@@ -161,6 +167,8 @@ export default function ShopSurveyList() {
       <PageHeader
         title="고객 설문"
         description={`${shopTitle || '선택한 매장'}에 방문한 고객 대상 설문입니다. QR코드를 매장에 붙여두면 고객이 휴대폰으로 바로 응답할 수 있어요.`}
+        createLabel="+ 설문 만들기"
+        onCreate={() => navigate(`${SHOP_SURVEY_BASE}/new`)}
       />
 
       <Filterbar
@@ -189,7 +197,7 @@ export default function ShopSurveyList() {
         data={rows}
         rowKey={(r) => r.no}
         loading={loading}
-        onEdit={(r) => navigate(`${SHOP_SURVEY_BASE}/${r.no}`)}
+        onEdit={(r) => navigate(r.status === 'DRAFT' ? `${SHOP_SURVEY_BASE}/${r.no}/edit` : `${SHOP_SURVEY_BASE}/${r.no}`)}
         editLabel="보기"
         emptyMessage={status ? '조건에 맞는 설문이 없습니다.' : '등록된 설문이 없습니다.'}
       />

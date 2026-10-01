@@ -47,6 +47,7 @@ import ShopOrderMatch from '../pages/user/shoporder/ShopOrderMatch';
 
 import ShopSurveyList from '../pages/user/shopsurvey/ShopSurveyList';
 import ShopSurveyDetail from '../pages/user/shopsurvey/ShopSurveyDetail';
+import ShopSurveyEdit from '../pages/user/shopsurvey/ShopSurveyEdit';
 
 import Notification from '../pages/user/notification/Notification';
 import ShopOrderPendingnList from '../pages/user/shoporder/ShopOrderPendingList';
@@ -108,7 +109,9 @@ export default function UserRoutes() {
 
       {/* 매장 고객 설문 (점주용 조회/생성). 손님 응답 화면은 App.tsx의 /s/:qrid */}
       <Route path="shopsurvey" element={<ShopSurveyList />} />
+      <Route path="shopsurvey/new" element={<ShopSurveyEdit />} />
       <Route path="shopsurvey/:svno" element={<ShopSurveyDetail />} />
+      <Route path="shopsurvey/:svno/edit" element={<ShopSurveyEdit />} />
 
       {/* 예시용 */}
       <Route element={<DashboardLayout />}>{/* 대시보드용 레이아웃 적용 */}

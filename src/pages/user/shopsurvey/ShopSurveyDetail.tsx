@@ -94,6 +94,9 @@ export default function ShopSurveyDetail() {
 
   const status = survey.status ?? 'DRAFT';
   const isDraft = status === 'DRAFT';
+  // 응답이 없을 때만 수정 가능 (DRAFT는 이어서 작성)
+  const canEdit = isDraft || (survey.responseCount ?? 0) === 0;
+  const goEdit = () => navigate(`${SHOP_SURVEY_BASE}/${svno}/edit`);
 
   return (
     <section className="view active shop-survey-page">
@@ -105,6 +108,11 @@ export default function ShopSurveyDetail() {
             <button type="button" className="btn btn_md btn_ghost" onClick={goList}>
               ← 목록으로
             </button>
+            {canEdit && (
+              <button type="button" className="btn btn_md btn_outline_primary" onClick={goEdit}>
+                {isDraft ? '이어서 작성' : '수정'}
+              </button>
+            )}
             {!isDraft && survey.qrid && (
               <button type="button" className="btn btn_md btn_outline_primary" onClick={() => setQrOpen(true)}>
                 QR코드
@@ -141,6 +149,9 @@ export default function ShopSurveyDetail() {
       {isDraft ? (
         <div className="card card_pad_lg shop_survey_empty">
           <p className="b_title">작성중인 설문입니다. 게시하면 QR코드로 고객 응답을 받을 수 있어요.</p>
+          <button type="button" className="btn btn_md btn_primary" onClick={goEdit}>
+            이어서 작성하기
+          </button>
         </div>
       ) : (
         <>

@@ -283,3 +283,61 @@
   line-height: 1.8;
   list-style: disc;
 }
+
+/* ---- 생성/수정 폼 (ShopSurveyEdit) ---- */
+.sv_edit_block { margin-bottom: 14px; }
+.sv_edit_q { margin-bottom: 12px; }
+.sv_edit_q .form_group:last-of-type { margin-bottom: 14px; }
+.sv_edit_q_head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.sv_edit_q_tools {
+  display: flex;
+  gap: 6px;
+}
+.sv_edit_options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sv_edit_option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.sv_edit_option_no {
+  width: 20px;
+  padding-top: 8px;
+  font-size: 12px;
+  color: var(--text-faint);
+  text-align: right;
+}
+.sv_edit_option_input {
+  flex: 1;
+  min-width: 0;
+}
+.sv_edit_option .btn { margin-top: 4px; }
+.sv_edit_add_option { margin-top: 10px; }
+.sv_edit_switches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.sv_edit_switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+.sv_edit_add_q {
+  width: 100%;
+  margin-bottom: 8px;
+  border-style: dashed;
+}
