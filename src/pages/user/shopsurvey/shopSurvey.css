@@ -341,3 +341,121 @@
   margin-bottom: 8px;
   border-style: dashed;
 }
+
+/* ---- 상세: 상단 버튼 (오른쪽 정렬, 버튼 간격) ---- */
+.shop_survey_head_actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-left: auto;
+}
+
+/* ---- 상세: 응답일 기간 필터 ---- */
+.shop_survey_range {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.shop_survey_range_label {
+  margin-right: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+.shop_survey_range .form_input { width: 160px; }
+.shop_survey_range_sep { color: var(--text-faint); }
+.shop_survey_summary_btn { margin-left: auto; }
+@media (max-width: 720px) {
+  .shop_survey_range .form_input { flex: 1; width: auto; min-width: 130px; }
+  .shop_survey_summary_btn { margin-left: 0; width: 100%; }
+}
+
+/* ---- 상세: AI 요약 패널 (왼쪽 요약 / 오른쪽 점수) ---- */
+.shop_survey_summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+.shop_survey_summary.is_loading {
+  display: block;
+  padding: 28px 20px;
+  text-align: center;
+  color: var(--text-dim);
+}
+.shop_survey_summary_title {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.shop_survey_summary_title .cell_sub {
+  margin-left: 6px;
+  font-weight: 400;
+}
+.shop_survey_summary_text p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: keep-all;
+}
+.shop_survey_sentiment {
+  padding-left: 24px;
+  border-left: 1px solid var(--border);
+}
+.shop_survey_sentiment_head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.shop_survey_sentiment_head .shop_survey_summary_title { margin: 0; }
+.shop_survey_sentiment_score {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 12px 0 10px;
+}
+.shop_survey_sentiment_score .mono:first-child {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text);
+}
+.shop_survey_sentiment_track {
+  position: relative;
+  height: 10px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.shop_survey_sentiment_fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 0 4px 4px 0;
+  background: var(--primary);
+}
+.shop_survey_sentiment_legend {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+.shop_survey_sentiment_reason {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+@media (max-width: 860px) {
+  .shop_survey_summary { grid-template-columns: 1fr; }
+  .shop_survey_sentiment {
+    padding: 16px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+}
