@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   PageHeader,
@@ -127,17 +127,43 @@ export default function ShopMapList() {
     }
   };
 
+  useEffect(() => {
+    loadShopMaps();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /**
    * 검색 초기화
+   * 검색 조건을 지우고 전체 매장 목록을 다시 조회
    */
-  const handleReset = () => {
+  const handleReset = async () => {
 
     setKeyword('');
     setSearchedKeyword('');
-    setRows([]);
     setPage(1);
-    setSearched(false);
+    setLoading(true);
+    setSearched(true);
+
+    try {
+
+      const response = await axiosInstance.get<ShopMapRow[]>(
+        '/api/shopmaps/admin'
+      );
+
+      setRows(response.data);
+
+    } catch (error) {
+
+      console.error('매장 도면 목록 조회 실패:', error);
+
+      setRows([]);
+
+      alert('매장 도면 목록을 불러오지 못했습니다.');
+
+    } finally {
+
+      setLoading(false);
+    }
   };
 
 
