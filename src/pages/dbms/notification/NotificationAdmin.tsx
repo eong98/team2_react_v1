@@ -317,12 +317,23 @@ export default function NotificationAdmin() {
 
     {
       header: '문자',
-      width: '8%',
+      width: '10%',
 
       render: (row) => (
-        <span className={getSendBadgeClass(row.smsStatus)}>
-          {getSendStatusText(row.smsStatus)}
-        </span>
+        <div className="notification_send_result">
+          <span className={getSendBadgeClass(row.smsStatus)}>
+            {getSendStatusText(row.smsStatus)}
+          </span>
+
+          {row.smsStatus === 'FAILED' && row.smsMessage && (
+            <span
+              className="notification_send_message"
+              title={row.smsMessage}
+            >
+              {row.smsMessage}
+            </span>
+          )}
+        </div>
       ),
     },
 

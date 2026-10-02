@@ -30,7 +30,10 @@ export interface NotificationAdminType {
 
     // 발송 결과
     emailStatus?: string | null;
+    emailMessage?: string | null;
+
     smsStatus?: string | null;
+    smsMessage?: string | null;
 }
 
 
