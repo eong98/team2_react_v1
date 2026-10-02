@@ -1,11 +1,11 @@
 /* =========================================
-
    관리자 알림 내역
-
-   공통 관리자 UI 스타일을 기반으로
-   알림내역 화면에 필요한 부분만 추가
-
 ========================================= */
+
+.notification_admin_page {
+  width: 100%;
+  min-width: 0;
+}
 
 
 /* =========================================
@@ -13,7 +13,6 @@
 ========================================= */
 
 .notification_result_count {
-
   margin: 20px 0 12px;
 
   font-size: 14px;
@@ -22,9 +21,7 @@
   color: var(--text-dim);
 }
 
-
 .notification_result_count strong {
-
   margin: 0 4px;
 
   font-size: 15px;
@@ -39,9 +36,10 @@
 ========================================= */
 
 .notification_member {
-
   display: flex;
   flex-direction: column;
+
+  min-width: 0;
 
   gap: 5px;
 
@@ -50,18 +48,19 @@
   line-height: 1.35;
 }
 
-
 .notification_member_name {
+  overflow: hidden;
 
   font-size: 14px;
   font-weight: 600;
 
   color: var(--text);
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-
 .notification_member .cell_sub {
-
   font-size: 12px;
 
   color: var(--text-dim);
@@ -73,41 +72,43 @@
 ========================================= */
 
 .notification_contact {
-
   display: flex;
   flex-direction: column;
 
-  gap: 5px;
-
   min-width: 0;
+
+  gap: 5px;
 
   padding: 3px 0;
 
   line-height: 1.35;
 }
 
-
 .notification_email {
-
   display: block;
 
-  max-width: 175px;
+  width: 100%;
+  min-width: 0;
 
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 
   font-size: 13px;
 
   color: var(--text);
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-
 .notification_contact .cell_sub {
+  overflow: hidden;
 
   font-size: 12px;
 
   color: var(--text-dim);
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 
@@ -116,15 +117,12 @@
 ========================================= */
 
 .notification_title {
-
   display: block;
 
   width: 100%;
-  max-width: 100%;
+  min-width: 0;
 
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 
   padding: 3px 0;
 
@@ -133,24 +131,48 @@
   line-height: 1.5;
 
   color: var(--text);
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 
 /* =========================================
-   알림내역 테이블 가독성
+   발생일시
 ========================================= */
 
-.table tbody td {
+.notification_date {
+  display: block;
 
+  font-size: 11px;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================
+   테이블
+========================================= */
+
+.notification_admin_page .table_wrap {
+  width: 100%;
+  min-width: 0;
+}
+
+.notification_admin_page .table {
+  width: 100%;
+
+  table-layout: fixed;
+}
+
+.notification_admin_page .table tbody td {
   padding-top: 14px;
   padding-bottom: 14px;
 
   vertical-align: middle;
 }
 
-
-.table thead th {
-
+.notification_admin_page .table thead th {
   padding-top: 13px;
   padding-bottom: 13px;
 
@@ -162,18 +184,17 @@
    상태 배지
 ========================================= */
 
-.table .badge {
-
+.notification_admin_page .table .badge {
   display: inline-flex;
 
   align-items: center;
   justify-content: center;
 
-  min-width: 54px;
+  min-width: 50px;
 
-  padding: 5px 9px;
+  padding: 5px 7px;
 
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
 
   line-height: 1.2;
@@ -183,34 +204,396 @@
 
 
 /* =========================================
-   발생일시
+   1300px 이하
 ========================================= */
 
-.table td .mono {
+@media (max-width: 1300px) {
 
-  white-space: nowrap;
+  .notification_admin_page .table {
+    min-width: 0;
+  }
+
+  .notification_admin_page .table th,
+  .notification_admin_page .table td {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .notification_member_name,
+  .notification_title {
+    font-size: 13px;
+  }
+
+  .notification_email,
+  .notification_contact .cell_sub {
+    font-size: 11px;
+  }
+
+  .notification_admin_page .table .badge {
+    min-width: 44px;
+
+    padding-left: 5px;
+    padding-right: 5px;
+
+    font-size: 10px;
+  }
 }
 
 
 /* =========================================
-   작은 화면
+   1100px 이하
 ========================================= */
 
-@media (max-width: 1200px) {
+@media (max-width: 1100px) {
 
-  .notification_email {
-
-    max-width: 145px;
+  .notification_admin_page .table_wrap {
+    overflow-x: visible !important;
   }
 
+  .notification_admin_page .table {
+    min-width: 0;
+  }
+
+
+  /* 번호 숨김 */
+
+  .notification_admin_page .table th:nth-child(1),
+  .notification_admin_page .table td:nth-child(1) {
+    display: none;
+  }
+
+
+  /* 연락처 숨김 */
+
+  .notification_admin_page .table th:nth-child(3),
+  .notification_admin_page .table td:nth-child(3) {
+    display: none;
+  }
+
+
+  /*
+   * 남은 컬럼 공간 재배치
+   */
+
+  .notification_admin_page .table th:nth-child(2) {
+    width: 14% !important;
+  }
+
+  .notification_admin_page .table th:nth-child(4) {
+    width: 28% !important;
+  }
+
+  .notification_admin_page .table th:nth-child(5),
+  .notification_admin_page .table th:nth-child(6) {
+    width: 10% !important;
+  }
+
+  .notification_admin_page .table th:nth-child(7),
+  .notification_admin_page .table th:nth-child(8) {
+    width: 10% !important;
+  }
+
+  .notification_admin_page .table th:nth-child(9) {
+    width: 18% !important;
+  }
 }
 
 
-@media (max-width: 900px) {
+/* =========================================
+   800px 이하
+========================================= */
 
-  .notification_title {
+@media (max-width: 800px) {
 
-    max-width: 180px;
+  /* 발생일시 숨김 */
+
+  .notification_admin_page .table th:nth-child(9),
+  .notification_admin_page .table td:nth-child(9) {
+    display: none;
   }
 
+  .notification_admin_page .table th,
+  .notification_admin_page .table td {
+    padding-left: 7px;
+    padding-right: 7px;
+  }
+}
+
+
+/* =========================================
+   650px 이하
+   테이블 → 카드
+========================================= */
+
+@media (max-width: 650px) {
+
+  .notification_result_count {
+    margin-top: 14px;
+
+    font-size: 12px;
+  }
+
+
+  .notification_admin_page .table_wrap {
+    overflow: visible !important;
+
+    border: 0;
+
+    background: transparent;
+  }
+
+  .notification_admin_page .table {
+    display: block;
+
+    width: 100%;
+    min-width: 0;
+  }
+
+  .notification_admin_page .table thead {
+    display: none;
+  }
+
+  .notification_admin_page .table tbody {
+    display: block;
+
+    width: 100%;
+  }
+
+
+  /* =========================================
+     한 알림
+  ========================================= */
+
+  .notification_admin_page .table tr {
+    display: grid;
+
+    grid-template-columns:
+      minmax(0, 1fr) auto auto;
+
+    gap: 10px 8px;
+
+    width: 100%;
+
+    margin-bottom: 10px;
+
+    padding: 15px;
+
+    border: 1px solid var(--border);
+    border-radius: 10px;
+
+    background: var(--surface);
+  }
+
+  .notification_admin_page .table td {
+    display: block;
+
+    width: auto;
+
+    padding: 0;
+
+    border: 0;
+  }
+
+
+  /* 번호 */
+
+  .notification_admin_page .table td:nth-child(1) {
+    display: none;
+  }
+
+
+  /* 수신자 */
+
+  .notification_admin_page .table td:nth-child(2) {
+    grid-column: 1;
+    grid-row: 1;
+
+    min-width: 0;
+  }
+
+  .notification_member {
+    gap: 2px;
+
+    padding: 0;
+  }
+
+  .notification_member_name {
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+
+  /* 연락처 */
+
+  .notification_admin_page .table td:nth-child(3) {
+    display: block;
+
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+
+  .notification_contact {
+    gap: 3px;
+
+    padding: 0;
+  }
+
+  .notification_email {
+    font-size: 11px;
+
+    color: var(--text-dim);
+  }
+
+
+  /* 알림 제목 */
+
+  .notification_admin_page .table td:nth-child(4) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+
+    min-width: 0;
+  }
+
+  .notification_title {
+    padding: 0;
+
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+
+  /* 이메일 */
+
+  .notification_admin_page .table td:nth-child(5) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+
+  /* 문자 */
+
+  .notification_admin_page .table td:nth-child(6) {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+
+  /* 상태 */
+
+  .notification_admin_page .table td:nth-child(7) {
+    grid-column: 1;
+    grid-row: 4;
+  }
+
+
+  /* 확인 */
+
+  .notification_admin_page .table td:nth-child(8) {
+    grid-column: 2;
+    grid-row: 4;
+  }
+
+
+  /* 발생일시 */
+
+  .notification_admin_page .table td:nth-child(9) {
+    display: block;
+
+    grid-column: 1 / -1;
+    grid-row: 5;
+
+    padding-top: 8px;
+
+    border-top: 1px solid var(--border);
+
+    color: var(--text-faint);
+  }
+
+
+  .notification_admin_page .table .badge {
+    min-width: 0;
+
+    padding: 4px 7px;
+
+    font-size: 10px;
+  }
+}
+
+
+/* =========================================
+   450px 이하
+========================================= */
+
+@media (max-width: 450px) {
+
+  .notification_admin_page .table tr {
+    grid-template-columns:
+      minmax(0, 1fr) auto;
+
+    gap: 9px;
+  }
+
+
+  /* 수신자 */
+
+  .notification_admin_page .table td:nth-child(2) {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+
+  /* 제목 */
+
+  .notification_admin_page .table td:nth-child(4) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+
+  /* 연락처 */
+
+  .notification_admin_page .table td:nth-child(3) {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+
+
+  /* 이메일 */
+
+  .notification_admin_page .table td:nth-child(5) {
+    grid-column: 1;
+    grid-row: 4;
+  }
+
+
+  /* 문자 */
+
+  .notification_admin_page .table td:nth-child(6) {
+    grid-column: 2;
+    grid-row: 4;
+  }
+
+
+  /* 상태 */
+
+  .notification_admin_page .table td:nth-child(7) {
+    grid-column: 1;
+    grid-row: 5;
+  }
+
+
+  /* 확인 */
+
+  .notification_admin_page .table td:nth-child(8) {
+    grid-column: 2;
+    grid-row: 5;
+  }
+
+
+  /* 발생일시 */
+
+  .notification_admin_page .table td:nth-child(9) {
+    grid-column: 1 / -1;
+    grid-row: 6;
+  }
 }

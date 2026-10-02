@@ -26,27 +26,27 @@ import {
   getSurveys,
 } from '../../../components/ts/surveyApi';
 
+import './SurveyList.css';
+
 
 export default function SurveyList() {
   const navigate = useNavigate();
 
-  // 설문 목록
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // 검색 / 필터
   const [searchText, setSearchText] = useState('');
   const [keyword, setKeyword] = useState('');
-  const [statusFilter, setStatusFilter] = useState<SurveyStatus | ''>('');
+  const [statusFilter, setStatusFilter] =
+    useState<SurveyStatus | ''>('');
 
-  // 페이지
   const [page, setPage] = useState(1);
 
-  // 삭제
-  const [deleteTarget, setDeleteTarget] = useState<Survey | null>(null);
+  const [deleteTarget, setDeleteTarget] =
+    useState<Survey | null>(null);
+
   const [deleting, setDeleting] = useState(false);
 
-  // 알림
   const [alert, setAlert] = useState<{
     message: string;
     variant?: 'success' | 'error';
@@ -62,11 +62,14 @@ export default function SurveyList() {
 
       const list = await getSurveys();
 
-      // 최신 설문이 위로 오도록 정렬
-      const sorted = [...list].sort((a, b) => b.no - a.no);
+      const sorted = [...list].sort(
+        (a, b) => b.no - a.no
+      );
 
       setSurveys(sorted);
+
     } catch (error: any) {
+
       console.error(error);
 
       setAlert({
@@ -75,6 +78,7 @@ export default function SurveyList() {
           '설문 목록을 불러오지 못했습니다.',
         variant: 'error',
       });
+
     } finally {
       setLoading(false);
     }
@@ -87,7 +91,7 @@ export default function SurveyList() {
 
 
   /**
-   * 검색 버튼
+   * 검색
    */
   const onSearch = () => {
     setKeyword(searchText.trim());
@@ -96,7 +100,7 @@ export default function SurveyList() {
 
 
   /**
-   * 검색 조건 초기화
+   * 초기화
    */
   const onReset = () => {
     setSearchText('');
@@ -110,6 +114,7 @@ export default function SurveyList() {
    * 상태 필터
    */
   const handleStatusFilter = (value: string) => {
+
     if (
       value === 'READY' ||
       value === 'ACTIVE' ||
@@ -125,17 +130,23 @@ export default function SurveyList() {
 
 
   /**
-   * 검색 + 상태 필터 적용
+   * 검색 + 필터
    */
   const filtered = useMemo(() => {
-    const searchKeyword = keyword.toLowerCase();
+
+    const searchKeyword =
+      keyword.toLowerCase();
 
     return surveys.filter((survey) => {
+
       const matchKeyword =
         searchKeyword === '' ||
-        survey.title.toLowerCase().includes(searchKeyword);
+        survey.title
+          .toLowerCase()
+          .includes(searchKeyword);
 
-      const status = getSurveyStatus(survey);
+      const status =
+        getSurveyStatus(survey);
 
       const matchStatus =
         statusFilter === '' ||
@@ -143,6 +154,7 @@ export default function SurveyList() {
 
       return matchKeyword && matchStatus;
     });
+
   }, [surveys, keyword, statusFilter]);
 
 
@@ -153,7 +165,9 @@ export default function SurveyList() {
 
   const totalPages = Math.max(
     1,
-    Math.ceil(totalCount / SURVEY_LIST_PAGE_SIZE)
+    Math.ceil(
+      totalCount / SURVEY_LIST_PAGE_SIZE
+    )
   );
 
   const paged = filtered.slice(
@@ -163,19 +177,22 @@ export default function SurveyList() {
 
 
   /**
-   * 설문 삭제
+   * 삭제
    */
   const handleDelete = async () => {
+
     if (!deleteTarget) return;
 
     try {
+
       setDeleting(true);
 
       await deleteSurvey(deleteTarget.no);
 
       setSurveys((prev) =>
         prev.filter(
-          (survey) => survey.no !== deleteTarget.no
+          (survey) =>
+            survey.no !== deleteTarget.no
         )
       );
 
@@ -185,7 +202,9 @@ export default function SurveyList() {
         message: '설문이 삭제되었습니다.',
         variant: 'success',
       });
+
     } catch (error: any) {
+
       console.error(error);
 
       setAlert({
@@ -194,24 +213,30 @@ export default function SurveyList() {
           '설문 삭제 중 오류가 발생했습니다.',
         variant: 'error',
       });
+
     } finally {
+
       setDeleting(false);
     }
   };
 
 
   /**
-   * 설문 목록 컬럼
+   * 테이블 컬럼
    */
   const columns: DataTableColumn<Survey>[] = [
+
     {
       header: '번호',
+      width: '7%',
       render: (survey) => {
+
         const index = filtered.findIndex(
           (item) => item.no === survey.no
         );
 
-        const virtualNo = filtered.length - index;
+        const virtualNo =
+          filtered.length - index;
 
         return (
           <span className="mono">
@@ -221,71 +246,102 @@ export default function SurveyList() {
       },
     },
 
+
     {
       header: '설문 제목',
+      width: '23%',
+
       render: (survey) => (
-        <div>
-          <div className="cell_title">
+        <div className="survey_admin_title">
+
+          <div
+            className="cell_title"
+            title={survey.title}
+          >
             {survey.title}
           </div>
 
           <div className="cell_sub">
             설문 No.{survey.no}
           </div>
+
         </div>
       ),
     },
 
+
     {
       header: '상태',
+      width: '9%',
+
       render: (survey) => {
-        const status = getSurveyStatus(survey);
+
+        const status =
+          getSurveyStatus(survey);
 
         return (
-          <span className={getStatusClass(status)}>
+          <span
+            className={getStatusClass(status)}
+          >
             {getStatusLabel(status)}
           </span>
         );
       },
     },
 
+
     {
       header: '설문 기간',
+      width: '21%',
+
       render: (survey) => (
-        <span className="mono">
+        <span className="mono survey_admin_period">
           {formatDate(survey.startDate)}
-          {' ~ '}
+          <span className="survey_period_separator">
+            ~
+          </span>
           {formatDate(survey.endDate)}
         </span>
       ),
     },
 
+
     {
       header: '작성자',
+      width: '10%',
+
       render: (survey) => (
-        <span className="mono">
+        <span className="mono survey_admin_writer">
           관리자 {survey.managerNo}
         </span>
       ),
     },
 
+
     {
       header: '등록일',
+      width: '13%',
+
       render: (survey) => (
-        <span className="mono">
+        <span className="mono survey_admin_date">
           {formatDate(survey.cdate)}
         </span>
       ),
     },
 
+
     {
       header: '응답',
+      width: '10%',
+
       render: (survey) => (
         <button
           type="button"
           className="btn btn_sm btn_ghost"
           onClick={() =>
-            navigate(`${survey.no}/responses`)
+            navigate(
+              `${survey.no}/responses`
+            )
           }
         >
           응답관리
@@ -296,36 +352,55 @@ export default function SurveyList() {
 
 
   return (
-    <section className="view active">
+    <section className="view active survey_admin_page">
 
       <PageHeader
         title="설문 관리"
         description="점주 대상 설문을 등록하고 진행 상태 및 응답을 관리합니다."
         createLabel="+ 설문 작성"
-        onCreate={() => navigate('create')}
+        onCreate={() =>
+          navigate('create')
+        }
       />
 
 
-      {/* 검색 / 상태 필터 */}
       <AdminToolbar
+
         searchValue={searchText}
+
         onSearchChange={setSearchText}
+
         searchPlaceholder="설문 제목으로 검색"
+
         filters={
           <select
             className="form_select"
             value={statusFilter}
             onChange={(e) =>
-              handleStatusFilter(e.target.value)
+              handleStatusFilter(
+                e.target.value
+              )
             }
             aria-label="설문 상태 필터"
           >
-            <option value="">상태 전체</option>
-            <option value="READY">예정</option>
-            <option value="ACTIVE">진행중</option>
-            <option value="END">종료</option>
+            <option value="">
+              상태 전체
+            </option>
+
+            <option value="READY">
+              예정
+            </option>
+
+            <option value="ACTIVE">
+              진행중
+            </option>
+
+            <option value="END">
+              종료
+            </option>
           </select>
         }
+
         extra={
           <>
             <button
@@ -348,25 +423,29 @@ export default function SurveyList() {
       />
 
 
-      {/* 설문 목록 */}
       <DataTable
         columns={columns}
         data={paged}
         rowKey={(survey) => survey.no}
         loading={loading}
+
         onEdit={(survey) =>
-          navigate(`${survey.no}/edit`)
+          navigate(
+            `${survey.no}/edit`
+          )
         }
+
         onDelete={(survey) =>
           setDeleteTarget(survey)
         }
+
         editLabel="수정"
         deleteLabel="삭제"
+
         emptyMessage="등록된 설문이 없습니다."
       />
 
 
-      {/* 페이지네이션 + 총 건수 */}
       <DbmsPagination
         page={page}
         totalPages={totalPages}
@@ -376,14 +455,21 @@ export default function SurveyList() {
       />
 
 
-      {/* 삭제 확인 */}
       <ConfirmDeleteModal
         open={deleteTarget !== null}
-        onClose={() => setDeleteTarget(null)}
+
+        onClose={() =>
+          setDeleteTarget(null)
+        }
+
         onConfirm={handleDelete}
+
         loading={deleting}
+
         title="설문을 삭제하시겠습니까?"
+
         description="설문과 연결된 문항 및 응답 데이터도 함께 삭제될 수 있습니다. 삭제 후에는 복구할 수 없습니다."
+
         targetLabel={
           deleteTarget
             ? `No.${deleteTarget.no} · ${deleteTarget.title}`
@@ -392,12 +478,20 @@ export default function SurveyList() {
       />
 
 
-      {/* 결과 알림 */}
       <AlertModal
         open={alert !== null}
-        onClose={() => setAlert(null)}
-        message={alert?.message ?? ''}
-        variant={alert?.variant}
+
+        onClose={() =>
+          setAlert(null)
+        }
+
+        message={
+          alert?.message ?? ''
+        }
+
+        variant={
+          alert?.variant
+        }
       />
 
     </section>
