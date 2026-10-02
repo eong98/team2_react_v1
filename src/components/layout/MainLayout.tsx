@@ -8,6 +8,8 @@ import { GlobalStoreSession } from '../../store/LoginStore';
 import { AlertModal } from '../ui';
 import { useEffect, useState } from 'react';
 import ChatBotWidget from '../ui/chatbot/ChatBotWidget';
+import { GlobalCurrentShop } from '../../store/UserStore';
+
 
 const MainLayout = () => {
   const { pathname, hash, key } = useLocation();
@@ -40,6 +42,18 @@ const MainLayout = () => {
 
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
 
+  // [추가] Sidebar.tsx의 handleLogout과 같은 흐름
+  const handleLogout = async () => {
+    try {
+      await axiosInstance.post('/auth/logout');      // 서버가 로그인 쿠키를 만료시킴
+    } catch (err) {
+      console.error('로그아웃 처리 중 오류(무시 가능):', err);
+    } finally {
+      GlobalStoreSession.getState().clearAuth();     // 화면 쪽 로그인 상태 비움
+      GlobalCurrentShop.getState().clearShop();      // 입장해 둔 매장 비움
+      navigate('/login');
+    }
+  };
     
   return (
     <div className='home'>
@@ -82,7 +96,7 @@ const MainLayout = () => {
                         title={isAdminGrade ? '관리자 사이트로 이동' : '관제 사이트로 이동'}
                         aria-label={isAdminGrade ? '관리자 사이트로 이동' : '관제 사이트로 이동'} />
                       <button type="button" className="nav_icon_btn logout"
-                        title="로그아웃" aria-label="로그아웃" />
+                        title="로그아웃" aria-label="로그아웃"  onClick={handleLogout} />
                     </>
                   ) : (
                     <>
