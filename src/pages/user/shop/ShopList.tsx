@@ -102,7 +102,7 @@ export default function ShopListView() {
   const enterStore = (shop: ShopType) => {
     if (!shop.no) return;
     setShop({ no: shop.no, title: shop.title ?? '' });
-    navigate('/user/dashboard/test1');
+    navigate('/user/dashboard/');
   };
 
   // 매장번호(sno)를 GlobalCurrentShop에 물린 뒤 CCTV 목록(/user/cctv)으로 바로 이동합니다.
@@ -151,8 +151,6 @@ export default function ShopListView() {
       <PageHeader
         title="매장 목록"
         description="운영 중인 매장을 선택해 관제 화면으로 전환합니다."
-        createLabel="+ 매장생성"
-        onCreate={() => navigate('new')}
       />
 
       <Filterbar
