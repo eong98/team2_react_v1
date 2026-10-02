@@ -137,10 +137,14 @@ export default function CctvListView() {
     );
   }
 
+  // [수정] 노트북 해상도(1280~1536px)에서 글씨 겹침 방지.
+  //  - mono 셀은 줄바꿈이 안 되므로(white-space:nowrap) 폭 = 글자수×7.5px + 좌우 padding 28px 이상이어야 함
+  //    날짜(10자) 110px / 일시(19자) 180px / 배지 84px 이상
+  //  - 등록일처럼 '일' 단위 컬럼은 다른 목록(ShopSurveyList 등)과 같이 slice(0, 10)으로 날짜만 표시
+  //  - 폭 없는 컬럼 1개가 남는 공간을 우측 버튼 컬럼과 나눠 가짐 → %폭 합계 초과로 버튼이 밀리는 문제 방지
   const columns: DataTableColumn<CctvType>[] = [
     {
       header: 'CCTV명',
-      width: '22%',
       render: (r) => (
         <div>
           <div className="cell_title">{r.cname || '(이름 없음)'}</div>
@@ -148,10 +152,10 @@ export default function CctvListView() {
         </div>
       ),
     },
-    { header: 'MAC 주소', width: '160px', mono: true, render: (r) => r.mac || '-' },
+    { header: 'MAC 주소', width: '164px', mono: true, render: (r) => r.mac || '-' },
     {
       header: '대표',
-      width: '70px',
+      width: '84px',
       render: (r) => (
         <span className={`badge ${r.represent === 'Y' ? 'badge_info' : 'badge_neutral'}`}>
           {r.represent === 'Y' ? '대표' : '-'}
@@ -165,8 +169,8 @@ export default function CctvListView() {
         <span className={`badge ${STATE_BADGE[r.state] ?? 'badge_neutral'}`}>{STATE_LABELS[r.state] ?? r.state}</span>
       ),
     },
-    { header: '최근 점검일', width: '110px', mono: true, render: (r) => r.ckdate || '-' },
-    { header: '등록일', width: '110px', mono: true, render: (r) => r.cdate },
+    { header: '최근 점검일', width: '110px', mono: true, render: (r) => r.ckdate?.slice(0, 10) || '-' },
+    { header: '등록일', width: '110px', mono: true, render: (r) => r.cdate?.slice(0, 10) },
   ];
 
   return (

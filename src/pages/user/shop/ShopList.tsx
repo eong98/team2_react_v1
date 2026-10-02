@@ -102,7 +102,7 @@ export default function ShopListView() {
   const enterStore = (shop: ShopType) => {
     if (!shop.no) return;
     setShop({ no: shop.no, title: shop.title ?? '' });
-    navigate('/user/dashboard/');
+    navigate('/user/dashboard');
   };
 
   // 매장번호(sno)를 GlobalCurrentShop에 물린 뒤 CCTV 목록(/user/cctv)으로 바로 이동합니다.
