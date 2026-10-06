@@ -7,6 +7,7 @@ import { GlobalStoreSession } from '../../../store/LoginStore';
 import { AlertModal, AttachViewer, ConfirmDeleteModal, PageHeader, PrevNextNav } from '../../../components/ui';
 import { NOTICE_TYPE_MAP, type NoticeTypes } from '../../../components/ts/NoticeType';
 import { type AttachType } from '../../../components/ts/Attach';
+import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 
 export default function NoticeDetail() {
   const { no } = useParams<{ no: string }>(); // URL에서 no 추출
@@ -67,7 +68,7 @@ export default function NoticeDetail() {
   /* 첨부파일 목록 조회 */
   const loadAttachList = () => {
     setLoading(true);
-    axiosInstance.get<AttachType[]>(`/attach/list/${no}`)
+    axiosInstance.get<AttachType[]>(`/attach/list/${no}`, { params: { tname: ATTACH_BOARD_LABEL[1].table } })
       .then((result) => result.data)
       .then((data) => {
         setAttach(data);
@@ -230,7 +231,7 @@ export default function NoticeDetail() {
             {notice.content}
           </div>
 
-          {notice.fileyn === 'Y' && <AttachViewer bno={notice.no} />}
+          {notice.fileyn === 'Y' && <AttachViewer bno={notice.no} tname={ATTACH_BOARD_LABEL[1].table} />}
 
           <div className="form_page_footer">
             <button type="button" className="btn btn_danger" onClick={() => setDeleteTarget(notice)}>

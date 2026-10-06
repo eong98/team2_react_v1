@@ -5,7 +5,7 @@ import { getOrCreateGno } from '../../ts/ChatGuest';
 import type { ChatSessionResponse, ChatSessionSummary } from '../../ts/ChatBot';
 import ChatRoomList from './ChatRoomList';
 import ChatRoom from './ChatRoom';
-import { FASTAPI_BASE_URL } from './ChatApi';
+import { fastapiWsUrl } from './ChatApi';
 import { backoffDelay } from './aiServer';
 
 /** AI 답변 대기 폴링: 기본 간격 / 연속 실패 허용 횟수 / 최대 대기 시간 */
@@ -62,7 +62,7 @@ export default function ChatBotWidget({ corner = false }: ChatBotWidgetProps) {
     }
     // 회원일 경우 mno, 비회원일 경우 localstorage 기반 gno 생성/조회하여 파라미터 구성
     const params = mno ? `mno=${mno}` : `gno=${getOrCreateGno()}`;
-    const wsUrl = `${FASTAPI_BASE_URL.replace(/^http/, 'ws')}/api/chatbot/ws?${params}`;
+    const wsUrl = fastapiWsUrl(`/api/chatbot/ws?${params}`); // http→ws, https→wss (프록시면 현재 사이트 기준)
 
     let ws: WebSocket | null = null;
     let retry = 0; // 연속 재연결 시도 횟수 → 대기 시간 1초, 2초, 4초 … 최대 30초
@@ -103,6 +103,12 @@ export default function ChatBotWidget({ corner = false }: ChatBotWidgetProps) {
         if (data.type === 'session_updated') {
           // 상담 종료 후 제목 요약 완료 등 — 목록만 새로고침 (새 메시지가 아니므로 안읽음 표시 안 함)
           setLastMessageSno({ sno: data.sno, ts: Date.now() });
+          return;
+        }
+        if (data.type === 'ai_responding') {
+          // 다른 브라우저·기기에서 같은 상담방에 AI 질문을 보냄 → 그 방을 새로 불러와 질문과 "입력 중" 표시
+          setLastMessageSno({ sno: data.sno, ts: Date.now() });
+          setAiRespondingSno(data.sno);
           return;
         }
         if (data.type === 'new_message') {

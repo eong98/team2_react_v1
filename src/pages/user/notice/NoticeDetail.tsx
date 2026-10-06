@@ -5,6 +5,7 @@ import { axiosInstance, getAttachUrl } from '../../../utils/Tool';
 import { usePaging } from '../../../hooks/usePaging';
 import { AttachViewer, PageHeader, PrevNextNav } from '../../../components/ui';
 import type { AttachType } from '../../../components/ts/Attach';
+import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 
 export default function NoticeDetail() {
   const { no } = useParams<{ no: string }>(); // URL에서 no 추출
@@ -56,7 +57,7 @@ export default function NoticeDetail() {
   /* 첨부파일 목록 조회 */
   const loadAttachList = () => {
     setLoading(true);
-    axiosInstance.get<AttachType[]>(`/attach/list/${no}`)
+    axiosInstance.get<AttachType[]>(`/attach/list/${no}`, { params: { tname: ATTACH_BOARD_LABEL[1].table } })
       .then((result) => result.data)
       .then((data) => {
         setAttach(data);
@@ -151,7 +152,7 @@ export default function NoticeDetail() {
           </div>
           
           
-          {notice.fileyn === 'Y' && <AttachViewer bno={notice.no} />}
+          {notice.fileyn === 'Y' && <AttachViewer bno={notice.no} tname={ATTACH_BOARD_LABEL[1].table} />}
         </div>
 
         {/* 🔑 이전글 / 다음글 컴포넌트 연동 */}

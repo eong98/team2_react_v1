@@ -7,6 +7,7 @@ import { usePaging } from '../../../hooks/usePaging';
 import { AlertModal, AttachViewer, ConfirmDeleteModal, PageHeader, PrevNextNav } from '../../../components/ui';
 import { QA_STATUS_MAP, QA_TYPE_MAP, type QaTypes } from '../../../components/ts/QaType';
 import type { AttachType } from '../../../components/ts/Attach';
+import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 
 export default function QaDetail() {
   const { no } = useParams<{ no: string }>(); // URL에서 no 추출
@@ -72,7 +73,7 @@ export default function QaDetail() {
   /* 첨부파일 목록 조회 */
   const loadAttachList = () => {
     setLoading(true);
-    axiosInstance.get<AttachType[]>(`/attach/list/${no}`)
+    axiosInstance.get<AttachType[]>(`/attach/list/${no}`, { params: { tname: ATTACH_BOARD_LABEL[0].table } })
       .then((result) => result.data)
       .then((data) => {
         setAttach(data);
@@ -212,7 +213,7 @@ export default function QaDetail() {
             {qa.content}
           </div>
           
-          {qa.fileyn === 'Y' && <AttachViewer bno={qa.no} onlyList={false} />}
+          {qa.fileyn === 'Y' && <AttachViewer bno={qa.no} tname={ATTACH_BOARD_LABEL[0].table} onlyList={false} />}
 
           {/* 본인 글인 경우에만 수정/삭제 노출 */}
           {mno === qa.mno && (

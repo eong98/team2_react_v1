@@ -7,6 +7,7 @@ import { GlobalStoreSession } from '../../../store/LoginStore';
 import { usePaging } from '../../../hooks/usePaging';
 import { NOTICE_TYPE_MAP, type NCRequest } from '../../../components/ts/NoticeType';
 import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
+import { attachErrorMessage } from '../../../components/ui/common/AttachUploader';
 
 export default function NoticeForm() {
   const { no } = useParams<{ no: string }>(); // URL에 no가 있으면 수정 모드
@@ -149,6 +150,13 @@ export default function NoticeForm() {
 
     setSubmitting(true);
     try {
+      // 첨부할 파일이 있으면 저장 경로부터 확인 — 쓸 수 없으면 글도 저장하지 않고 오류 모달
+      const storageError = await attachRef.current?.checkStorage();
+      if (storageError) {
+        setAlert({ message: storageError, variant: 'error' });
+        return;
+      }
+      let attachFailMessage: string | null = null; // 글 저장 후 첨부 반영이 실패했을 때 안내
       const payload: NCRequest = {
         ano: ano,
         type: Number(input.type),
@@ -170,6 +178,7 @@ export default function NoticeForm() {
             await attachRef.current.commit();
           } catch (attachErr) {
             console.error('첨부파일 반영 실패 (글은 정상 저장됨):', attachErr);
+            attachFailMessage = attachErrorMessage(attachErr);
           }
         }
       } else {
@@ -184,8 +193,18 @@ export default function NoticeForm() {
             await attachRef.current.commit(Number(newNo));
           } catch (attachErr) {
             console.error('첨부파일 반영 실패 (글은 정상 저장됨):', attachErr);
+            attachFailMessage = attachErrorMessage(attachErr);
           }
         }
+      }
+
+      if (attachFailMessage) {
+        setAlert({
+          message: `글은 저장되었지만 첨부파일은 저장하지 못했습니다.\n${attachFailMessage}`,
+          variant: 'error',
+          onConfirm: goBack,
+        });
+        return;
       }
 
       setAlert({

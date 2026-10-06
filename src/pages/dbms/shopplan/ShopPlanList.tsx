@@ -247,7 +247,11 @@ export default function ShopPlanList() {
             </p>
             <div className="plan_grid">
               <div className={`card plan_card${previewTarget.isreco === 'Y' ? ' plan_highlight' : ''}`}>
-                {previewTarget.isreco === 'Y' && <span className="plan_tag reco">추천</span>}
+                {previewTarget.isreco === 'Y' && (
+                  <div className="plan_tags">
+                    <span className="plan_tag reco"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.8l2.8 5.7 6.3.9-4.6 4.4 1.1 6.2L12 17.1 6.4 20l1.1-6.2L2.9 9.4l6.3-.9z" /></svg>추천</span>
+                  </div>
+                )}
 
                 <h3>{previewTarget.pname}</h3>
                 

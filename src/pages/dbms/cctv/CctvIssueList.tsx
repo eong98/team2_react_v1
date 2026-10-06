@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { AdminToolbar, AttachViewer, DataTable, PageHeader, DbmsPagination, type DataTableColumn } from '../../../components/ui';
 import { axiosInstance } from '../../../utils/Tool.ts';
 import { useCctvIssueCodes } from '../../../hooks/useCctvIssueCodes.ts';
+import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 import {
   PAGE_SIZE,
   STATE_LABELS,
@@ -350,10 +351,11 @@ export default function CctvIssueListView() {
               </div>
 
               {/* 매장(사용자)에서 등록한 증빙 첨부파일(현장 사진/영수증 등) - 조회 전용 */}
+              {/* 20261002 첨부파일에 tname 전달 변수 추가 (ATTACH_BOARD_LABEL) */}
               <div className="form_group">
                 <div className="form_label">증빙 첨부파일</div>
                 <div className="form_control">
-                  <AttachViewer bno={renderDetail.no} onlyList={false} />
+                  <AttachViewer bno={renderDetail.no} tname={ATTACH_BOARD_LABEL[2].table} onlyList={false} />
                 </div>
               </div>
             </div>

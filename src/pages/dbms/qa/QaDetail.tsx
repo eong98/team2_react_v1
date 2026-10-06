@@ -6,6 +6,7 @@ import { QA_STATUS_MAP, QA_TYPE_MAP, type QARequest, type QaTypes } from '../../
 import { usePaging } from '../../../hooks/usePaging';
 import { useParams } from 'react-router-dom';
 import type { AttachType } from '../../../components/ts/Attach';
+import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 
 /**
  * 
@@ -94,7 +95,7 @@ export default function QaDetail() {
   /* 첨부파일 목록 조회 */
   const loadAttachList = () => {
     setLoading(true);
-    axiosInstance.get<AttachType[]>(`/attach/list/${no}`)
+    axiosInstance.get<AttachType[]>(`/attach/list/${no}`, { params: { tname: ATTACH_BOARD_LABEL[0].table } })
       .then((result) => result.data)
       .then((data) => {
         setAttach(data);
@@ -269,7 +270,7 @@ export default function QaDetail() {
             {qa.content}
           </div>
 
-          {qa.fileyn === 'Y' && <AttachViewer bno={qa.no} onlyList={false} />}
+          {qa.fileyn === 'Y' && <AttachViewer bno={qa.no} tname={ATTACH_BOARD_LABEL[0].table} onlyList={false} />}
         </div>
         
 

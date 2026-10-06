@@ -45,7 +45,17 @@ export interface AttachUploaderHandle {
   commit: (bno?: number) => Promise<void>;
   /** 아직 서버에 반영 안 된(업로드 예정 또는 삭제 예정) 변경사항이 있는지 여부 */
   hasPendingChanges: () => boolean;
+  /**
+   * 업로드할 파일이 있을 때 첨부 저장 경로를 쓸 수 있는지 서버에 확인 (글 저장 전에 호출).
+   * 문제 없으면(또는 올릴 파일이 없으면) null, 쓸 수 없으면 오류 모달에 띄울 안내 문구.
+   */
+  checkStorage: () => Promise<string | null>;
 }
+
+/** 첨부 반영 실패 시 안내 문구 — 서버가 보낸 사유(저장 경로 오류 등)를 우선 사용 */
+export const attachErrorMessage = (err: unknown): string =>
+  (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+  '잠시 후 수정 화면에서 다시 첨부해주세요.';
 
 /**
  * 첨부파일 업로더. Attach.java/AttachCont.java의 /attach/list, /attach/create, /attach/delete와 연동됩니다.
@@ -112,7 +122,7 @@ const AttachUploader = forwardRef<AttachUploaderHandle, AttachUploaderProps>(fun
     setLoading(true);
     setPendingDeleteNos(new Set()); // 다른 글로 bno가 바뀌는 경우를 대비해 초기화
     axiosInstance
-      .get<AttachType[]>(`/attach/list/${bno}`)
+      .get<AttachType[]>(`/attach/list/${bno}`, { params: { tname } }) // 게시판 구분 — 같은 번호 다른 게시판 글과 섞이지 않게
       .then((res) => setList(res.data))
       .catch((err) => console.error('첨부파일 목록 조회 실패:', err))
       .finally(() => setLoading(false));
@@ -216,6 +226,15 @@ const AttachUploader = forwardRef<AttachUploaderHandle, AttachUploaderProps>(fun
       }
     },
     hasPendingChanges: () => pendingFiles.length > 0 || pendingDeleteNos.size > 0,
+    checkStorage: async () => {
+      if (pendingFiles.length === 0) return null; // 새로 올릴 파일이 없으면 확인할 필요 없음
+      try {
+        const res = await axiosInstance.get<{ available: boolean; message?: string }>('/attach/check');
+        return res.data.available ? null : res.data.message || '첨부파일 저장 경로에 접근할 수 없습니다.';
+      } catch {
+        return '첨부파일 저장 경로를 확인하지 못했습니다. 잠시 후 다시 시도해주세요.';
+      }
+    },
   }));
 
   return (

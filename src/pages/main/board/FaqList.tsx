@@ -4,6 +4,7 @@ import { DataAcc, Filterbar, PageHeader, UserPagination, type DataAccColumn, typ
 import { EMPTY_FILTERS, QA_TYPE_MAP, type Filters, type QaSearchResult, type QaTypes } from '../../../components/ts/QaType';
 import { usePaging } from '../../../hooks/usePaging';
 import type { AttachType } from '../../../components/ts/Attach';
+import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 
 /* ---------------------------------------------------------------------
    자주묻는 질문 (/board/faq) — 비회원도 볼 수 있는 FAQ 검색 화면입니다.
@@ -89,7 +90,7 @@ export default function FaqList() {
     Promise.all(
       targets.map((n) =>
         axiosInstance
-          .get<AttachType[]>(`/attach/list/${n.no}`)
+          .get<AttachType[]>(`/attach/list/${n.no}`, { params: { tname: ATTACH_BOARD_LABEL[0].table } })
           .then((res) => [n.no, res.data] as const)
           .catch((err) => {
             console.error(`첨부파일 조회 실패 (no:${n.no}):`, err);

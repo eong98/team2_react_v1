@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export interface DataAccColumn<T> {
   /** 라벨 (선택 사항) */
@@ -29,6 +29,8 @@ interface DataAccProps<T> {
   loading?: boolean;
   /** true면 여러 항목을 동시에 펼칠 수 있음 (기본값). false면 한 번에 하나만 펼쳐짐 */
   allowMultiple?: boolean;
+  /** 이 키의 항목을 펼친 상태로 보여주고 그 위치로 스크롤 (예: 다른 화면에서 특정 FAQ로 바로 이동) */
+  openKey?: string | number | null;
 }
 
 /**
@@ -60,8 +62,22 @@ export default function DataAcc<T>({
   emptyMessage = '등록된 데이터가 없습니다.',
   loading = false,
   allowMultiple = true,
+  openKey = null,
 }: DataAccProps<T>) {
   const [openKeys, setOpenKeys] = useState<Set<string | number>>(new Set());
+
+  // openKey 항목이 목록에 나타나면 한 번만 펼치고 그 위치로 스크롤 (이후엔 사용자가 자유롭게 접고 펼침)
+  const appliedOpenKey = useRef<string | number | null>(null);
+  useEffect(() => {
+    if (openKey == null || appliedOpenKey.current === openKey) return;
+    if (!data.some((row) => rowKey(row) === openKey)) return;
+    appliedOpenKey.current = openKey;
+    setOpenKeys((prev) => (allowMultiple ? new Set(prev).add(openKey) : new Set([openKey])));
+    requestAnimationFrame(() =>
+      document.getElementById(`acc-item-${openKey}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openKey, data]);
   const hasActions = Boolean(onEdit || onDelete);
 
   const toggle = (key: string | number) => {
@@ -91,7 +107,7 @@ export default function DataAcc<T>({
           const panelId = `acc-panel-${key}`;
 
           return (
-            <div className="acc_item" key={key}>
+            <div className="acc_item" key={key} id={`acc-item-${key}`}>
               <button
                 type="button"
                 className="acc_trigger"

@@ -8,6 +8,7 @@ import { GlobalStoreSession } from '../../../store/LoginStore';
 import { usePaging } from '../../../hooks/usePaging';
 import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 import type { MyMemberInfo } from '../../../components/ts/MyPage';
+import { attachErrorMessage } from '../../../components/ui/common/AttachUploader';
 
 /**
  * 
@@ -162,6 +163,13 @@ export default function QaForm() {
 
     setSubmitting(true);
     try {
+      // 첨부할 파일이 있으면 저장 경로부터 확인 — 쓸 수 없으면 글도 저장하지 않고 오류 모달
+      const storageError = await attachRef.current?.checkStorage();
+      if (storageError) {
+        setAlert({ message: storageError, variant: 'error' });
+        return;
+      }
+      let attachFailMessage: string | null = null; // 글 저장 후 첨부 반영이 실패했을 때 안내
       const payload: QCRequest = {
         mno: mno,
         type: Number(input.type),
@@ -182,19 +190,32 @@ export default function QaForm() {
             await attachRef.current.commit();
           } catch (attachErr) {
             console.error('첨부파일 반영 실패 (글은 정상 저장됨):', attachErr);
+            attachFailMessage = attachErrorMessage(attachErr);
           }
         }
       } else {
         const res = await axiosInstance.post('/qa', payload);
-        const newNo = res.data;
+        // 서버가 등록된 글(QaResponse)을 돌려줌 → 글번호는 res.data.no
+        // (예전엔 res.data 자체를 번호로 써서 NaN이 되어 첨부파일이 저장되지 않았음)
+        const newNo = typeof res.data === 'object' ? res.data?.no : res.data;
 
         if (newNo && attachRef.current?.hasPendingChanges()) {
           try {
             await attachRef.current.commit(Number(newNo));
           } catch (attachErr) {
             console.error('첨부파일 반영 실패 (글은 정상 저장됨):', attachErr);
+            attachFailMessage = attachErrorMessage(attachErr);
           }
         }
+      }
+
+      if (attachFailMessage) {
+        setAlert({
+          message: `글은 저장되었지만 첨부파일은 저장하지 못했습니다.\n${attachFailMessage}`,
+          variant: 'error',
+          onConfirm: goBack,
+        });
+        return;
       }
 
       setAlert({

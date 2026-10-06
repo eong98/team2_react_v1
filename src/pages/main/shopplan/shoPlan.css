@@ -258,39 +258,45 @@
 .plan_card ul li {position:relative; padding-left:12px;}
 .plan_card ul li::before {display:block; position:absolute; left:0; top:calc(50% - 2px); content:''; width:4px; height:4px; border-radius:4px; background-color:var(--primary);}
 
-/* 추천/이용중일 때 카드 테두리 전체 강조 */
+
+/* 카드 테두리 전체 강조 (관리자 추천 또는 인기) */
 .plan_card.plan_highlight {
   border-color: var(--primary);
-  box-shadow: 0 0 0 1px var(--primary);
+  box-shadow: 0 0 0 1px var(--primary), 0 8px 24px rgba(51, 214, 138, 0.12);
 }
 
-/* 카드 테두리 위에 걸치는 탭형 배지 — 레이아웃은 공통, 색상만 modifier로 분기 */
-.plan_tag {
+/* 카드 테두리 위에 걸치는 배지 묶음 — 추천·인기가 둘 다면 나란히 */
+.plan_tags {
   position: absolute;
-  top: -9px;
+  top: -11px;
+  left: 16px;
+  display: flex;
+  gap: 6px;
+}
+.plan_tag {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 12px;
-  border-radius: 100px;
-  font-size: 11px;
-  font-weight: 700;
-  background: var(--primary);
-  color: #04211D;
-  font-size: 10.5px;
-  font-weight: 700;
   padding: 3px 10px;
   border-radius: 100px;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.4;
   white-space: nowrap;
 }
-
-.plan_tag.popular, /* 사용자 인기 */
-.plan_tag.reco /* 관리자 추천 */ {
-  left: 16px;
+.plan_tag svg {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
 }
-.plan_tag.current {
-  right: 16px;
-  /* background: var(--surface-2); */
+/* 인기(결제 통계 1위) — 꽉 찬 초록 */
+.plan_tag.popular {
+  background: var(--primary);
+  border: 1.5px solid var(--primary);
+  color: #04211D;
+}
+/* 관리자 추천 — 어두운 바탕 + 초록 테두리 */
+.plan_tag.reco {
   background: var(--n-900, #0a0e13);
   border: 1.5px solid var(--primary);
   color: var(--primary);

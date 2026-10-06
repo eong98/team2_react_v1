@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { axiosInstance } from '../../../utils/Tool';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import { getOrCreateGno } from '../../ts/ChatGuest';
+import { onChatChanged } from './chatSync';
 import { formatMessageDate, formatRelativeTime, type ChatSessionSummary } from '../../ts/ChatBot';
 
 /** ChatRoomList 컴포넌트의 Props 타입 정의 */
@@ -49,6 +50,12 @@ export default function ChatRoomList({ onClose, onEnterRoom, refreshSignal, aiRe
     loadRooms();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshSignal]);
+
+  // 같은 브라우저의 다른 탭에서 상담이 바뀌면(메뉴 선택·종료 등) 목록도 갱신
+  useEffect(() => {
+    return onChatChanged(() => loadRooms());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   // ---------------------------------------------------------------------------
   // 3. 유틸리티 및 헬퍼 함수

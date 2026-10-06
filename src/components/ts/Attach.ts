@@ -2,6 +2,8 @@
 export interface AttachType {
   /* 첨부파일 고유번호 */
   no: number;
+  /** 문의(QA) 첨부일 때 그 글이 FAQ인지 — 관리자 첨부 목록에서만 내려옴 */
+  isfaq?: 'Y' | 'N' | null;
 
   /* 게시판번호를 조회할 테이블 이름(해당 이름으로 폴더명 생성됨) */
   tname: string;
