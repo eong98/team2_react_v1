@@ -18,6 +18,7 @@ import {
 import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach.ts';
 import { GlobalStoreSession } from '../../../store/LoginStore.ts';
 import { GlobalCurrentShop } from '../../../store/UserStore.ts';
+import CctvIssueReviewBox from './CctvIssueReviewBox.tsx'; // [추가] AI 검토(에이전트)
 
 // 파일이름 꼭 맞춰주세요
 /* ---------------------------------------------------------------------
@@ -511,6 +512,15 @@ export default function CctvIssueListView() {
                   <div className="v">{renderDetail.pdate || '미처리'}</div>
                 </div>
               </div>
+
+              {/* [추가] AI 검토 - 에이전트가 관련 기록을 조회해 정탐/오탐 의견을 냅니다(상태는 바꾸지 않음).
+                  key에 이슈 번호를 줘서 다른 이슈를 열면 이전 검토 결과가 초기화됩니다. */}
+              <CctvIssueReviewBox
+                key={renderDetail.no}
+                issueNo={renderDetail.no}
+                sno={shopNo}
+                onError={(message) => setAlert({ message, variant: 'error' })}
+              />
 
               <div className="detail_actions">
                 {/* 현재 오탐여부(state) 값과 상관없이 항상 눌러서 재처리할 수 있습니다.
