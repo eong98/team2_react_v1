@@ -16,7 +16,6 @@ import {
   EMPTY_FILTERS,
   type ShopPlanSearchResult,
   type Filters,
-  type ShopPlanTypes,
   type RowType,
 } from '../../../components/ts/ShopPlan';
 

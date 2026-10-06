@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Modal } from '../../../../components/ui';
 import { axiosInstance } from '../../../../utils/Tool';
 import { PMETHOD_MAP, PMETHOD_ICON } from '../../../../components/ts/ShopPayment';
-import type { RenewRequest, RenewResult, ShopOrderTypes } from '../../../../components/ts/ShopOrder';
+import type { ShopOrderTypes } from '../../../../components/ts/ShopOrder';
 
 interface RenewModalProps {
   target: ShopOrderTypes | null;

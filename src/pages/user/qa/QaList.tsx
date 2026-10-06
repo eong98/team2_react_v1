@@ -3,7 +3,7 @@ import { GlobalStoreSession } from '../../../store/LoginStore';
 import { axiosInstance, getAttachUrl } from '../../../utils/Tool';
 import { useTab } from '../../../hooks/useTab';
 import { usePaging } from '../../../hooks/usePaging';
-import { Filterbar, UserPagination, PageHeader, DataAcc, DataCard } from '../../../components/ui';
+import { AlertModal, Filterbar, UserPagination, PageHeader, DataAcc, DataCard } from '../../../components/ui';
 import type { DataCardColumn, DataAccColumn } from '../../../components/ui';
 import { EMPTY_FILTERS, PAGE_SIZE, QA_STATUS_MAP, QA_TYPE_MAP } from '../../../components/ts/QaType';
 import type { Filters, QaSearchResult, QaTypes, TabKey } from '../../../components/ts/QaType';
@@ -11,12 +11,27 @@ import type { AttachType } from '../../../components/ts/Attach';
 import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 
 export default function QaList() {
-  const { no:mno, id } = GlobalStoreSession();
+  const { no:mno } = GlobalStoreSession();
 
   /* 탭 이동시 저장 설정 */
   // 범용 useTab 훅 사용 (URL Query Parameter 기반 탭 제어)
   const { tab, changeTab } = useTab<TabKey>({ defaultTab: 'qa' });
   const { page, setPage, navigateWithQuery } = usePaging({ basePath: '/user/qa' });
+
+  /** 안내 모달 문구 (남의 비밀글을 눌렀을 때) */
+  const [alert, setAlert] = useState<string | null>(null);
+
+  /**
+   * 상세로 이동 — 다른 사람의 비밀글은 서버에 요청하지 않고 바로 안내
+   * (요청하면 서버가 거부하고, 브라우저가 실패한 요청을 콘솔에 오류로 남김)
+   */
+  const openDetail = (n: QaTypes) => {
+    if (n.vmode === 'Y' && n.mno !== mno) {
+      setAlert('비밀글은 작성자만 볼 수 있습니다.');
+      return;
+    }
+    navigateWithQuery(`${n.no}`);
+  };
 
   // 탭 상태 조건 분기
   const isFaq = tab === 'faq';
@@ -26,7 +41,6 @@ export default function QaList() {
   const [qaList, setQaList] = useState<QaTypes[]>([]);
   const [attachMap, setAttachMap] = useState<Record<number, AttachType[]>>({});
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState('');
 
   /* 필터바 설정 */
   // draft: 입력 중인 값 (타이핑만으로는 검색 안 됨) / applied: "검색" 눌렀을 때 실제 조회에 쓰이는 값
@@ -148,7 +162,6 @@ export default function QaList() {
     changeTab(next, resetFilters);
   };
 
-  console.log(qaList)
 
   // ==========================================
   // DataCard / DataAcc 컬럼 정의
@@ -170,7 +183,7 @@ export default function QaList() {
         <>
           <div className="lt">
             <div className="cell_title">
-              <button className='link' onClick={() => navigateWithQuery(`${n.no}`)}>
+              <button className='link' onClick={() => openDetail(n)}>
                 {n.title}
                 {n.vmode === 'Y' ? 
                   (<span className='lock'>
@@ -184,7 +197,7 @@ export default function QaList() {
             </div>
           </div>
 
-          {n.fileyn !== 'Y' && (
+          {n.fileyn === 'Y' && ( // 첨부파일 있는 글만 아이콘 표시
             <div className="me">
               <div className='icon_row'>
                 <div className='icon file'>
@@ -352,6 +365,13 @@ export default function QaList() {
         totalCount={totalElements}
         pageSize={PAGE_SIZE}
         onChange={setPage}
+      />
+
+      <AlertModal
+        open={alert !== null}
+        onClose={() => setAlert(null)}
+        message={alert ?? ''}
+        variant="error"
       />
 
     </section>

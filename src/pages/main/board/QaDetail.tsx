@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { usePaging } from '../../../hooks/usePaging';
 import { QA_STATUS_MAP, QA_TYPE_MAP, type QaTypes } from '../../../components/ts/QaType';
 import { axiosInstance } from '../../../utils/Tool';
 import { AlertModal, AttachViewer, ConfirmDeleteModal, PageHeader, PrevNextNav } from '../../../components/ui';
-import type { AttachType } from '../../../components/ts/Attach';
 import axios from 'axios';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
@@ -31,7 +30,6 @@ export default function QaDetail() {
   const { goToList, navigateWithQuery } = usePaging({ basePath: '../qa' });
 
   const [qa, setQa] = useState<QaTypes | null>(null);
-  const [attach, setAttach] = useState<AttachType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,7 +61,6 @@ export default function QaDetail() {
           next: data.next ?? null,
         })
         
-        loadAttachList()
       })
       .catch((err) => {
         console.error('문의 상세 조회 실패:', err);
@@ -80,18 +77,6 @@ export default function QaDetail() {
     loadQa();
   }, [no, mno, grade, pwFromState]);
 
-  /* 첨부파일 목록 조회 */
-  const loadAttachList = () => {
-    axiosInstance
-      .get<AttachType[]>(`/attach/list/${no}`, { params: { tname: ATTACH_BOARD_LABEL[0].table } })
-      .then((result) => result.data)
-      .then((data) => {
-        setAttach(data);
-      })
-      .catch((err) => {
-        console.error('첨부파일 목록 조회 실패:', err);
-      });
-  };
 
 
   // 비밀번호 입력 후 삭제 실행

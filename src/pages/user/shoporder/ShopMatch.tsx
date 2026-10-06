@@ -6,7 +6,6 @@ import { GlobalStoreSession } from '../../../store/LoginStore';
 import type { LinkShopRequest } from '../../../components/ts/ShopOrder';
 import { PAGE_SIZE, type ShopType } from '../../../components/ts/ShopUser';
 import type { ShopOrderTypes } from '../../../components/ts/ShopOrder';
-import type { ShopPlanTypes } from '../../../components/ts/ShopPlan';
 
 /* ---------------------------------------------------------------------
    구독 결제 완료 후 매장 연결 (/user/subscribe/:no/shop-select)

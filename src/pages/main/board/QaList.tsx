@@ -2,10 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePaging } from '../../../hooks/usePaging';
 import { EMPTY_FILTERS, PAGE_SIZE, QA_STATUS_MAP, QA_TYPE_MAP, type Filters, type QaSearchResult, type QaTypes } from '../../../components/ts/QaType';
-import type { AttachType } from '../../../components/ts/Attach';
 import { axiosInstance } from '../../../utils/Tool';
 import { DataCard, Filterbar, Modal, PageHeader, UserPagination, type DataCardColumn } from '../../../components/ui';
-import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 
 /* ---------------------------------------------------------------------
    비회원 문의 조회 (/board/qa/search) — 이메일/키워드로 본인 작성 문의
@@ -28,9 +26,7 @@ export default function QaList() {
 
   /* API 데이터 저장 */
   const [qaList, setQaList] = useState<QaTypes[]>([]);
-  const [attachMap, setAttachMap] = useState<Record<number, AttachType[]>>({});
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState('');
   
   const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
@@ -88,27 +84,6 @@ export default function QaList() {
     loadQaList();
   }, [applied, page]);
 
-  /* 첨부파일 목록 조회 */
-  useEffect(() => {
-    if (!qaList) return;
-
-    const targets = qaList.filter((n) => n.fileyn === 'Y');
-    if (targets.length === 0) return;
-
-    Promise.all(
-      targets.map((n) =>
-        axiosInstance
-          .get<AttachType[]>(`/attach/list/${n.no}`, { params: { tname: ATTACH_BOARD_LABEL[0].table } })
-          .then((res) => [n.no, res.data] as const)
-          .catch((err) => {
-            console.error(`첨부파일 조회 실패 (no:${n.no}):`, err);
-            return [n.no, []] as const;
-          }),
-      ),
-    ).then((results) => {
-      setAttachMap(Object.fromEntries(results));
-    });
-  }, [qaList]);
 
   // 검색/초기화
   const onSearch = () => {
@@ -196,7 +171,7 @@ export default function QaList() {
             </div>
           </div>
           
-          {n.fileyn !== 'Y' && (
+          {n.fileyn === 'Y' && ( // 첨부파일 있는 글만 아이콘 표시
             <div className="me">
               <div className='icon_row'>
                 <div className='icon file'>

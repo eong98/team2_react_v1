@@ -56,7 +56,7 @@ export default function ShopPlanForm() {
       .get(`/shop_plan/${no}`)
       .then((result) => result.data)
       .then((data) => {
-        setInput((prev) => ({
+        setInput(() => ({
           no: data.no,
           pname: data.pname ?? '',
           pmonth: data.pmonth ?? '',

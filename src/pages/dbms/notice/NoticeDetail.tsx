@@ -11,7 +11,7 @@ import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 
 export default function NoticeDetail() {
   const { no } = useParams<{ no: string }>(); // URL에서 no 추출
-  const { no:ano, id, grade } = GlobalStoreSession();
+  const { no:ano, grade } = GlobalStoreSession();
   const { goToList, navigateWithQuery } = usePaging({ basePath: '/dbms/notice' });
 
   const [notice, setNotice] = useState<NoticeTypes | null>(null);
@@ -86,7 +86,6 @@ export default function NoticeDetail() {
   const handleDeleteWithPw = async (inputPw: string = '') => {
     if (!deleteTarget) return;
     setDeleting(true);
-    console.log(inputPw)
 
     try {
       // Axios DELETE 요청 시 Body로 데이터를 전달할 때는 { data: ... } 옵션을 사용합니다.

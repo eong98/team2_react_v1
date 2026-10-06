@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { axiosInstance, getAttachUrl } from '../../../utils/Tool';
-import { DataAcc, Filterbar, PageHeader, UserPagination, type DataAccColumn, type DataTableColumn } from '../../../components/ui';
+import { DataAcc, Filterbar, PageHeader, UserPagination, type DataAccColumn } from '../../../components/ui';
 import { EMPTY_FILTERS, QA_TYPE_MAP, type Filters, type QaSearchResult, type QaTypes } from '../../../components/ts/QaType';
 import { usePaging } from '../../../hooks/usePaging';
 import type { AttachType } from '../../../components/ts/Attach';
@@ -19,13 +19,12 @@ import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 const PAGE_SIZE = 6;
 
 export default function FaqList() {
-  const { page, setPage, navigateWithQuery } = usePaging({ basePath: '/board/faq' });
+  const { page, setPage } = usePaging({ basePath: '/board/faq' });
 
   /* API 데이터 저장 */
   const [faqList, setQaList] = useState<QaTypes[]>([]);
   const [attachMap, setAttachMap] = useState<Record<number, AttachType[]>>({});
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState('');
 
   /* 필터바 설정 */
   const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS);

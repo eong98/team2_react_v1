@@ -7,7 +7,7 @@ import { EMPTY_FILTERS, NOTICE_TYPE_MAP, PAGE_SIZE, type Filters, type NoticeSea
 import { GlobalStoreSession } from '../../../store/LoginStore';
 
 export default function NoticeList() {
-  const { no:ano, id, grade } = GlobalStoreSession();
+  const { no:ano, grade } = GlobalStoreSession();
 
   const { page, setPage, navigateWithQuery } = usePaging({ basePath: '/dbms/notice' });
 

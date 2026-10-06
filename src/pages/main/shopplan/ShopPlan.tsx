@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PageHeader, AlertModal, Modal } from '../../../components/ui';
-import { axiosInstance, getNowDate } from '../../../utils/Tool';
+import { AlertModal, Modal } from '../../../components/ui';
+import { axiosInstance } from '../../../utils/Tool';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import { GlobalCurrentShop } from '../../../store/UserStore';
 import type { ShopPlanTypes } from '../../../components/ts/ShopPlan';
@@ -29,7 +29,7 @@ import { PMETHOD_MAP, PMETHOD_ICON } from '../../../components/ts/ShopPayment';
 
 export default function ShopPlan() {
   const navigate = useNavigate();
-  const { no: mno, login } = GlobalStoreSession();
+  const { no: mno } = GlobalStoreSession();
   const shopNo = GlobalCurrentShop((state) => state.no);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);

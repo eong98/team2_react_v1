@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
-import { PageHeader, Filterbar, UserPagination, DataTable, type DataTableColumn, DbmsPagination, AdminToolbar, Modal } from '../../../components/ui';
+import { PageHeader, DataTable, type DataTableColumn, DbmsPagination, AdminToolbar, Modal } from '../../../components/ui';
 import { axiosInstance } from '../../../utils/Tool';
 import { EMPTY_FILTERS, formatLogAmount, LOG_ACTION_MAP, PAGE_SIZE, type Filters, type LogSearchResult, type RowType } from '../../../components/ts/ShopOrderLog';
-import { ORDER_STATUS_MAP } from '../../../components/ts/ShopOrder';
 import { usePaging } from '../../../hooks/usePaging';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 
@@ -128,7 +127,6 @@ export default function ShopOrderLogList() {
       ),
     },
   ];
-  console.log(logs)
 
   return (
     <section className="view active">

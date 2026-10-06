@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { PageHeader } from '../../../components/ui';
 import { axiosInstance } from '../../../utils/Tool';
 import { PMETHOD_MAP, PSTATUS_MAP, type ShopPaymentTypes } from '../../../components/ts/ShopPayment';
@@ -13,7 +13,6 @@ import { usePaging } from '../../../hooks/usePaging';
 --------------------------------------------------------------------- */
 
 export default function ShopPaymentDetail() {
-  const navigate = useNavigate();
   const { pno, ono } = useParams<{ pno: string; ono: string }>();
   const url = location.pathname.includes('/order') ? 'order' : 'shoporder';
 
@@ -36,7 +35,6 @@ export default function ShopPaymentDetail() {
       })
       .finally(() => setLoading(false));
   }, [pno, ono]);
-  console.log(payment)
 
   if (loading) {
     return (
