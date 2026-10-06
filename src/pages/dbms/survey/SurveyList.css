@@ -1,0 +1,401 @@
+/* =========================================
+   관리자 설문 관리
+========================================= */
+
+.survey_admin_page {
+    width: 100%;
+    min-width: 0;
+}
+
+
+/* =========================================
+   제목
+========================================= */
+
+.survey_admin_title {
+    min-width: 0;
+}
+
+.survey_admin_title .cell_title {
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.survey_admin_title .cell_sub {
+    margin-top: 4px;
+}
+
+
+/* =========================================
+   설문 기간
+========================================= */
+
+.survey_admin_period {
+    display: flex;
+
+    align-items: center;
+
+    gap: 5px;
+
+    font-size: 12px;
+
+    white-space: nowrap;
+}
+
+.survey_period_separator {
+    color: var(--text-faint);
+}
+
+
+/* =========================================
+   작성자 / 등록일
+========================================= */
+
+.survey_admin_writer,
+.survey_admin_date {
+    font-size: 12px;
+
+    white-space: nowrap;
+}
+
+
+/* =========================================
+   기본 테이블
+========================================= */
+
+.survey_admin_page .table_wrap {
+    width: 100%;
+
+    min-width: 0;
+}
+
+.survey_admin_page .table {
+    width: 100%;
+
+    table-layout: fixed;
+}
+
+.survey_admin_page .table th,
+.survey_admin_page .table td {
+    vertical-align: middle;
+
+    word-break: keep-all;
+}
+
+
+/* =========================================
+   1200px 이하
+========================================= */
+
+@media (max-width: 1200px) {
+
+    .survey_admin_page .table {
+        min-width: 0;
+    }
+
+    .survey_admin_page .table th,
+    .survey_admin_page .table td {
+        padding-left: 9px;
+        padding-right: 9px;
+    }
+
+    .survey_admin_period {
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 2px;
+
+        white-space: normal;
+    }
+
+    .survey_period_separator {
+        display: none;
+    }
+
+    .survey_admin_page .table .btn {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+}
+
+
+/* =========================================
+   900px 이하
+========================================= */
+
+@media (max-width: 900px) {
+
+    .survey_admin_page .table_wrap {
+        overflow-x: visible !important;
+    }
+
+    .survey_admin_page .table {
+        min-width: 0;
+    }
+
+
+    /* 번호 숨김 */
+
+    .survey_admin_page .table th:nth-child(1),
+    .survey_admin_page .table td:nth-child(1) {
+        display: none;
+    }
+
+
+    /* 작성자 숨김 */
+
+    .survey_admin_page .table th:nth-child(5),
+    .survey_admin_page .table td:nth-child(5) {
+        display: none;
+    }
+
+
+    /* 등록일 숨김 */
+
+    .survey_admin_page .table th:nth-child(6),
+    .survey_admin_page .table td:nth-child(6) {
+        display: none;
+    }
+
+
+    .survey_admin_page .table th,
+    .survey_admin_page .table td {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+}
+
+
+/* =========================================
+   650px 이하
+   테이블 → 카드
+========================================= */
+
+@media (max-width: 650px) {
+
+    .survey_admin_page .table_wrap {
+        overflow: visible !important;
+
+        border: 0;
+
+        background: transparent;
+    }
+
+    .survey_admin_page .table {
+        display: block;
+
+        width: 100%;
+        min-width: 0;
+    }
+
+    .survey_admin_page .table thead {
+        display: none;
+    }
+
+    .survey_admin_page .table tbody {
+        display: block;
+
+        width: 100%;
+    }
+
+
+    /* 한 설문 */
+
+    .survey_admin_page .table tr {
+        display: grid;
+
+        grid-template-columns:
+            minmax(0, 1fr) auto;
+
+        gap: 10px 12px;
+
+        width: 100%;
+
+        margin-bottom: 10px;
+
+        padding: 15px;
+
+        border: 1px solid var(--border);
+        border-radius: 10px;
+
+        background: var(--surface);
+    }
+
+
+    .survey_admin_page .table td {
+        display: block;
+
+        width: auto;
+
+        padding: 0;
+
+        border: 0;
+    }
+
+
+    /* 번호 */
+
+    .survey_admin_page .table td:nth-child(1) {
+        display: none;
+    }
+
+
+    /* 설문 제목 */
+
+    .survey_admin_page .table td:nth-child(2) {
+        grid-column: 1;
+        grid-row: 1;
+
+        min-width: 0;
+    }
+
+    .survey_admin_title .cell_title {
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+
+    /* 상태 */
+
+    .survey_admin_page .table td:nth-child(3) {
+        grid-column: 2;
+        grid-row: 1;
+
+        text-align: right;
+    }
+
+
+    /* 설문 기간 */
+
+    .survey_admin_page .table td:nth-child(4) {
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+
+    .survey_admin_period {
+        display: flex;
+
+        flex-direction: row;
+
+        flex-wrap: wrap;
+
+        align-items: center;
+
+        gap: 5px;
+
+        color: var(--text-dim);
+    }
+
+    .survey_period_separator {
+        display: inline;
+    }
+
+
+    /* 작성자 */
+
+    .survey_admin_page .table td:nth-child(5) {
+        display: none;
+    }
+
+
+    /* 등록일 */
+
+    .survey_admin_page .table td:nth-child(6) {
+        display: none;
+    }
+
+
+    /* 응답관리 */
+
+    .survey_admin_page .table td:nth-child(7) {
+        grid-column: 1;
+        grid-row: 3;
+    }
+
+
+    /*
+   * DataTable이 onEdit/onDelete로
+   * 마지막 관리 컬럼을 자동 생성함
+   */
+
+    .survey_admin_page .table td:last-child {
+        grid-column: 2;
+        grid-row: 3;
+
+        display: flex;
+
+        justify-content: flex-end;
+
+        gap: 5px;
+    }
+
+
+    .survey_admin_page .table .btn {
+        min-height: 30px;
+
+        padding: 5px 9px;
+
+        font-size: 11px;
+    }
+}
+
+
+/* =========================================
+   480px 이하
+========================================= */
+
+@media (max-width: 480px) {
+
+    .survey_admin_page .table tr {
+        grid-template-columns: 1fr;
+
+        gap: 9px;
+    }
+
+
+    /* 제목 */
+
+    .survey_admin_page .table td:nth-child(2) {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+
+    /* 상태 */
+
+    .survey_admin_page .table td:nth-child(3) {
+        grid-column: 1;
+        grid-row: 2;
+
+        text-align: left;
+    }
+
+
+    /* 기간 */
+
+    .survey_admin_page .table td:nth-child(4) {
+        grid-column: 1;
+        grid-row: 3;
+    }
+
+
+    /* 응답 */
+
+    .survey_admin_page .table td:nth-child(7) {
+        grid-column: 1;
+        grid-row: 4;
+    }
+
+
+    /* 수정 / 삭제 */
+
+    .survey_admin_page .table td:last-child {
+        grid-column: 1;
+        grid-row: 5;
+
+        justify-content: flex-start;
+    }
+}

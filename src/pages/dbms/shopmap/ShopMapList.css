@@ -1,20 +1,33 @@
 /* =========================================
-   사용자 매장 도면 관리
+   관리자 매장 도면 관리
 ========================================= */
+
+.shopmap_admin_page {
+  width: 100%;
+  min-width: 0;
+}
 
 
 /* =========================================
-   점주 안내
+   조회 요약
 ========================================= */
 
-.shopmap_owner_notice {
+.shopmap_summary {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
+  align-items: stretch;
+  gap: 12px;
 
   margin: 18px 0;
-  padding: 16px 20px;
+}
+
+.shopmap_summary_item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  min-width: 150px;
+
+  padding: 14px 18px;
 
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -22,139 +35,54 @@
   background: var(--surface);
 }
 
-
-.shopmap_owner_notice strong {
-  display: block;
-
-  margin-bottom: 4px;
-
-  font-size: 14px;
-  font-weight: 700;
-
-  color: var(--text);
-}
-
-
-.shopmap_owner_notice p {
-  margin: 0;
-
+.shopmap_summary_label {
   font-size: 13px;
-  line-height: 1.6;
-
   color: var(--text-dim);
 }
 
-
-.shopmap_owner_badge {
-  flex-shrink: 0;
-
-  padding: 5px 12px;
-
-  border-radius: 20px;
-
-  background: #eef2ff;
-  color: #4f46e5;
-
-  font-size: 12px;
+.shopmap_summary_item strong {
+  font-size: 17px;
   font-weight: 700;
-}
-
-
-
-/* =========================================
-   도면 목록
-========================================= */
-
-.shopmap_list {
-  overflow: hidden;
-
-  margin-top: 18px;
-
-  border: 1px solid var(--border);
-  border-radius: 10px;
-
-  background: var(--surface);
-}
-
-
-
-/* 한 매장 */
-.shopmap_row {
-  display: grid;
-
-  grid-template-columns:
-    minmax(220px, 1.5fr) 100px minmax(200px, 1fr) 160px;
-
-  gap: 20px;
-
-  align-items: center;
-
-  min-height: 88px;
-
-  padding: 16px 20px;
-
-  border-bottom: 1px solid var(--border);
-}
-
-
-.shopmap_row:last-child {
-  border-bottom: 0;
-}
-
-
-
-/* =========================================
-   매장
-========================================= */
-
-.shopmap_store,
-.shopmap_file {
-  display: flex;
-  flex-direction: column;
-
-  min-width: 0;
-
-  gap: 5px;
-}
-
-
-.shopmap_store .cell_title,
-.shopmap_file .cell_title {
-  overflow: hidden;
-
-  font-size: 14px;
-  font-weight: 700;
-
   color: var(--text);
-
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 
-.shopmap_store .cell_sub,
-.shopmap_file .cell_sub {
-  overflow: hidden;
+/* =========================================
+   조회 결과
+========================================= */
+
+.shopmap_result_info {
+  margin-top: 12px;
 
   font-size: 12px;
 
   color: var(--text-faint);
-
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
-
 
 
 /* =========================================
-   등록 상태
+   로딩
 ========================================= */
 
-.shopmap_status_area {
-  display: flex;
-  align-items: center;
+.loading_box {
+  padding: 50px 20px;
+
+  border: 1px solid var(--border);
+  border-radius: 10px;
+
+  background: var(--surface);
+
+  text-align: center;
+
+  font-size: 13px;
+
+  color: var(--text-faint);
 }
 
+
+/* =========================================
+   도면 상태
+========================================= */
 
 .shopmap_status {
   display: inline-flex;
@@ -170,14 +98,14 @@
 
   font-size: 12px;
   font-weight: 600;
-}
 
+  white-space: nowrap;
+}
 
 .shopmap_status.registered {
   background: #ecfdf5;
   color: #047857;
 }
-
 
 .shopmap_status.unregistered {
   background: #f3f4f6;
@@ -185,380 +113,404 @@
 }
 
 
-
 /* =========================================
    도면 파일
 ========================================= */
 
-.shopmap_no_file {
-  font-size: 13px;
-
-  color: var(--text-faint);
-}
-
-
-
-/* =========================================
-   버튼
-========================================= */
-
-.shopmap_actions {
-  display: flex;
-
-  justify-content: flex-end;
-
-  gap: 6px;
-}
-
-
-.shopmap_readonly {
-  display: inline-flex;
-
-  padding: 5px 10px;
-
-  border-radius: 6px;
-
-  background: var(--surface-2);
-
-  color: var(--text-faint);
-
-  font-size: 12px;
-}
-
-
-
-/* =========================================
-   빈 화면
-========================================= */
-
-.shopmap_empty {
-  margin: 0;
-
-  padding: 48px 20px;
-
-  text-align: center;
-
-  font-size: 13px;
-
-  color: var(--text-faint);
-}
-
-
-
-/* =========================================
-   등록 / 변경 모달
-========================================= */
-
-.shopmap_modal_backdrop {
-  position: fixed;
-
-  inset: 0;
-
-  z-index: 1000;
-
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  padding: 20px;
-
-  background: rgba(15, 23, 42, 0.48);
-}
-
-
-.shopmap_modal {
-  width: 100%;
-  max-width: 600px;
-
-  overflow: hidden;
-
-  border-radius: 12px;
-
-  background: var(--surface);
-
-  box-shadow:
-    0 20px 60px rgba(15, 23, 42, 0.18);
-}
-
-
-
-/* 모달 상단 */
-.shopmap_modal_header {
-  display: flex;
-
-  align-items: flex-start;
-  justify-content: space-between;
-
-  gap: 20px;
-
-  padding: 20px 22px;
-
-  border-bottom: 1px solid var(--border);
-}
-
-
-.shopmap_modal_header h3 {
-  margin: 0 0 5px;
-
-  font-size: 18px;
-  font-weight: 700;
-
-  color: var(--text);
-}
-
-
-.shopmap_modal_header p {
-  margin: 0;
-
-  font-size: 13px;
-
-  color: var(--text-faint);
-}
-
-
-.shopmap_modal_close {
-  width: 32px;
-  height: 32px;
-
-  padding: 0;
-
-  border: 0;
-  border-radius: 6px;
-
-  background: transparent;
-
-  color: var(--text-dim);
-
-  font-size: 24px;
-  line-height: 1;
-
-  cursor: pointer;
-}
-
-
-.shopmap_modal_close:hover {
-  background: var(--surface-2);
-}
-
-
-
-/* 모달 내용 */
-.shopmap_modal_body {
-  padding: 22px;
-}
-
-
-.shopmap_upload_info {
-  display: flex;
-  flex-direction: column;
-
-  gap: 4px;
-
-  margin-bottom: 20px;
-
-  padding: 14px 16px;
-
-  border-radius: 8px;
-
-  background: var(--surface-2);
-}
-
-
-.shopmap_upload_info strong {
-  font-size: 14px;
-
-  color: var(--text);
-}
-
-
-.shopmap_upload_info span {
-  font-size: 12px;
-
-  color: var(--text-faint);
-}
-
-
-
-/* 파일 선택 */
-.shopmap_upload .form_label {
+.shopmap_filename {
   display: block;
 
-  margin-bottom: 8px;
-
-  font-size: 13px;
-  font-weight: 600;
-}
-
-
-.shopmap_file_input {
-  display: flex;
-
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 12px;
-
-  min-height: 42px;
-
-  padding-left: 14px;
-
-  overflow: hidden;
-
-  border: 1px solid var(--border);
-  border-radius: 8px;
-
-  cursor: pointer;
-
-  background: var(--surface);
-}
-
-
-.shopmap_file_input input {
-  display: none;
-}
-
-
-.shopmap_file_input span {
+  width: 100%;
   min-width: 0;
 
   overflow: hidden;
 
-  color: var(--text-faint);
-
-  font-size: 13px;
-
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-
-.shopmap_file_input strong {
-  align-self: stretch;
-
-  display: flex;
-
-  align-items: center;
-
-  flex-shrink: 0;
-
-  padding: 0 16px;
-
-  border-left: 1px solid var(--border);
-
-  background: var(--surface-2);
-
-  color: var(--text);
-
-  font-size: 12px;
-  font-weight: 600;
-}
-
-
-
-/* =========================================
-   도면 미리보기
-========================================= */
-
-.shopmap_preview {
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  min-height: 280px;
-
-  margin-top: 16px;
-
-  overflow: hidden;
-
-  border: 1px solid var(--border);
-  border-radius: 8px;
-
-  background: var(--surface-2);
-}
-
-
-.shopmap_preview img {
-  display: block;
-
-  width: 100%;
-
-  max-height: 420px;
-
-  object-fit: contain;
-}
-
-
-.shopmap_preview p {
-  margin: 0;
-
-  padding: 40px 20px;
-
-  color: var(--text-faint);
 
   font-size: 13px;
 
-  text-align: center;
+  color: var(--text);
+}
+
+.shopmap_empty {
+  font-size: 13px;
+
+  color: var(--text-faint);
 }
 
 
-
 /* =========================================
-   모달 하단
+   다운로드 버튼
 ========================================= */
 
-.shopmap_modal_footer {
-  display: flex;
+.shopmap_download_btn {
+  min-height: 32px;
 
-  justify-content: flex-end;
+  padding: 6px 11px;
 
-  gap: 8px;
-
-  padding: 16px 22px;
-
-  border-top: 1px solid var(--border);
+  font-size: 12px;
 }
 
 
+/* =========================================
+   관리자 도면 테이블
+========================================= */
+
+.shopmap_admin_page .table_wrap {
+  width: 100%;
+  min-width: 0;
+
+  overflow-x: auto;
+}
+
+.shopmap_admin_page .table {
+  width: 100%;
+
+  table-layout: fixed;
+}
+
+.shopmap_admin_page .table th,
+.shopmap_admin_page .table td {
+  vertical-align: middle;
+
+  word-break: keep-all;
+}
+
 
 /* =========================================
-   반응형
+   1200px 이하
+========================================= */
+
+@media (max-width: 1200px) {
+
+  .shopmap_summary {
+    flex-wrap: wrap;
+  }
+
+  .shopmap_summary_item {
+    flex: 1 1 180px;
+
+    min-width: 0;
+  }
+
+  .shopmap_admin_page .table {
+    min-width: 0;
+  }
+
+  .shopmap_admin_page .table th,
+  .shopmap_admin_page .table td {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .shopmap_download_btn {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
+
+
+/* =========================================
+   900px 이하
 ========================================= */
 
 @media (max-width: 900px) {
 
-  .shopmap_row {
-    grid-template-columns: 1fr;
+  .shopmap_summary {
+    display: grid;
 
-    gap: 12px;
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 8px;
+  }
+
+  .shopmap_summary_item {
+    min-width: 0;
+
+    padding: 12px 14px;
+  }
+
+  .shopmap_summary_label {
+    font-size: 12px;
+  }
+
+  .shopmap_summary_item strong {
+    font-size: 15px;
   }
 
 
-  .shopmap_actions {
-    justify-content: flex-start;
+  /*
+   * 화면이 좁아지면
+   * 매장번호 / 등록일을 숨겨
+   * 주요 정보 영역 확보
+   */
+
+  .shopmap_admin_page .table th:nth-child(1),
+  .shopmap_admin_page .table td:nth-child(1),
+
+  .shopmap_admin_page .table th:nth-child(6),
+  .shopmap_admin_page .table td:nth-child(6) {
+    display: none;
   }
 
+
+  /*
+   * 남아있는 컬럼 너비
+   */
+
+  .shopmap_admin_page .table th:nth-child(2) {
+    width: 20% !important;
+  }
+
+  .shopmap_admin_page .table th:nth-child(3) {
+    width: 32% !important;
+  }
+
+  .shopmap_admin_page .table th:nth-child(4) {
+    width: 15% !important;
+  }
+
+  .shopmap_admin_page .table th:nth-child(5) {
+    width: 20% !important;
+  }
+
+  .shopmap_admin_page .table th:nth-child(7) {
+    width: 13% !important;
+  }
+
+  .shopmap_admin_page .table {
+    min-width: 0;
+  }
 }
 
 
-@media (max-width: 600px) {
+/* =========================================
+   650px 이하
+   테이블 → 카드 형태
+========================================= */
 
-  .shopmap_owner_notice {
-    align-items: flex-start;
+@media (max-width: 650px) {
+
+  .shopmap_summary {
+    grid-template-columns: 1fr;
+  }
+
+  .shopmap_summary_item {
+    justify-content: space-between;
+
+    width: 100%;
   }
 
 
-  .shopmap_modal_backdrop {
-    padding: 12px;
+  /* -----------------------------------------
+     테이블 카드화
+  ----------------------------------------- */
+
+  .shopmap_admin_page .table_wrap {
+    overflow: visible;
+
+    border: 0;
+
+    background: transparent;
+  }
+
+  .shopmap_admin_page .table {
+    display: block;
+
+    min-width: 0;
+  }
+
+  .shopmap_admin_page .table thead {
+    display: none;
+  }
+
+  .shopmap_admin_page .table tbody {
+    display: block;
+
+    width: 100%;
+  }
+
+  .shopmap_admin_page .table tr {
+    display: grid;
+
+    grid-template-columns: minmax(0, 1fr) auto;
+
+    gap: 9px 12px;
+
+    width: 100%;
+
+    margin-bottom: 10px;
+    padding: 15px;
+
+    border: 1px solid var(--border);
+    border-radius: 10px;
+
+    background: var(--surface);
+  }
+
+  .shopmap_admin_page .table td {
+    display: block;
+
+    width: auto;
+
+    padding: 0;
+
+    border: 0;
+
+    font-size: 12px;
   }
 
 
-  .shopmap_modal_header,
-  .shopmap_modal_body,
-  .shopmap_modal_footer {
-    padding-left: 16px;
-    padding-right: 16px;
+  /* -----------------------------------------
+     숨김
+     매장번호 / 등록일
+  ----------------------------------------- */
+
+  .shopmap_admin_page .table td:nth-child(1),
+  .shopmap_admin_page .table td:nth-child(6) {
+    display: none;
   }
 
+
+  /* -----------------------------------------
+     매장명
+  ----------------------------------------- */
+
+  .shopmap_admin_page .table td:nth-child(2) {
+    grid-column: 1;
+    grid-row: 1;
+
+    min-width: 0;
+
+    font-size: 14px;
+    font-weight: 700;
+
+    color: var(--text);
+  }
+
+
+  /* -----------------------------------------
+     상태
+  ----------------------------------------- */
+
+  .shopmap_admin_page .table td:nth-child(4) {
+    grid-column: 2;
+    grid-row: 1;
+
+    text-align: right;
+  }
+
+
+  /* -----------------------------------------
+     주소
+  ----------------------------------------- */
+
+  .shopmap_admin_page .table td:nth-child(3) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+
+    line-height: 1.5;
+
+    color: var(--text-dim);
+
+    word-break: keep-all;
+  }
+
+
+  /* -----------------------------------------
+     파일명
+  ----------------------------------------- */
+
+  .shopmap_admin_page .table td:nth-child(5) {
+    grid-column: 1;
+    grid-row: 3;
+
+    min-width: 0;
+
+    align-self: center;
+  }
+
+  .shopmap_filename {
+    max-width: 100%;
+
+    font-size: 12px;
+  }
+
+
+  /* -----------------------------------------
+     다운로드
+  ----------------------------------------- */
+
+  .shopmap_admin_page .table td:nth-child(7) {
+    grid-column: 2;
+    grid-row: 3;
+
+    text-align: right;
+  }
+
+  .shopmap_download_btn {
+    min-height: 30px;
+
+    padding: 5px 9px;
+
+    font-size: 11px;
+  }
+
+
+  /* -----------------------------------------
+     결과
+  ----------------------------------------- */
+
+  .shopmap_result_info {
+    margin-top: 10px;
+
+    font-size: 11px;
+  }
+}
+
+
+/* =========================================
+   420px 이하
+========================================= */
+
+@media (max-width: 420px) {
+
+  .shopmap_admin_page .table tr {
+    grid-template-columns: 1fr;
+
+    gap: 8px;
+  }
+
+  .shopmap_admin_page .table td:nth-child(2),
+  .shopmap_admin_page .table td:nth-child(3),
+  .shopmap_admin_page .table td:nth-child(4),
+  .shopmap_admin_page .table td:nth-child(5),
+  .shopmap_admin_page .table td:nth-child(7) {
+    grid-column: 1;
+  }
+
+  .shopmap_admin_page .table td:nth-child(2) {
+    grid-row: 1;
+  }
+
+  .shopmap_admin_page .table td:nth-child(4) {
+    grid-row: 2;
+
+    text-align: left;
+  }
+
+  .shopmap_admin_page .table td:nth-child(3) {
+    grid-row: 3;
+  }
+
+  .shopmap_admin_page .table td:nth-child(5) {
+    grid-row: 4;
+  }
+
+  .shopmap_admin_page .table td:nth-child(7) {
+    grid-row: 5;
+
+    text-align: left;
+  }
 }

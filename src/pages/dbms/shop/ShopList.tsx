@@ -106,12 +106,17 @@ export default function ShopListView() {
     }
   };
 
+  // [수정] 노트북 해상도(1280~1536px)에서 글씨 겹침 방지.
+  //  - mono 셀은 줄바꿈이 안 되므로(white-space:nowrap) 폭 = 글자수×7.5px + 좌우 padding 28px 이상이어야 함
+  //    날짜(10자) 110px / 일시(19자) 180px / 배지 84px 이상
+  //  - 등록일처럼 '일' 단위 컬럼은 다른 목록(ShopSurveyList 등)과 같이 slice(0, 10)으로 날짜만 표시
+  //  - 폭 없는 컬럼 1개가 남는 공간을 우측 버튼 컬럼과 나눠 가짐 → %폭 합계 초과로 버튼이 밀리는 문제 방지
   const columns: DataTableColumn<RowType>[] = [
-    { header: '번호', width: '64px', mono: true, render: (r) => r.cnt },
-    { header: '회원번호', width: '90px', mono: true, render: (r) => `#${r.mno}` },
+    { header: '번호', width: '60px', mono: true, render: (r) => r.cnt },
+    { header: '회원번호', width: '80px', mono: true, render: (r) => `#${r.mno}` },
     {
       header: '매장명',
-      width: '18%',
+      width: '150px',
       render: (r) => (
         <div>
           <div className="cell_title">{r.title}</div>
@@ -121,17 +126,16 @@ export default function ShopListView() {
     },
     {
       header: '주소',
-      width: '28%',
       render: (r) => (
-        <span title={`${r.address ?? ''} ${r.address2 ?? ''}`}>
+        <span className="ellipsis line2" title={`${r.address ?? ''} ${r.address2 ?? ''}`}>
           {r.address}
           {r.address2 ? ` ${r.address2}` : ''}
         </span>
       ),
     },
     { header: '매장연락처', width: '130px', mono: true, render: (r) => r.tel || '-' },
-    { header: '사업자번호', width: '120px', mono: true, render: (r) => r.snum || '-' },
-    { header: '등록일', width: '110px', mono: true, render: (r) => r.cdate },
+    { header: '사업자번호', width: '124px', mono: true, render: (r) => r.snum || '-' },
+    { header: '등록일', width: '110px', mono: true, render: (r) => r.cdate?.slice(0, 10) },
   ];
 
   return (

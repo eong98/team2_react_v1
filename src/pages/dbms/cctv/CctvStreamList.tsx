@@ -114,15 +114,22 @@ export default function CctvStreamListView() {
     }
   };
 
+  // [수정] 노트북 해상도(1280~1536px)에서 글씨 겹침 방지.
+  //  - mono 셀은 줄바꿈이 안 되므로(white-space:nowrap) 폭 = 글자수×7.5px + 좌우 padding 28px 이상이어야 함
+  //    날짜(10자) 110px / 일시(19자) 180px / 배지 84px 이상
+  //  - 등록일처럼 '일' 단위 컬럼은 다른 목록(ShopSurveyList 등)과 같이 slice(0, 10)으로 날짜만 표시
+  //  - 폭 없는 컬럼 1개가 남는 공간을 우측 버튼 컬럼과 나눠 가짐 → %폭 합계 초과로 버튼이 밀리는 문제 방지
   const columns: DataTableColumn<RowType>[] = [
-    { header: '번호', width: '64px', mono: true, render: (r) => r.cnt },
+    { header: '번호', width: '60px', mono: true, render: (r) => r.cnt },
     { header: 'CCTV번호', width: '90px', mono: true, render: (r) => `#${r.cno}` },
     {
       header: '스트림 주소',
-      width: '28%',
       render: (r) => (
         <div>
-          <div className="cell_title mono">{r.streamUrl || '(미등록)'}</div>
+          {/* 긴 rtsp 주소는 공백이 없어 옆 칸을 덮으므로 강제 줄바꿈 */}
+          <div className="cell_title mono" style={{ whiteSpace: 'normal', wordBreak: 'break-all' }} title={r.streamUrl ?? ''}>
+            {r.streamUrl || '(미등록)'}
+          </div>
           <div className="cell_sub">{r.protocol}{r.port ? `:${r.port}` : ''}</div>
         </div>
       ),
@@ -136,8 +143,8 @@ export default function CctvStreamListView() {
         </span>
       ),
     },
-    { header: '최근 연결일시', width: '160px', mono: true, render: (r) => r.lastConnectedAt || '-' },
-    { header: '등록일', width: '110px', mono: true, render: (r) => r.cdate },
+    { header: '최근 연결일시', width: '180px', mono: true, render: (r) => r.lastConnectedAt || '-' },
+    { header: '등록일', width: '110px', mono: true, render: (r) => r.cdate?.slice(0, 10) },
   ];
 
   return (

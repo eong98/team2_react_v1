@@ -197,7 +197,7 @@ export default function Notification() {
 
     return (
         <>
-            <section className="view active">
+            <section className="view active notification_user_page">
                 <PageHeader
                     title="알림 관리"
                     description="CCTV 이슈 알림을 확인할 수 있습니다."

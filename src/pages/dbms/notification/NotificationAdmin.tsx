@@ -25,21 +25,16 @@ const PAGE_SIZE = 10;
 
 export default function NotificationAdmin() {
 
-  // 입력 중 검색값
   const [draftKeyword, setDraftKeyword] = useState('');
   const [draftStatus, setDraftStatus] = useState('');
 
-  // 실제 검색에 적용되는 값
   const [keyword, setKeyword] = useState('');
   const [status, setStatus] = useState('');
 
-  // 알림 목록
   const [rows, setRows] = useState<NotificationAdminType[]>([]);
 
-  // 로딩
   const [loading, setLoading] = useState(true);
 
-  // 현재 페이지
   const [page, setPage] = useState(1);
 
 
@@ -81,7 +76,7 @@ export default function NotificationAdmin() {
 
 
   /**
-   * 검색 / 상태 필터 적용
+   * 검색 / 상태 필터
    */
   const filteredRows = useMemo(() => {
 
@@ -91,13 +86,11 @@ export default function NotificationAdmin() {
 
     return rows.filter((row) => {
 
-      // 상태 검색
       const matchStatus =
         status === '' ||
         row.status === status;
 
 
-      // 키워드 검색
       const matchKeyword =
         search === '' ||
 
@@ -130,7 +123,7 @@ export default function NotificationAdmin() {
 
 
   /**
-   * 전체 페이지 수
+   * 페이지
    */
   const totalPages = Math.max(
     1,
@@ -138,9 +131,6 @@ export default function NotificationAdmin() {
   );
 
 
-  /**
-   * 현재 페이지 데이터
-   */
   const pagedRows = filteredRows.slice(
     (page - 1) * PAGE_SIZE,
     page * PAGE_SIZE
@@ -160,7 +150,7 @@ export default function NotificationAdmin() {
 
 
   /**
-   * 검색 초기화
+   * 초기화
    */
   const onReset = () => {
 
@@ -175,7 +165,7 @@ export default function NotificationAdmin() {
 
 
   /**
-   * 목록 새로고침
+   * 새로고침
    */
   const onRefresh = () => {
 
@@ -184,7 +174,7 @@ export default function NotificationAdmin() {
 
 
   /**
-   * 이메일 / 문자 발송 상태 배지
+   * 이메일 / 문자 상태
    */
   const getSendBadgeClass = (
     sendStatus?: string | null
@@ -214,7 +204,7 @@ export default function NotificationAdmin() {
 
 
   /**
-   * 알림 전체 상태 배지
+   * 전체 알림 상태
    */
   const getStatusBadgeClass = (
     notificationStatus?: string | null
@@ -232,8 +222,6 @@ export default function NotificationAdmin() {
         return 'badge badge_info';
 
       case 'READY':
-        return 'badge badge_neutral';
-
       case 'CANCELLED':
         return 'badge badge_neutral';
 
@@ -250,14 +238,16 @@ export default function NotificationAdmin() {
 
     {
       header: '번호',
-      width: '70px',
+      width: '6%',
       mono: true,
+
       render: (row) => row.no,
     },
 
+
     {
       header: '수신자',
-      width: '120px',
+      width: '11%',
 
       render: (row) => (
         <div className="notification_member">
@@ -274,9 +264,10 @@ export default function NotificationAdmin() {
       ),
     },
 
+
     {
       header: '연락처',
-      width: '190px',
+      width: '17%',
 
       render: (row) => (
         <div className="notification_contact">
@@ -296,9 +287,10 @@ export default function NotificationAdmin() {
       ),
     },
 
+
     {
       header: '알림 제목',
-      width: '30%',
+      width: '22%',
 
       render: (row) => (
         <span
@@ -310,9 +302,10 @@ export default function NotificationAdmin() {
       ),
     },
 
+
     {
       header: '이메일',
-      width: '90px',
+      width: '8%',
 
       render: (row) => (
         <span className={getSendBadgeClass(row.emailStatus)}>
@@ -321,20 +314,33 @@ export default function NotificationAdmin() {
       ),
     },
 
+
     {
       header: '문자',
-      width: '90px',
+      width: '10%',
 
       render: (row) => (
-        <span className={getSendBadgeClass(row.smsStatus)}>
-          {getSendStatusText(row.smsStatus)}
-        </span>
+        <div className="notification_send_result">
+          <span className={getSendBadgeClass(row.smsStatus)}>
+            {getSendStatusText(row.smsStatus)}
+          </span>
+
+          {row.smsStatus === 'FAILED' && row.smsMessage && (
+            <span
+              className="notification_send_message"
+              title={row.smsMessage}
+            >
+              {row.smsMessage}
+            </span>
+          )}
+        </div>
       ),
     },
 
+
     {
       header: '상태',
-      width: '105px',
+      width: '9%',
 
       render: (row) => (
         <span className={getStatusBadgeClass(row.status)}>
@@ -343,9 +349,10 @@ export default function NotificationAdmin() {
       ),
     },
 
+
     {
       header: '확인',
-      width: '90px',
+      width: '8%',
 
       render: (row) => (
         <span
@@ -360,29 +367,31 @@ export default function NotificationAdmin() {
       ),
     },
 
+
     {
       header: '발생일시',
-      width: '180px',
+      width: '15%',
       mono: true,
 
-      render: (row) =>
-        formatNotificationDate(row.cdate),
+      render: (row) => (
+        <span className="notification_date">
+          {formatNotificationDate(row.cdate)}
+        </span>
+      ),
     },
   ];
 
 
   return (
 
-    <section className="view active">
+    <section className="view active notification_admin_page">
 
-      {/* 페이지 제목 */}
       <PageHeader
         title="알림 내역"
         description="회원에게 발송된 이메일 및 문자 알림의 발송 상태를 확인합니다."
       />
 
 
-      {/* 검색 / 필터 */}
       <AdminToolbar
 
         searchValue={draftKeyword}
@@ -458,7 +467,6 @@ export default function NotificationAdmin() {
       />
 
 
-      {/* 검색 결과 */}
       <div className="notification_result_count">
 
         전체
@@ -472,7 +480,6 @@ export default function NotificationAdmin() {
       </div>
 
 
-      {/* 알림 목록 */}
       <DataTable
         columns={columns}
         data={pagedRows}
@@ -482,7 +489,6 @@ export default function NotificationAdmin() {
       />
 
 
-      {/* 페이징 */}
       <DbmsPagination
         page={page}
         totalPages={totalPages}

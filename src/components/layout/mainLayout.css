@@ -1,112 +1,303 @@
-
 /* =========================================================
    알리미오 홈페이지 css
 ========================================================= */
-.home{
-  --primary:var(--cyan); --primary-dim:var(--cyan-dim);
-  display:flex; flex-direction:column; flex:1;
+.home {
+  --primary: var(--cyan);
+  --primary-dim: var(--cyan-dim);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
-.home::before{
-  content:"";
-  position:fixed;inset:0;
+.home::before {
+  content: "";
+  position: fixed;
+  inset: 0;
   background:
-    linear-gradient(rgba(51,214,192,0.025) 1px, transparent 1px);
-  background-size:100% 3px;
-  pointer-events:none;
-  z-index:2;
-  opacity:.5;
+    linear-gradient(rgba(51, 214, 192, 0.025) 1px, transparent 1px);
+  background-size: 100% 3px;
+  pointer-events: none;
+  z-index: 2;
+  opacity: .5;
 }
 
 /* #섹션으로 스크롤할 때 상단 고정 헤더에 제목이 가려지지 않게 */
-.home section[id]{scroll-margin-top:80px;}
+.home section[id] {
+  scroll-margin-top: 80px;
+}
 
-.home::selection{background:var(--cyan-dim);color:var(--cyan);} /* 마우스 드래그 배경 */
+.home::selection {
+  background: var(--cyan-dim);
+  color: var(--cyan);
+}
 
-.home .wrap{max-width:var(--maxw);margin:0 auto;padding:0 32px;}
-.home #container.wrap{padding:40px 32px 60px;}
+/* 마우스 드래그 배경 */
+
+.home .wrap {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+.home #container.wrap {
+  padding: 40px 32px 60px;
+}
 
 
 
 /* ---------- NAV ---------- */
-.home header{
-  position:sticky;top:0;z-index:50;
-  background:rgba(10,14,19,0.86);
-  backdrop-filter:blur(10px);
-  border-bottom:1px solid var(--n-600);
-}
-.home nav{
-  max-width:var(--maxw);margin:0 auto;padding:18px 32px;
-  display:flex;align-items:center;justify-content:space-between;
+.home header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(10, 14, 19, 0.86);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--n-600);
 }
 
-.home .navlinks{display:flex;gap:36px;font-size:14px;color:var(--text-dim);}
-.home .navlinks a:hover{color:var(--text);}
+.home nav {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 18px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.home .navlinks {
+  display: flex;
+  gap: 36px;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.home .navlinks a:hover {
+  color: var(--text);
+}
+
 .home .nav_cta {
-  display:flex; align-items:center; gap:8px;
-}
-.home .nav_utils {
-  display:flex; align-items:center; gap:18px;
-}
-/* 로그인 / 관리자 로그인 — 동그란 아이콘 버튼 */
-.home .nav_icon_btn{
-  display:inline-block; flex-shrink:0;
-  width:30px; height:30px; border-radius:50%;
-  border:1px solid var(--border-strong);
-  background-repeat:no-repeat; background-position:center; background-size:16px;
-  transition:.2s;
-}
-/* 로그인 — 흰색 사람 / 마우스 올리면 청록 */
-.home .nav_icon_btn.login{background-image:url('../../assets/images/icon/ico-login.png');}
-.home .nav_icon_btn.login:hover{
-  border-color:var(--cyan); background-color:var(--cyan-dim);
-  background-image:url('../../assets/images/icon/ico-login-primary.png');
-}
-/* 로그아웃 — 흰색 문+화살표 / 마우스 올리면 청록 */
-.home .nav_icon_btn.logout{
-  padding:0; cursor:pointer; background-color:transparent;
-  background-image:url('../../assets/images/icon/ico-logout.png');
-}
-.home .nav_icon_btn.logout:hover{
-  border-color:var(--cyan); background-color:var(--cyan-dim);
-  background-image:url('../../assets/images/icon/ico-logout-primary.png');
-}
-/* 관제 사이트 이동 — 흰색 모니터 / 마우스 올리면 청록 */
-.home .nav_icon_btn.console{background-image:url('../../assets/images/icon/ico-console.svg');}
-.home .nav_icon_btn.console:hover{
-  border-color:var(--cyan); background-color:var(--cyan-dim);
-  background-image:url('../../assets/images/icon/ico-console-primary.svg');
-}
-/* 관리자 로그인 — 청록 사람+톱니바퀴로 일반 로그인과 구분 / 마우스 올리면 청록 배경에 어두운 아이콘 */
-.home .nav_icon_btn.admin{
-  border-radius:8px;
-  border-color:var(--cyan); background-size:18px;
-  background-image:url('../../assets/images/icon/ico-admin-primary.png');
-}
-.home .nav_icon_btn.admin:hover{
-  background-color:var(--cyan);
-  background-image:url('../../assets/images/icon/ico-admin-dark.png');
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.home .btn{
-  gap:8px;
+.home .nav_utils {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+/* 로그인 / 관리자 로그인 — 동그란 아이콘 버튼 */
+.home .nav_icon_btn {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 16px;
+  transition: .2s;
+}
+
+/* 로그인 — 흰색 사람 / 마우스 올리면 청록 */
+.home .nav_icon_btn.login {
+  background-image: url('../../assets/images/icon/ico-login.png');
+}
+
+.home .nav_icon_btn.login:hover {
+  border-color: var(--cyan);
+  background-color: var(--cyan-dim);
+  background-image: url('../../assets/images/icon/ico-login-primary.png');
+}
+
+/* 로그아웃 — 흰색 문+화살표 / 마우스 올리면 청록 */
+.home .nav_icon_btn.logout {
+  padding: 0;
+  cursor: pointer;
+  background-color: transparent;
+  background-image: url('../../assets/images/icon/ico-logout.png');
+}
+
+.home .nav_icon_btn.logout:hover {
+  border-color: var(--cyan);
+  background-color: var(--cyan-dim);
+  background-image: url('../../assets/images/icon/ico-logout-primary.png');
+}
+
+/* 관제 사이트 이동 — 흰색 모니터 / 마우스 올리면 청록 */
+.home .nav_icon_btn.console {
+  background-image: url('../../assets/images/icon/ico-console.svg');
+}
+
+.home .nav_icon_btn.console:hover {
+  border-color: var(--cyan);
+  background-color: var(--cyan-dim);
+  background-image: url('../../assets/images/icon/ico-console-primary.svg');
+}
+
+/* 관리자 로그인 — 청록 사람+톱니바퀴로 일반 로그인과 구분 / 마우스 올리면 청록 배경에 어두운 아이콘 */
+.home .nav_icon_btn.admin {
+  border-radius: 8px;
+  border-color: var(--cyan);
+  background-size: 18px;
+  background-image: url('../../assets/images/icon/ico-admin-primary.png');
+}
+
+.home .nav_icon_btn.admin:hover {
+  background-color: var(--cyan);
+  background-image: url('../../assets/images/icon/ico-admin-dark.png');
+}
+
+.home .btn {
+  gap: 8px;
   text-decoration: none;
 }
-.home .btn_primary:hover{background:#4EE3CE;transform:translateY(-1px);}
-.home .btn_ghost{border-color:var(--border-strong);color:var(--text);}
-.home .btn_ghost:hover{border-color:var(--cyan);color:var(--cyan);}
 
-@media(max-width:840px){.home .navlinks{display:none;}}
-
-
-.home footer{margin-top:auto; border-top:1px solid var(--n-600);padding:40px 0;}
-.home footer .logo{
-  display:inline-flex;align-items:center;gap:9px;
-  font-weight:700;font-size:17px;letter-spacing:-0.01em;
-  padding-left:34px;
-  background:url('../../assets/logo.svg') no-repeat left center;
-  background-size:28px;
+.home .btn_primary:hover {
+  background: #4EE3CE;
+  transform: translateY(-1px);
 }
-.home .foot_row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;}
-.home .foot_links{display:flex;gap:24px;font-size:13px;color:var(--text-faint);}
-.home .foot_links a:hover{color:var(--text-dim);}
+
+.home .btn_ghost {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.home .btn_ghost:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+@media(max-width:840px) {
+  .home .navlinks {
+    display: none;
+  }
+}
+
+
+.home footer {
+  margin-top: auto;
+  border-top: 1px solid var(--n-600);
+  padding: 40px 0;
+}
+
+.home footer .logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  padding-left: 34px;
+  background: url('../../assets/logo.svg') no-repeat left center;
+  background-size: 28px;
+}
+
+.home .foot_row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.home .foot_links {
+  display: flex;
+  gap: 24px;
+  font-size: 13px;
+  color: var(--text-faint);
+}
+
+.home .foot_links a:hover {
+  color: var(--text-dim);
+}
+
+/* ========================================
+   메인 헤더 알림
+======================================== */
+
+/* 기존 nav_icon_btn과 동일한 30x30 원형 버튼 */
+.home .main_notification_btn {
+  position: relative;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  width: 30px;
+  height: 30px;
+
+  padding: 0;
+  margin: 0;
+
+  box-sizing: border-box;
+
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+
+  background: transparent;
+
+  text-decoration: none;
+  cursor: pointer;
+
+  transition: .2s;
+}
+
+
+/* hover도 기존 아이콘과 동일 */
+.home .main_notification_btn:hover {
+  border-color: var(--cyan);
+  background-color: var(--cyan-dim);
+}
+
+
+/* 알림 종 SVG */
+.home .main_notification_bell {
+  width: 16px;
+  height: 16px;
+
+  display: block;
+
+  margin: 0;
+  padding: 0;
+
+  object-fit: contain;
+
+  /* 이전에 넣었던 위치 보정 제거 */
+  transform: none;
+}
+
+
+/* 미확인 알림 숫자 */
+.home .main_notification_badge {
+  position: absolute;
+
+  /* 30px 원 안의 오른쪽 위 */
+  top: 2px;
+  right: 2px;
+
+  width: auto;
+  min-width: 0;
+  height: auto;
+
+  margin: 0;
+  padding: 0;
+
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+
+  color: #ffffff;
+
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+
+  white-space: nowrap;
+  pointer-events: none;
+}

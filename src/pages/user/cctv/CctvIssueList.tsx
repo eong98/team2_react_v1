@@ -216,11 +216,16 @@ export default function CctvIssueListView() {
     );
   }
 
+  // [수정] 노트북 해상도(1280~1536px)에서 글씨 겹침 방지.
+  //  - mono 셀은 줄바꿈이 안 되므로(white-space:nowrap) 폭 = 글자수×7.5px + 좌우 padding 28px 이상이어야 함
+  //    날짜(10자) 110px / 일시(19자) 180px / 배지 84px 이상
+  //  - 등록일처럼 '일' 단위 컬럼은 다른 목록(ShopSurveyList 등)과 같이 slice(0, 10)으로 날짜만 표시
+  //  - 폭 없는 컬럼 1개가 남는 공간을 우측 버튼 컬럼과 나눠 가짐 → %폭 합계 초과로 버튼이 밀리는 문제 방지
   const columns: DataTableColumn<RowType>[] = [
-    { header: '번호', width: '64px', mono: true, render: (r) => r.cnt },
+    { header: '번호', width: '60px', mono: true, render: (r) => r.cnt },
     {
       header: '발생일시',
-      width: '16%',
+      width: '180px',
       mono: true,
       render: (r) => (
         <span style={{ cursor: 'pointer' }} onClick={() => setDetail(r)}>
@@ -228,31 +233,31 @@ export default function CctvIssueListView() {
         </span>
       ),
     },
-    { header: 'CCTV', width: '8%', mono: true, render: (r) => `#${r.cno}` },
+    { header: 'CCTV', width: '66px', mono: true, render: (r) => `#${r.cno}` },
     {
       header: '유형',
-      width: '12%',
+      width: '110px',
       render: (r) => <span className="badge badge_info">{codeLabel(r.code)}</span>,
     },
     {
       header: '상황설명',
-      width: '24%',
+      // 글자수로 자르던 방식 → 칸 폭에 맞춰 최대 2줄 말줄임(전체 내용은 title/상세에서 확인)
       render: (r) => (
-        <span title={r.comnet ?? ''}>
-          {r.comnet ? (r.comnet.length > 30 ? `${r.comnet.slice(0, 30)}…` : r.comnet) : '-'}
+        <span className="ellipsis line2" title={r.comnet ?? ''}>
+          {r.comnet || '-'}
         </span>
       ),
     },
     {
       header: '오탐여부',
-      width: '10%',
+      width: '86px',
       render: (r) => (
         <span className={`badge ${STATE_BADGE[r.state] ?? 'badge_neutral'}`}>{STATE_LABELS[r.state] ?? r.state}</span>
       ),
     },
     {
       header: '첨부',
-      width: '7%',
+      width: '84px',
       render: (r) =>
         r.hasAttach ? (
           <span className="badge badge_info" title="증빙 첨부파일 있음">
@@ -262,10 +267,10 @@ export default function CctvIssueListView() {
           <span className="cell_sub">-</span>
         ),
     },
-    { header: '신뢰도', width: '9%', mono: true, render: (r) => formatReliability(r.reliability) },
+    { header: '신뢰도', width: '76px', mono: true, render: (r) => formatReliability(r.reliability) },
     {
       header: '발송여부',
-      width: '10%',
+      width: '96px',
       render: (r) => (
         <span className={`badge ${r.noticeyn === 'Y' ? 'badge_success' : 'badge_neutral'}`}>
           {r.noticeyn === 'Y' ? '발송완료' : '미발송'}
