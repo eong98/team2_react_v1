@@ -205,12 +205,23 @@ export default function ShopPlan() {
                     className={`card plan_card${highlighted ? ' plan_highlight' : ''}`}
                     onClick={() => selectPlan(p)}
                   >
-                    {p.isreco === 'Y' ? (
-                      /* 사용자가 선택한 통계가 없는 경우 관리자 추천 */
-                      <span className="plan_tag reco">추천</span>
-                    ) : p.popular ? (
-                      <span className="plan_tag popular">인기</span>
-                    ) : null}
+                    {/* 관리자 추천(isreco)과 인기(결제 건수 1위)는 둘 다 붙을 수 있음 */}
+                    {highlighted && (
+                      <div className="plan_tags">
+                        {p.isreco === 'Y' && (
+                          <span className="plan_tag reco">
+                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.8l2.8 5.7 6.3.9-4.6 4.4 1.1 6.2L12 17.1 6.4 20l1.1-6.2L2.9 9.4l6.3-.9z" /></svg>
+                            추천
+                          </span>
+                        )}
+                        {p.popular && (
+                          <span className="plan_tag popular">
+                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 22a7 7 0 0 1-7-7c0-3.4 2.2-5.5 3.5-7.4.4 1.7 1.3 2.8 2.4 3.3C10.6 7.2 12.3 3.9 15 1.5c-.2 3.4 1 5.5 2.2 7.3 1 1.6 1.8 3.3 1.8 5.2a7 7 0 0 1-7 8z" /></svg>
+                            인기
+                          </span>
+                        )}
+                      </div>
+                    )}
                     
 
                     <h3>{p.pname}</h3>

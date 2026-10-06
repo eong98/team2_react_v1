@@ -21,6 +21,7 @@ import type { ChatMenuTypes } from '../../ts/ChatMenu';
 import { getOrCreateGno } from '../../ts/ChatGuest';
 import { aiChat, endAiConsultDivider, startAiConsult, summarizeChat, summarizeTitle } from './ChatApi';
 import { apiErrorMessage, backoffDelay } from './aiServer';
+import { notifyChatChanged, onChatChanged } from './chatSync';
 import AlertModal from '../common/AlertModal';
 
 /* ---------------------------------------------------------------------
@@ -109,16 +110,67 @@ export default function ChatRoom({
   };
 
   /* ---------------------------------------------------------------------
+     [Effect] 다른 탭 변경 알림 · 창 복귀 시 최신 상태로 다시 불러오기
+     (이 창이 답변 대기·처리 중이면 건너뜀 — 진행 중인 화면/폴링과 겹치지 않게)
+  --------------------------------------------------------------------- */
+  const busyRef = useRef(false);
+
+  /**
+   * 이 창에서 상담을 진행한 횟수(질문 전송·메뉴 선택 등). 서버에서 다시 불러오는 요청이 응답 오기 전에
+   * 이 값이 바뀌었으면 그 결과는 버림 — 늦게 도착한 예전 대화가 방금 보낸 내 질문 말풍선을 덮어써서
+   * 질문이 사라졌다가 답변과 함께 나타나던 문제 방지 (창 전환 시 갱신과 질문 전송이 겹칠 때)
+   */
+  const localChangeSeq = useRef(0);
+  const markLocalChange = () => {
+    localChangeSeq.current += 1;
+  };
+  busyRef.current = aiLoading || optionLoading || summarizing;
+
+  useEffect(() => {
+    return onChatChanged((sno) => {
+      if (sno !== sessionIdRef.current || busyRef.current) return;
+      reloadRoom().catch((err) => console.error('다른 탭 변경 반영 실패:', err));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    let lastAt = 0;
+    const onComeBack = () => {
+      if (document.visibilityState !== 'visible' || !sessionIdRef.current || busyRef.current) return;
+      if (Date.now() - lastAt < 3000) return; // focus + visibilitychange가 연달아 와도 한 번만
+      lastAt = Date.now();
+      reloadRoom().catch((err) => console.error('창 복귀 시 상담 갱신 실패:', err));
+    };
+    document.addEventListener('visibilitychange', onComeBack);
+    window.addEventListener('focus', onComeBack);
+    return () => {
+      document.removeEventListener('visibilitychange', onComeBack);
+      window.removeEventListener('focus', onComeBack);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* ---------------------------------------------------------------------
      [Effect] 실시간 메시지 수신 신호(refreshSignal) 처리
   --------------------------------------------------------------------- */
   useEffect(() => {
     if (!refreshSignal || !sessionIdRef.current) return;
     if (refreshSignal.sno !== sessionIdRef.current) return; // 다른 세션 신호면 무시
 
-    // 현재 열려있는 세션의 로그를 다시 로드하여 최신 상태 동기화
+    // 이 창이 답변 대기·처리 중이 아니면 상담 상태까지 다시 불러옴
+    // (다른 브라우저에서 보낸 AI 질문의 "입력 중" 표시·폴링, 종료 등 상태 변경까지 반영)
+    if (!busyRef.current) {
+      reloadRoom().catch((err) => console.error('실시간 상담 갱신 실패:', err));
+      return;
+    }
+
+    // 이 창이 자기 답변을 기다리는 중이면 대화 내용만 갱신 (진행 중인 입력 중 표시·응답 처리와 겹치지 않게)
+    const seq = localChangeSeq.current;
     axiosInstance
       .get<ChatLogEntry[]>(`/chat_log/session/${sessionIdRef.current}`)
       .then((res) => {
+        if (seq !== localChangeSeq.current) return; // 그 사이 이 창에서 보낸 내용이 있으면 덮어쓰지 않음
         const restoredBubbles: ChatBubble[] = res.data.map((log) => ({
           id: String(log.no),
           sender: log.sender,
@@ -163,7 +215,11 @@ export default function ChatRoom({
       mtype: log.mtype,
       createdAt: log.cdate,
     }));
-    setBubbles((prev) => [...prev, ...newBubbles]);
+    // 실시간 알림으로 이미 다시 불러온 대화(같은 번호)는 또 붙이지 않음 — 답변이 두 번 보이는 것 방지
+    setBubbles((prev) => {
+      const existing = new Set(prev.map((b) => b.id));
+      return [...prev, ...newBubbles.filter((b) => !existing.has(b.id))];
+    });
     scrollToBottom();
   };
 
@@ -179,14 +235,49 @@ export default function ChatRoom({
   /** 통합 단계를 진행하는 공통 step API 호출 */
   const callStep = async (payload: ChatStepRequest): Promise<ChatActionResult | null> => {
     if (!sessionIdRef.current) return null;
+    markLocalChange();
     try {
       const res = await axiosInstance.put<ChatActionResult>(`/chat_session/${sessionIdRef.current}/step`, payload);
       appendLogs(res.data.logs);
+      notifyChatChanged(sessionIdRef.current);
       return res.data;
     } catch (err) {
       console.error('상담 진행 처리 실패:', err);
+      await handleActionError(err);
       return null;
     }
+  };
+
+  /* ---------------------------------------------------------------------
+     여러 탭·기기 동시 사용 대응
+     - 서버가 "다른 창에서 이미 진행된 상태"라고 거부(409)하면 최신 상태로 다시 불러오고 안내
+     - 같은 브라우저의 다른 탭에서 상담이 바뀌면(chatSync) 다시 불러옴
+     - 이 창으로 돌아올 때(포커스·화면 전환) 다시 불러옴 — 다른 기기에서 진행한 내용 반영
+  --------------------------------------------------------------------- */
+
+  /** 현재 상담방을 서버 기준으로 다시 불러옴 (상태 + 대화 내용) */
+  const reloadRoom = async () => {
+    const sno = sessionIdRef.current;
+    if (!sno) return;
+    const seq = localChangeSeq.current;
+    const res = await axiosInstance.get<ChatSessionResponse>(`/chat_session/${sno}`);
+    await restoreFromSession(res.data, seq);
+  };
+
+  /** 상담 동작 실패 처리 — 무반응 대신 이유를 안내 */
+  const handleActionError = async (err: unknown) => {
+    const status = (err as { response?: { status?: number } })?.response?.status;
+    if (status === 409) {
+      // 다른 창에서 먼저 진행됨(상담 종료·단계 변경 등) → 서버 기준으로 화면을 맞춤
+      try {
+        await reloadRoom();
+      } catch (reloadErr) {
+        console.error('상담방 다시 불러오기 실패:', reloadErr);
+      }
+      addNoticeBubble(apiErrorMessage(err, '다른 창에서 상담이 진행되어 화면을 최신 상태로 바꿨습니다.'));
+      return;
+    }
+    addNoticeBubble(`요청을 처리하지 못했습니다.\n(${apiErrorMessage(err, '잠시 후 다시 시도해 주세요.')})`);
   };
 
   /* ---------------------------------------------------------------------
@@ -216,7 +307,10 @@ export default function ChatRoom({
   };
 
   /** 기존 세션 정보 및 로그 복원 */
-  const restoreFromSession = async (session: ChatSessionResponse) => {
+  /** @param guardSeq 다시 불러오기를 시작할 때의 localChangeSeq — 그 사이 이 창에서 상담이 진행됐으면 적용하지 않음 */
+  const restoreFromSession = async (session: ChatSessionResponse, guardSeq?: number) => {
+    const isStale = () => guardSeq !== undefined && guardSeq !== localChangeSeq.current;
+    if (isStale()) return;
     sessionIdRef.current = session.no;
     setConsultStarted(session.cmode !== 2);
     setSessionEnded(session.cmode === 2);
@@ -267,6 +361,7 @@ export default function ChatRoom({
 
     try {
       const logRes = await axiosInstance.get<ChatLogEntry[]>(`/chat_log/session/${session.no}`);
+      if (isStale()) return; // 대화 조회 중에 이 창에서 질문을 보냈으면 덮어쓰지 않음
       const restoredBubbles: ChatBubble[] = logRes.data.map((log) => ({
         id: String(log.no),
         sender: log.sender,
@@ -394,6 +489,7 @@ export default function ChatRoom({
   /** 최상위 카테고리 클릭 */
   const handleSelectRoot = async (menu: ChatMenuTypes) => {
     if (optionLoading) return; // 연타 시 세션/로그 중복 생성 방지
+    markLocalChange();
     setOptionLoading(true);
     try {
       setConsultStarted(true);
@@ -403,8 +499,10 @@ export default function ChatRoom({
       const actionRes = await axiosInstance.put<ChatActionResult>(`/chat_session/${no}/select`, { cno: menu.no });
       appendLogs(actionRes.data.logs);
       setCurrentOptions(actionRes.data.nextOptions ?? []);
+      notifyChatChanged(no);
     } catch (err) {
       console.error('메뉴 선택 실패:', err);
+      await handleActionError(err);
     } finally {
       setOptionLoading(false);
     }
@@ -413,13 +511,16 @@ export default function ChatRoom({
   /** 하위 카테고리 클릭 */
   const handleSelectChild = async (menu: ChatMenuTypes) => {
     if (!sessionIdRef.current || optionLoading) return;
+    markLocalChange();
     setOptionLoading(true);
     try {
       const actionRes = await axiosInstance.put<ChatActionResult>(`/chat_session/${sessionIdRef.current}/select`, { cno: menu.no });
       appendLogs(actionRes.data.logs);
       setCurrentOptions(actionRes.data.nextOptions ?? []);
+      notifyChatChanged(sessionIdRef.current);
     } catch (err) {
       console.error('메뉴 선택 실패:', err);
+      await handleActionError(err);
     } finally {
       setOptionLoading(false);
     }
@@ -427,6 +528,7 @@ export default function ChatRoom({
 
   /** 처음으로(다른 질문하기) 클릭 */
   const handleOtherQuestion = async () => {
+    markLocalChange();
     const wasAi = stage === 'AI';
 
     setStage('INTRO');
@@ -451,8 +553,10 @@ export default function ChatRoom({
           { params: { greeting } },
         );
         appendLogs(actionRes.data.logs);
+        notifyChatChanged(sessionIdRef.current);
       } catch (err) {
         console.error('처음으로 전환 실패:', err);
+        await handleActionError(err);
       }
     }
     scrollToBottom();
@@ -460,6 +564,7 @@ export default function ChatRoom({
 
   /** AI 상담으로 전환 */
   const handleAiConsult = async () => {
+    markLocalChange();
     setConsultStarted(true);
     setStage('AI');
     setEndFlow(null);
@@ -482,6 +587,7 @@ export default function ChatRoom({
       onStartAiResponding(sessionIdRef.current!);
       const result = await startAiConsult(sessionIdRef.current!);
       appendLogs(result.logs);
+      notifyChatChanged(sessionIdRef.current!);
       scrollToBottom();
     } catch (err) {
       console.error('AI 상담 전환 실패:', err);
@@ -495,6 +601,7 @@ export default function ChatRoom({
   /** 텍스트 메시지 전송 (사용자 메시지 및 불만족 메모 입력) */
   const handleSendText = async () => {
     if (sessionEnded || aiLoading || !inputValue.trim() || !sessionIdRef.current) return;
+    markLocalChange(); // 이 시점 이전에 시작된 다시 불러오기가 내 질문 말풍선을 덮어쓰지 않게
 
     // 불만족 사유 메모 입력 단계인 경우
     if (endFlow === 'ASK_UNSATISFY_MEMO') {
@@ -523,6 +630,7 @@ export default function ChatRoom({
     try {
       const result = await aiChat(sessionIdRef.current, userMsg);
       appendLogs(result.logs);
+      notifyChatChanged(sessionIdRef.current);
       if (result.needsAdmin) {
         setEndFlow('FAIL_AI_ANSWER');
       }

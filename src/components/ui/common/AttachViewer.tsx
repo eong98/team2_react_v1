@@ -5,6 +5,8 @@ import { formatFileSize, type AttachType } from '../../ts/Attach';
 interface AttachViewerProps {
   /** 게시글 PK 번호 */
   bno: number;
+  /** 게시판 테이블명 (ATTACH_BOARD_LABEL의 table: QA, NOTICE, CCTV_ISSUE) — 다른 게시판의 같은 번호 글과 구분 */
+  tname?: string;
   /** 다운로드 목록만 노출 (기본 true) */
   onlyList?: boolean;
 }
@@ -39,7 +41,7 @@ function getExt(name: string): string {
  * {qa.fileyn === 'Y' && <AttachViewer bno={qa.no} onlyList={false} />}
  * 
  */
-export default function AttachViewer({ bno, onlyList = true }: AttachViewerProps) {
+export default function AttachViewer({ bno, tname, onlyList = true }: AttachViewerProps) {
   const [list, setList] = useState<AttachType[]>([]);
   const [loading, setLoading] = useState(true);
   const [lightboxImg, setLightboxImg] = useState<AttachType | null>(null);
@@ -47,11 +49,11 @@ export default function AttachViewer({ bno, onlyList = true }: AttachViewerProps
   useEffect(() => {
     setLoading(true);
     axiosInstance
-      .get<AttachType[]>(`/attach/list/${bno}`)
+      .get<AttachType[]>(`/attach/list/${bno}`, { params: tname ? { tname } : undefined })
       .then((res) => setList(res.data))
       .catch((err) => console.error('첨부파일 목록 조회 실패:', err))
       .finally(() => setLoading(false));
-  }, [bno]);
+  }, [bno, tname]);
 
   // ESC로 라이트박스 닫기
   useEffect(() => {

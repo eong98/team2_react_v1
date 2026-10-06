@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from "react";
 import { EMPTY_FILTERS, PAGE_SIZE, type Filters, type AttachSearchResult, type AttachType, ATTACH_TYPE_LABEL, ATTACH_BOARD_LABEL, formatFileSize } from "../../../components/ts/Attach";
 import { usePaging } from "../../../hooks/usePaging";
@@ -8,6 +9,19 @@ import { AdminToolbar, DataTable, DbmsPagination, PageHeader, type DataTableColu
 export default function AttachList() {
   // const { no:ano, id, grade } = GlobalStoreSession();
   const { page, setPage, navigateWithQuery } = usePaging({ basePath: '/dbms/attach' });
+
+  /**
+   * "게시글로 이동" — FAQ는 문의(QA) 테이블에 함께 있어 tname만으로는 구분이 안 되므로 서버가 내려준 isfaq로 나눔.
+   * FAQ는 상세 화면이 없어 "자주 묻는 질문" 탭에서 그 FAQ를 펼친 상태로 보여줌.
+   */
+  const navigate = useNavigate();
+  const goToPost = (a: AttachType) => {
+    if (a.tname === 'QA' && a.isfaq === 'Y') {
+      navigate(`/dbms/qa?tab=faq&open=${a.bno}`);
+      return;
+    }
+    navigateWithQuery(`/dbms/${a.tname.toLowerCase()}/${a.bno}`);
+  };
   
   // const { navigateWithQuery } = usePaging({ basePath: `/dbms/${tname}/${bno}` });
 
@@ -201,7 +215,7 @@ export default function AttachList() {
       render: (a) => (
         <div className="actions">
           {a.tno !== 10 && (
-            <button type="button" className="btn btn_sm btn_ghost" onClick={() => navigateWithQuery(`/dbms/${a.tname.toLowerCase()}/${a.bno}`)}>
+            <button type="button" className="btn btn_sm btn_ghost" onClick={() => goToPost(a)}>
               게시글로 이동
             </button>
           )}

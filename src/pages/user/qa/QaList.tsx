@@ -8,6 +8,7 @@ import type { DataCardColumn, DataAccColumn } from '../../../components/ui';
 import { EMPTY_FILTERS, PAGE_SIZE, QA_STATUS_MAP, QA_TYPE_MAP } from '../../../components/ts/QaType';
 import type { Filters, QaSearchResult, QaTypes, TabKey } from '../../../components/ts/QaType';
 import type { AttachType } from '../../../components/ts/Attach';
+import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 
 export default function QaList() {
   const { no:mno, id } = GlobalStoreSession();
@@ -107,7 +108,7 @@ export default function QaList() {
     Promise.all(
       targets.map((n) =>
         axiosInstance
-          .get<AttachType[]>(`/attach/list/${n.no}`)
+          .get<AttachType[]>(`/attach/list/${n.no}`, { params: { tname: ATTACH_BOARD_LABEL[0].table } })
           .then((res) => [n.no, res.data] as const)
           .catch((err) => {
             console.error(`첨부파일 조회 실패 (no:${n.no}):`, err);

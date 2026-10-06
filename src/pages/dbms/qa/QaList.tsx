@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { axiosInstance, getAttachUrl } from '../../../utils/Tool';
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import { AdminToolbar, AlertModal, AttachViewer, ConfirmDeleteModal, DataAcc, DataCard, DbmsPagination, PageHeader } from '../../../components/ui';
 import type { DataAccColumn, DataCardColumn  } from '../../../components/ui';
@@ -9,6 +10,7 @@ import type { Filters, QaSearchResult, QaTypes, TabKey  } from '../../../compone
 import { useTab } from '../../../hooks/useTab';
 import { usePaging } from '../../../hooks/usePaging';
 import type { AttachType } from '../../../components/ts/Attach';
+import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 
 
 export default function QaList() {
@@ -16,7 +18,8 @@ export default function QaList() {
 
   /* 탭 이동시 저장 설정 */
   // 범용 useTab 훅 사용 (URL Query Parameter 기반 탭 제어)
-  const { tab, changeTab } = useTab<TabKey>({ defaultTab: 'qa' });
+  // 탭을 바꾸면 page와 함께 open(특정 FAQ 펼치기)도 지움
+  const { tab, changeTab } = useTab<TabKey>({ defaultTab: 'qa', resetParamsOnTabChange: ['page', 'open'] });
   // navigateWithQuery/goToList는 usePaging 쪽에 있음 (탭 없는 화면도 쓸 수 있게 분리됨)
   const { page, setPage, navigateWithQuery } = usePaging({ basePath: '/dbms/qa' });
 
@@ -97,6 +100,57 @@ export default function QaList() {
     loadQaList();
   }, [tab, applied, page]);
 
+  // ?tab=faq&open=번호 로 들어오면(관리자 첨부 목록의 "게시글로 이동" 등) 그 FAQ가 있는 페이지를 찾아 이동 → 펼침
+  const [searchParams, setSearchParams] = useSearchParams();
+  const openFaqNo = Number(searchParams.get('open')) || null;
+
+  /** 주소에서 open만 지움 (tab, page 등 다른 값은 유지, 뒤로가기 기록 안 남김) */
+  const removeOpenParam = () =>
+    setSearchParams(
+      (prev) => {
+        const updated = new URLSearchParams(prev);
+        updated.delete('open');
+        return updated;
+      },
+      { replace: true },
+    );
+
+  // 그 FAQ가 목록에 나타나 펼쳐지면 주소창의 open은 지움 (DataAcc가 같은 렌더에서 먼저 펼친 뒤 실행됨)
+  // → 이후 페이지 이동·새로고침 때 다시 펼쳐지거나 주소에 남지 않게
+  useEffect(() => {
+    if (!openFaqNo || !qaList.some((q) => q.no === openFaqNo)) return;
+    removeOpenParam();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qaList]);
+  useEffect(() => {
+    if (tab !== 'faq' || !openFaqNo) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        for (let p = 0; p < 100; p++) {
+          const res = await axiosInstance.get<QaSearchResult>('/qa/faq', {
+            headers: { accessNo: String(ano), grade: String(grade) },
+            params: { page: p, size: PAGE_SIZE },
+          });
+          if (cancelled) return;
+          if (res.data.content.some((q) => q.no === openFaqNo)) {
+            setPage(p + 1);
+            return;
+          }
+          if (p + 1 >= res.data.totalPages) break; // 끝까지 없음 (삭제된 FAQ 등)
+        }
+      } catch (err) {
+        console.error('FAQ 위치 찾기 실패:', err);
+      }
+      // 못 찾았으면 open을 지움 — 남아 있으면 수정 화면 이동(navigateWithQuery)·목록 복귀 때 따라다니며 다시 찾음
+      if (!cancelled) removeOpenParam();
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, openFaqNo]);
+
 
   // FAQ 탭이고 목록이 새로 로드되면, 첨부파일 있는(fileyn === 'Y') 행들의 이미지를
   // 한 번에 병렬로 불러와서 attachMap에 채워둡니다. (렌더 함수 안에서 직접 호출하지 않음 —
@@ -110,7 +164,7 @@ export default function QaList() {
     Promise.all(
       targets.map((n) =>
         axiosInstance
-          .get<AttachType[]>(`/attach/list/${n.no}`)
+          .get<AttachType[]>(`/attach/list/${n.no}`, { params: { tname: ATTACH_BOARD_LABEL[0].table } })
           .then((res) => [n.no, res.data] as const)
           .catch((err) => {
             console.error(`첨부파일 조회 실패 (no:${n.no}):`, err);
@@ -415,6 +469,7 @@ export default function QaList() {
           columns={faqColumns}
           data={qaList}
           rowKey={(n) => n.no}
+          openKey={openFaqNo}
           emptyMessage="등록된 FAQ가 없습니다."
           onEdit={(n) => navigateWithQuery(`${n.no}/edit`)}
           onDelete={(n) => setDeleteTarget(n)}

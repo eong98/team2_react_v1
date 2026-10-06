@@ -1,0 +1,9 @@
+/* /dbms/paystats 구독권 결제 통계 - 매장 통계(Dashboard.css)에 없는 것만 추가 */
+.dashboard_page .pay_sub_title { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border); }
+.dashboard_page .pay_recent_price { margin-left: auto; color: var(--text); }
+.dashboard_page .pay_recent_price + .recent_time { margin-left: 12px; }
+
+@media (max-width: 900px) {
+  .dashboard_page .pay_recent_price { margin-left: 0; }
+  .dashboard_page .pay_recent_price + .recent_time { margin-left: 0; }
+}

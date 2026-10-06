@@ -7,6 +7,7 @@ import { AlertModal, AttachViewer, ConfirmDeleteModal, PageHeader, PrevNextNav }
 import type { AttachType } from '../../../components/ts/Attach';
 import axios from 'axios';
 import { GlobalStoreSession } from '../../../store/LoginStore';
+import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 
 /* ---------------------------------------------------------------------
    비회원 문의 상세 (/board/qna/:no) — 목록에서 비밀번호 확인을 이미
@@ -82,7 +83,7 @@ export default function QaDetail() {
   /* 첨부파일 목록 조회 */
   const loadAttachList = () => {
     axiosInstance
-      .get<AttachType[]>(`/attach/list/${no}`)
+      .get<AttachType[]>(`/attach/list/${no}`, { params: { tname: ATTACH_BOARD_LABEL[0].table } })
       .then((result) => result.data)
       .then((data) => {
         setAttach(data);
@@ -218,7 +219,7 @@ export default function QaDetail() {
 
           <div className="card_contents">{qa.content}</div>
 
-          {qa.fileyn === 'Y' && <AttachViewer bno={qa.no} onlyList={false} />}
+          {qa.fileyn === 'Y' && <AttachViewer bno={qa.no} tname={ATTACH_BOARD_LABEL[0].table} onlyList={false} />}
 
           {/* 본인 글(회원/비회원) 수정/삭제 노출 */}
           {(mno === qa.mno || !qa.mno) && (

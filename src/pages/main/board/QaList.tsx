@@ -5,6 +5,7 @@ import { EMPTY_FILTERS, PAGE_SIZE, QA_STATUS_MAP, QA_TYPE_MAP, type Filters, typ
 import type { AttachType } from '../../../components/ts/Attach';
 import { axiosInstance } from '../../../utils/Tool';
 import { DataCard, Filterbar, Modal, PageHeader, UserPagination, type DataCardColumn } from '../../../components/ui';
+import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 
 /* ---------------------------------------------------------------------
    비회원 문의 조회 (/board/qa/search) — 이메일/키워드로 본인 작성 문의
@@ -97,7 +98,7 @@ export default function QaList() {
     Promise.all(
       targets.map((n) =>
         axiosInstance
-          .get<AttachType[]>(`/attach/list/${n.no}`)
+          .get<AttachType[]>(`/attach/list/${n.no}`, { params: { tname: ATTACH_BOARD_LABEL[0].table } })
           .then((res) => [n.no, res.data] as const)
           .catch((err) => {
             console.error(`첨부파일 조회 실패 (no:${n.no}):`, err);

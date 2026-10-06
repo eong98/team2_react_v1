@@ -7,6 +7,7 @@ import axios from 'axios';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import { usePaging } from '../../../hooks/usePaging';
 import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
+import { attachErrorMessage } from '../../../components/ui/common/AttachUploader';
 
 /**
  * 
@@ -15,7 +16,7 @@ import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
  */
 export default function QaForm() {
   const { no } = useParams<{ no: string }>();
-  const { no:ano, id, grade } = GlobalStoreSession();
+  const { no:ano, grade } = GlobalStoreSession();
   const isEdit = Boolean(no);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
@@ -133,6 +134,13 @@ export default function QaForm() {
 
     setSubmitting(true);
     try {
+      // 첨부할 파일이 있으면 저장 경로부터 확인 — 쓸 수 없으면 글도 저장하지 않고 오류 모달
+      const storageError = await attachRef.current?.checkStorage();
+      if (storageError) {
+        setAlert({ message: storageError, variant: 'error' });
+        return;
+      }
+      let attachFailMessage: string | null = null; // 글 저장 후 첨부 반영이 실패했을 때 안내
       const payload: FaqCRequest = {
         ano,
         type: input.type,
@@ -156,6 +164,7 @@ export default function QaForm() {
             await attachRef.current.commit();
           } catch (attachErr) {
             console.error('첨부파일 반영 실패 (글은 정상 저장됨):', attachErr);
+            attachFailMessage = attachErrorMessage(attachErr);
           }
         }
       } else {
@@ -169,8 +178,18 @@ export default function QaForm() {
             await attachRef.current.commit(Number(newNo));
           } catch (attachErr) {
             console.error('첨부파일 반영 실패 (글은 정상 저장됨):', attachErr);
+            attachFailMessage = attachErrorMessage(attachErr);
           }
         }
+      }
+
+      if (attachFailMessage) {
+        setAlert({
+          message: `글은 저장되었지만 첨부파일은 저장하지 못했습니다.\n${attachFailMessage}`,
+          variant: 'error',
+          onConfirm: goToList,
+        });
+        return;
       }
 
       setAlert({ message: isEdit ? 'FAQ가 수정되었습니다.' : 'FAQ가 등록되었습니다.', variant: 'success', onConfirm: goToList });
@@ -257,24 +276,6 @@ export default function QaForm() {
                 ))}
               </select>
               <div className="form_hint">유형을 선택하지 않을 경우 기타유형으로 등록됩니다.</div>
-            </div>
-          </div>
-
-          {/* 작성자 (readOnly) */}
-          <div className="form_group">
-            <label className="form_label" htmlFor="user_id">
-              작성자 ID
-            </label>
-            <div className="form_control">
-              <input
-                type='text'
-                id="user_id"
-                name='ano'
-                className="form_input"
-                value={`${isEdit ? id : '등록할때 저장된 아이디 수정예정'} (No.${ano})`}
-                readOnly
-                style={{ maxWidth: 200 }}
-              />
             </div>
           </div>
 
