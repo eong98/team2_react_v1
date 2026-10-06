@@ -459,3 +459,13 @@
     border-top: 1px solid var(--border);
   }
 }
+
+/* ---- 상세: 날짜 입력 (클릭 시 달력, 다크 테마 달력 아이콘) ---- */
+.shop_survey_date {
+  cursor: pointer;
+  color-scheme: dark;
+}
+.shop_survey_date::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 1;
+}

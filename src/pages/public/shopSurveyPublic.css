@@ -15,6 +15,8 @@
 }
 
 .sv_card {
+  box-sizing: border-box;
+  width: 100%;
   margin: 0 0 12px;
   padding: 20px 18px;
   border: 1px solid var(--border);
@@ -94,6 +96,13 @@
   font-weight: 600;
   line-height: 1.5;
   word-break: keep-all;
+  position: static;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  clip-path: none;
+  white-space: normal;
+  text-indent: 0;
 }
 .sv_q_title + * { clear: both; }
 .sv_q_no { color: var(--primary); }

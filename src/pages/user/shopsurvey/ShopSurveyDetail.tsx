@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { PageHeader, UserPagination, AlertModal } from '../../../components/ui/index.ts';
+import { PageHeader, UserPagination, AlertModal, ConfirmDeleteModal } from '../../../components/ui/index.ts';
 import { axiosInstance, getAttachUrl } from '../../../utils/Tool.ts';
 import { useTab } from '../../../hooks/useTab.ts';
 import {
@@ -38,6 +38,9 @@ import './shopSurvey.css';
    GET /shop_survey/{svno}                     설문 + 문항 + 응답 수
    GET /shop_survey/{svno}/stats               집계
    GET /shop_survey/{svno}/responses?page=&size= 응답 목록
+   POST /shop_survey/{svno}/summary            AI 요약 + 긍정/부정 점수
+   PATCH /shop_survey/{svno}/status            진행중 <-> 종료
+   DELETE /shop_survey/{svno}                  삭제 (응답 없으면 실제 삭제, 있으면 숨김)
 --------------------------------------------------------------------- */
 
 type TabKey = 'stats' | 'responses' | 'questions';
@@ -64,6 +67,11 @@ export default function ShopSurveyDetail() {
   // AI 요약
   const [summary, setSummary] = useState<ShopSurveySummary | null>(null);
   const [summarizing, setSummarizing] = useState(false);
+
+  // 상태 변경 / 삭제
+  const [statusSaving, setStatusSaving] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; back?: boolean } | null>(
     null,
@@ -119,7 +127,41 @@ export default function ShopSurveyDetail() {
     }
   };
 
-  if (loading || !survey) {
+  /** 진행중 <-> 종료 */
+  const handleStatusChange = async (next: 'OPEN' | 'CLOSED') => {
+    if (!svno || statusSaving) return;
+    setStatusSaving(true);
+    try {
+      await axiosInstance.patch(`/shop_survey/${svno}/status`, { status: next });
+     setSurvey((prev) => (prev ? { ...prev, status: next } : prev));
+      setAlert({
+        message: next === 'CLOSED' ? '설문이 종료되었습니다.\n더 이상 고객 응답을 받지 않습니다.' : '설문을 다시 진행합니다.',
+        variant: 'success',
+      });
+    } catch (err) {
+      setAlert({ message: getShopSurveyErrorMessage(err, '상태 변경에 실패했습니다.'), variant: 'error' });
+    } finally {
+      setStatusSaving(false);
+    }
+  };
+
+  /** 삭제 (응답 없으면 실제 삭제, 있으면 서버에서 DELETE 상태로 숨김) */
+  const handleDelete = async () => {
+    if (!svno || deleting) return;
+    setDeleting(true);
+    try {
+      await axiosInstance.delete(`/shop_survey/${svno}`);
+      setDeleteOpen(false);
+      navigate(SHOP_SURVEY_BASE, { replace: true });
+    } catch (err) {
+      setDeleteOpen(false);
+      setAlert({ message: getShopSurveyErrorMessage(err, '삭제에 실패했습니다.'), variant: 'error' });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+ if (loading || !survey) {
     return (
       <section className="view active shop-survey-page">
         <PageHeader title="고객 설문" />
@@ -163,8 +205,31 @@ export default function ShopSurveyDetail() {
                 QR코드
               </button>
             )}
-          </div>
-        }
+            {status === 'OPEN' && (
+              <button
+                type="button"
+                className="btn btn_md btn_ghost"
+                onClick={() => handleStatusChange('CLOSED')}
+                disabled={statusSaving}
+              >
+                설문 종료
+              </button>
+            )}
+            {status === 'CLOSED' && (
+              <button
+                type="button"
+                className="btn btn_md btn_ghost"
+                onClick={() => handleStatusChange('OPEN')}
+                disabled={statusSaving}
+              >
+                다시 진행
+              </button>
+            )}
+            <button type="button" className="btn btn_md btn_danger_outline" onClick={() => setDeleteOpen(true)}>
+              삭제
+            </button>
+           </div>
+         }
       />
 
       {/* ---- 요약 ---- */}
@@ -205,8 +270,9 @@ export default function ShopSurveyDetail() {
             <span className="shop_survey_range_label">응답일</span>
             <input
               type="date"
-              className="form_input"
+              className="form_input shop_survey_date"
               value={rangeDraft.from}
+              onClick={(e) => e.currentTarget.showPicker?.()}
               max={rangeDraft.to || undefined}
               onChange={(e) => setRangeDraft((prev) => ({ ...prev, from: e.target.value }))}
               onKeyDown={(e) => e.key === 'Enter' && applyRange()}
@@ -215,8 +281,9 @@ export default function ShopSurveyDetail() {
             <span className="shop_survey_range_sep">~</span>
             <input
               type="date"
-              className="form_input"
+              className="form_input shop_survey_date"
               value={rangeDraft.to}
+              onClick={(e) => e.currentTarget.showPicker?.()}
               min={rangeDraft.from || undefined}
               onChange={(e) => setRangeDraft((prev) => ({ ...prev, to: e.target.value }))}
               onKeyDown={(e) => e.key === 'Enter' && applyRange()}
@@ -265,6 +332,20 @@ export default function ShopSurveyDetail() {
           {tab === 'questions' && <QuestionsTab survey={survey} />}
         </>
       )}
+
+      <ConfirmDeleteModal
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={handleDelete}
+        loading={deleting}
+        title="설문 삭제"
+        targetLabel={survey.title}
+        description={
+          (survey.responseCount ?? 0) > 0
+            ? `응답 ${survey.responseCount}건이 있는 설문입니다. 목록에서 사라지고 QR 링크로도 응답할 수 없게 됩니다.`
+            : '삭제한 설문은 되돌릴 수 없습니다.'
+        }
+      />
 
       {survey.qrid && (
         <ShopSurveyQrModal
