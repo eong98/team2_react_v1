@@ -127,7 +127,6 @@ export default function ShopSurveyList() {
           onClick={() => navigate(r.status === 'DRAFT' ? `${SHOP_SURVEY_BASE}/${r.no}/edit` : `${SHOP_SURVEY_BASE}/${r.no}`)}
         >
           <span className="shop_survey_link_title">
-            {r.aiyn === 1 && <span className="badge badge_info shop_survey_ai_badge">AI</span>}
             {r.title}
           </span>
           {r.description && <span className="cell_sub shop_survey_link_desc">{r.description}</span>}
@@ -142,7 +141,7 @@ export default function ShopSurveyList() {
           <span className={`badge ${SHOP_SURVEY_STATUS_BADGE[r.status] ?? 'badge_neutral'}`}>
             {SHOP_SURVEY_STATUS_LABEL[r.status] ?? r.status}
           </span>
-          {r.aiyn === 1 && <span className="badge badge_info">AI 생성</span>}
+          {r.aiyn === 1 && <span className="badge badge_info">AI</span>}
         </span>
       ),
     },
