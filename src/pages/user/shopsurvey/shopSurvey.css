@@ -556,3 +556,37 @@
   border-color: var(--primary);
   box-shadow: 0 0 0 1px var(--primary) inset;
 }
+
+/* AI 수정 요청 / 트렌드 추가로 바뀐 곳 강조 (추가 = 초록 실선, 수정 = 초록 점선) */
+.sv_edit_q.is_ai_changed {
+  border: 2px dashed var(--primary);
+}
+.form_input.is_ai_field {
+  border-style: dashed;
+  border-color: var(--primary);
+  background: var(--primary-dim);
+}
+.badge.sv_badge_ai_changed {
+  background: var(--primary-dim);
+  color: var(--green-400);
+}
+.sv_ai_diff {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  border: 1px solid rgba(51, 214, 138, .45);
+  border-radius: var(--radius-sm);
+  background: var(--primary-dim);
+  font-size: 12.5px;
+  color: var(--text);
+}
+.sv_ai_diff_text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+.sv_ai_diff_removed { color: var(--text-dim); }

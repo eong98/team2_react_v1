@@ -85,6 +85,97 @@ const toDraft = (f: Partial<ShopSurveyForm>): FormDraft => ({
   })),
 });
 
+/* ---------------------------------------------------------------------
+   AI 수정 결과 비교 (revise / trend 후 어디가 바뀌었는지 강조)
+
+   1) 제목이 같은 문항끼리 짝을 짓고
+   2) 남은 문항은 같은 위치·같은 답변 방식의 기존 문항과 짝을 지어 "제목 수정"으로 봅니다.
+   3) 짝이 없는 새 문항 = 추가, 짝이 없는 기존 문항 = 삭제
+--------------------------------------------------------------------- */
+interface AiQuestionChange {
+  kind: 'added' | 'changed';
+  /** 바뀐 내용 요약 (예: 제목, 보기 +2) */
+  details: string[];
+  /** 제목이 바뀌었는지 (입력칸 강조) */
+  title: boolean;
+}
+interface AiChanges {
+  /** 문항 key → 변경 내용 */
+  questions: Record<string, AiQuestionChange>;
+  /** 새로 생기거나 바뀐 보기 key */
+  options: Set<string>;
+  /** 삭제된 문항 제목 */
+  removed: string[];
+}
+const EMPTY_AI_CHANGES: AiChanges = { questions: {}, options: new Set(), removed: [] };
+
+const norm = (s: string) => s.replace(/\s+/g, ' ').trim();
+
+const diffAiForm = (before: FormDraft, after: FormDraft): AiChanges => {
+  const used = new Set<number>();
+  const pair: number[] = after.questions.map(() => -1);
+
+  // 1) 제목이 같은 문항
+  after.questions.forEach((q, i) => {
+    const t = norm(q.title);
+    if (!t) return;
+    const j = before.questions.findIndex((b, bi) => !used.has(bi) && norm(b.title) === t);
+    if (j >= 0) {
+      pair[i] = j;
+      used.add(j);
+    }
+  });
+  // 2) 같은 위치 + 같은 답변 방식의 기존 문항 (제목만 고친 경우)
+  after.questions.forEach((q, i) => {
+    if (pair[i] >= 0) return;
+    const b = before.questions[i];
+    if (b && !used.has(i) && norm(b.title) && b.atype === q.atype) {
+      pair[i] = i;
+      used.add(i);
+    }
+  });
+
+  const questions: Record<string, AiQuestionChange> = {};
+  const options = new Set<string>();
+
+  after.questions.forEach((q, i) => {
+    if (pair[i] < 0) {
+      questions[q.key] = { kind: 'added', details: [], title: false };
+      return;
+    }
+    const b = before.questions[pair[i]];
+    const details: string[] = [];
+    const title = norm(b.title) !== norm(q.title);
+    if (title) details.push('제목');
+    if (b.atype !== q.atype) details.push('답변 방식');
+    if (b.requiredyn !== q.requiredyn) details.push('필수');
+    if (b.fileyn !== q.fileyn) details.push('사진 첨부');
+
+    if (isChoice(q.atype)) {
+      const oldLabels = new Set(isChoice(b.atype) ? b.options.map((o) => norm(o.label)) : []);
+      const newLabels = new Set(q.options.map((o) => norm(o.label)));
+      let added = 0;
+      q.options.forEach((o) => {
+        if (!oldLabels.has(norm(o.label))) {
+          options.add(o.key);
+          added++;
+        }
+      });
+      const removed = [...oldLabels].filter((l) => l && !newLabels.has(l)).length;
+      if (added) details.push(`보기 +${added}`);
+      if (removed) details.push(`보기 -${removed}`);
+    }
+
+    if (details.length) questions[q.key] = { kind: 'changed', details, title };
+  });
+
+  const removed = before.questions
+    .filter((b, bi) => !used.has(bi) && norm(b.title))
+    .map((b) => norm(b.title));
+
+  return { questions, options, removed };
+};
+
 /** 화면 state → 서버 요청 형식 (정렬순서는 배열 순서) */
 const toPayload = (
   d: FormDraft,
@@ -122,7 +213,7 @@ export default function ShopSurveyEdit() {
   const [form, setForm] = useState<FormDraft>(() => ({ title: '', description: '', questions: [newQuestion()] }));
   const [surveySno, setSurveySno] = useState<number | null>(null);
   const [aiyn, setAiyn] = useState<0 | 1>(0);
-  const [aiAddedKeys, setAiAddedKeys] = useState<Set<string>>(new Set());
+  const [aiChanges, setAiChanges] = useState<AiChanges>(EMPTY_AI_CHANGES);
   const [errors, setErrors] = useState<Errors>({});
   const [loading, setLoading] = useState(Boolean(svno));
   const [saving, setSaving] = useState(false);
@@ -276,7 +367,7 @@ export default function ShopSurveyEdit() {
     try {
       const res = await axiosInstance.post<{ success: boolean; no: number; qrid: string }>(
         '/shop_survey/publish',
-        toPayload(form, { no: surveyNo, sno: shopNo }),
+        toPayload(form, { no: surveyNo, sno: shopNo, aiyn }),
       );
       const no = res.data.no;
       setAlert({
@@ -315,12 +406,10 @@ export default function ShopSurveyEdit() {
     setForm(draft);
     setAiyn(1);
     setErrors({});
-    setAiAddedKeys(
-      aiMode === 'trend'
-        ? new Set(result.addedIndexes.map((i) => draft.questions[i]?.key).filter((k): k is string => Boolean(k)))
-        : new Set(),
-    );
+    setAiChanges(aiMode === 'create' ? EMPTY_AI_CHANGES : diffAiForm(form, draft));
   };
+
+  const aiChangeCount = Object.keys(aiChanges.questions).length + aiChanges.removed.length;
 
   const hasContent = form.questions.some((q) => q.title.trim() !== '');
   const aiSno = surveySno ?? shopNo;
@@ -446,11 +535,44 @@ export default function ShopSurveyEdit() {
           </div>
         </div>
 
+        {/* ---- AI가 바꾼 곳 요약 ---- */}
+        {aiChangeCount > 0 && (
+          <div className="sv_ai_diff" role="status">
+            <div className="sv_ai_diff_text">
+              <b>AI가 바꾼 곳</b>
+              <span>
+                추가 {Object.values(aiChanges.questions).filter((c) => c.kind === 'added').length} · 수정{' '}
+                {Object.values(aiChanges.questions).filter((c) => c.kind === 'changed').length} · 삭제{' '}
+                {aiChanges.removed.length}
+              </span>
+              {aiChanges.removed.length > 0 && (
+                <span className="sv_ai_diff_removed">삭제된 문항: {aiChanges.removed.join(', ')}</span>
+              )}
+            </div>
+            <button type="button" className="btn btn_xsm btn_ghost" onClick={() => setAiChanges(EMPTY_AI_CHANGES)}>
+              표시 지우기
+            </button>
+          </div>
+        )}
+
         {/* ---- 문항 ---- */}
-        {form.questions.map((q, idx) => (
-          <div key={q.key} className={`card card_pad_md sv_edit_q${aiAddedKeys.has(q.key) ? ' is_ai_added' : ''}`}>
+        {form.questions.map((q, idx) => {
+          const aiChange = aiChanges.questions[q.key];
+          return (
+          <div
+            key={q.key}
+            className={`card card_pad_md sv_edit_q${
+              aiChange ? (aiChange.kind === 'added' ? ' is_ai_added' : ' is_ai_changed') : ''
+            }`}
+          >
             <div className="sv_edit_q_head">
-              <span className="shop_survey_q_no mono">Q{idx + 1}</span>
+              <div className="badge_area">
+                <span className="shop_survey_q_no mono">Q{idx + 1}</span>
+                {aiChange?.kind === 'added' && <span className="badge badge_success">AI 추가</span>}
+                {aiChange?.kind === 'changed' && (
+                  <span className="badge sv_badge_ai_changed">AI 수정 · {aiChange.details.join(', ')}</span>
+                )}
+              </div>
               <div className="sv_edit_q_tools">
                 <button
                   type="button"
@@ -488,7 +610,7 @@ export default function ShopSurveyEdit() {
               <input
                 id={`qt_${q.key}`}
                 data-err={`q:${q.key}`}
-                className={`form_input${errors[`q:${q.key}`] ? ' is_error' : ''}`}
+                className={`form_input${errors[`q:${q.key}`] ? ' is_error' : ''}${aiChange?.title ? ' is_ai_field' : ''}`}
                 value={q.title}
                 onChange={(e) => {
                   updateQuestion(q.key, { title: e.target.value });
@@ -529,7 +651,9 @@ export default function ShopSurveyEdit() {
                       <div className="sv_edit_option_input">
                         <input
                           data-err={`o:${o.key}`}
-                          className={`form_input${errors[`o:${o.key}`] ? ' is_error' : ''}`}
+                          className={`form_input${errors[`o:${o.key}`] ? ' is_error' : ''}${
+                            aiChange?.kind === 'changed' && aiChanges.options.has(o.key) ? ' is_ai_field' : ''
+                          }`}
                           value={o.label}
                           onChange={(e) => updateOption(q, o.key, e.target.value)}
                           placeholder={`보기 ${oi + 1}`}
@@ -586,7 +710,8 @@ export default function ShopSurveyEdit() {
               </label>
             </div>
           </div>
-        ))}
+          );
+        })}
 
         <button type="button" data-err="questions" className="btn btn_md btn_outline_primary sv_edit_add_q" onClick={addQuestion}>
           + 문항 추가
