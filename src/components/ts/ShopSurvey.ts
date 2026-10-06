@@ -50,6 +50,8 @@ export interface ShopSurveyForm {
   cdate?: string;
   /** 응답 수 (1건 이상이면 수정 잠금) */
   responseCount?: number | null;
+  /** AI생성여부 0:직접작성 / 1:AI관여 (AI를 한 번이라도 쓰면 1) */
+  aiyn?: 0 | 1;
   questions: ShopSurveyQuestion[];
 }
 
@@ -65,6 +67,8 @@ export interface ShopSurveyListItem {
   /** DRAFT는 문항이 임시저장 JSON에만 있어서 0 */
   questionCount: number;
   responseCount: number;
+  /** AI생성여부 0:직접작성 / 1:AI관여 */
+  aiyn: number | null;
 }
 
 /** 목록 행 (화면 번호 포함) */
@@ -170,6 +174,48 @@ export const getShopSurveySentiment = (score: number) => {
   return { label: '부정', badge: 'badge_danger' };
 };
 
+/* ---------------------------------------------------------------------
+   AI 설문 자동작성 (POST /shop_survey/ai/generate)
+--------------------------------------------------------------------- */
+
+/** create: 새로 만들기 / revise: 현재 폼 고치기 / trend: 업종 트렌드 문항 추가 */
+export type ShopSurveyAiMode = 'create' | 'revise' | 'trend';
+
+export interface ShopSurveyAiRequest {
+  sno: number;
+  mode: ShopSurveyAiMode;
+  request: string;
+  /** 첫 생성 때 AI가 뽑은 업종 (revise, trend에서 재사용) */
+  industry?: string | null;
+  /** 참고할 이전 설문 번호 (create) */
+  refSvnos?: number[];
+  /** 현재 폼 (revise, trend) */
+  currentForm?: ShopSurveyForm;
+}
+
+/** 트렌드 추가 때 참고한 기사 */
+export interface ShopSurveyAiArticle {
+  title: string;
+  link?: string | null;
+  source?: string | null;
+  date?: string | null;
+}
+
+export interface ShopSurveyAiResult {
+  industry: string;
+  /** 폼에 그대로 채울 설문 (번호 없음) */
+  form: ShopSurveyForm;
+  /** 이렇게 만든/고친 이유 */
+  notes: string[];
+  articles: ShopSurveyAiArticle[];
+  /** trend: 새로 추가된 문항 위치 (0부터) */
+  addedIndexes: number[];
+  /** 안내 문구 (예: 트렌드 기사 없음) */
+  message?: string | null;
+}
+
+/** AI 요청 최대 글자 수 (백엔드와 동일) */
+export const SHOP_SURVEY_AI_MAX_REQUEST = 500;
 
 /** 백엔드 오류 응답 (ShopSurveyExceptionHandler) */
 export interface ShopSurveyError {

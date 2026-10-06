@@ -7,17 +7,21 @@ import {
   SHOP_SURVEY_ATYPE_LABEL,
   SHOP_SURVEY_BASE,
   getShopSurveyErrorMessage,
+  type ShopSurveyAiMode,
+  type ShopSurveyAiResult,
   type ShopSurveyAtype,
   type ShopSurveyForm,
   type ShopSurveyQuestion,
 } from '../../../components/ts/ShopSurvey.ts';
+import ShopSurveyAiPanel from './ShopSurveyAiPanel.tsx'
 import './shopSurvey.css';
 
 /* ---------------------------------------------------------------------
    매장 설문 생성 / 수정 (/user/shopsurvey/new, /user/shopsurvey/:svno/edit)
 
-   폼 state는 ShopSurveyForm 형식 그대로입니다. 나중에 AI 자동작성(FastAPI)이
-   같은 형식의 JSON을 돌려주면 setForm(...)으로 바로 채울 수 있습니다.
+   폼 state는 ShopSurveyForm 형식 그대로입니다. 위쪽 AI 패널(ShopSurveyAiPanel)이
+   같은 형식의 JSON을 돌려주면 setForm(toDraft(...))으로 바로 채웁니다.
+   AI를 한 번이라도 쓰면 aiyn = 1로 저장됩니다 (서버에서도 한 번 1이면 계속 1).
 
    모드
    - 신규           : [임시저장] [게시하기]
@@ -82,18 +86,21 @@ const toDraft = (f: Partial<ShopSurveyForm>): FormDraft => ({
 });
 
 /** 화면 state → 서버 요청 형식 (정렬순서는 배열 순서) */
-const toPayload = (d: FormDraft, extra: { no?: number | null; sno?: number | null }): ShopSurveyForm => ({
-  ...extra,
-  title: d.title.trim(),
-  description: d.description.trim() || null,
-  questions: d.questions.map((q, qi) => ({
-    no: q.no ?? null,
-    title: q.title.trim(),
-    atype: q.atype,
-    requiredyn: q.requiredyn,
-    fileyn: q.fileyn,
-    sort: qi + 1,
-    options: isChoice(q.atype)
+const toPayload = (
+  d: FormDraft,
+  extra: { no?: number | null; sno?: number | null; aiyn?: 0 | 1 },
+  ): ShopSurveyForm => ({
+    ...extra,
+    title: d.title.trim(),
+    description: d.description.trim() || null,
+    questions: d.questions.map((q, qi) => ({
+      no: q.no ?? null,
+      title: q.title.trim(),
+      atype: q.atype,
+      requiredyn: q.requiredyn,
+      fileyn: q.fileyn,
+      sort: qi + 1,
+      options: isChoice(q.atype)
       ? q.options.map((o, oi) => ({ no: o.no ?? null, label: o.label.trim(), sort: oi + 1 }))
       : [],
   })),
@@ -113,6 +120,9 @@ export default function ShopSurveyEdit() {
   const [mode, setMode] = useState<Mode>(svno ? 'draft' : 'new');
   const [surveyNo, setSurveyNo] = useState<number | null>(svno ? Number(svno) : null);
   const [form, setForm] = useState<FormDraft>(() => ({ title: '', description: '', questions: [newQuestion()] }));
+  const [surveySno, setSurveySno] = useState<number | null>(null);
+  const [aiyn, setAiyn] = useState<0 | 1>(0);
+  const [aiAddedKeys, setAiAddedKeys] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<Errors>({});
   const [loading, setLoading] = useState(Boolean(svno));
   const [saving, setSaving] = useState(false);
@@ -133,6 +143,8 @@ export default function ShopSurveyEdit() {
         if (draft.questions.length === 0) draft.questions = [newQuestion()];
         setForm(draft);
         setSurveyNo(data.no ?? Number(svno));
+        setSurveySno(data.sno ?? null);
+        setAiyn(data.aiyn === 1 ? 1 : 0);
         if (data.status === 'DRAFT') setMode('draft');
         else if ((data.responseCount ?? 0) > 0) setMode('locked');
         else setMode('edit');
@@ -245,7 +257,7 @@ export default function ShopSurveyEdit() {
     try {
       const res = await axiosInstance.post<{ success: boolean; no: number }>(
         '/shop_survey/draft',
-        toPayload(form, { no: surveyNo, sno: shopNo }),
+        toPayload(form, { no: surveyNo, sno: surveySno ?? shopNo, aiyn }),
       );
       const no = res.data.no;
       setSurveyNo(no);
@@ -295,6 +307,23 @@ export default function ShopSurveyEdit() {
       setSaving(false);
     }
   };
+
+  /* ---- AI 패널 결과 적용 ---- */
+  const applyAiResult = (result: ShopSurveyAiResult, aiMode: ShopSurveyAiMode) => {
+    const draft = toDraft(result.form);
+    if (draft.questions.length === 0) draft.questions = [newQuestion()];
+    setForm(draft);
+    setAiyn(1);
+    setErrors({});
+    setAiAddedKeys(
+      aiMode === 'trend'
+        ? new Set(result.addedIndexes.map((i) => draft.questions[i]?.key).filter((k): k is string => Boolean(k)))
+        : new Set(),
+    );
+  };
+
+  const hasContent = form.questions.some((q) => q.title.trim() !== '');
+  const aiSno = surveySno ?? shopNo;
 
   const goBack = () => navigate(surveyNo && mode !== 'new' ? `${SHOP_SURVEY_BASE}/${surveyNo}` : SHOP_SURVEY_BASE);
 
@@ -362,6 +391,17 @@ export default function ShopSurveyEdit() {
         }
       />
 
+      {aiSno && (
+        <ShopSurveyAiPanel
+          sno={aiSno}
+          surveyNo={surveyNo}
+          hasContent={hasContent}
+          aiyn={aiyn}
+          getCurrentForm={() => toPayload(form, { no: surveyNo, sno: aiSno, aiyn })}
+          onApply={applyAiResult}
+        />
+      )}
+
       <div ref={formRef}>
         {/* ---- 기본 정보 ---- */}
         <div className="card card_pad_lg form_page sv_edit_block">
@@ -408,7 +448,7 @@ export default function ShopSurveyEdit() {
 
         {/* ---- 문항 ---- */}
         {form.questions.map((q, idx) => (
-          <div key={q.key} className="card card_pad_md sv_edit_q">
+          <div key={q.key} className={`card card_pad_md sv_edit_q${aiAddedKeys.has(q.key) ? ' is_ai_added' : ''}`}>
             <div className="sv_edit_q_head">
               <span className="shop_survey_q_no mono">Q{idx + 1}</span>
               <div className="sv_edit_q_tools">
