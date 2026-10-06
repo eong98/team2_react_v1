@@ -31,6 +31,22 @@ import { GlobalCurrentShop } from '../../../store/UserStore.ts';
    전부 ./Shop.ts 로 옮겨뒀습니다.
 --------------------------------------------------------------------- */
 
+// [2026-10-02 추가] 매장 카드 미리보기 영상 목록 (public/mock/ 에 있는 시연용 축소 영상 480x270).
+// 젯슨 시연 영상(01 폭행 / 02 기물파손 / 03 쓰러짐 / 06 화재)을 작게 줄인 것으로,
+// 실제 CCTV 스트림 연동 전까지 카드마다 서로 다른 영상이 돌아가게 하기 위한 목업입니다.
+const PREVIEW_VIDEOS = [
+  '/mock/shop-live-01.mp4',
+  '/mock/shop-live-02.mp4',
+  '/mock/shop-live-03.mp4',
+  '/mock/shop-live-06.mp4',
+];
+
+// 매장번호로 영상을 고릅니다. Math.random()을 쓰지 않는 이유: 렌더링될 때마다 값이 바뀌어
+// 검색/페이지 이동 시 영상이 계속 바뀌고 처음부터 다시 재생되기 때문입니다.
+// 매장번호 기준이면 같은 매장은 항상 같은 영상이 나옵니다.
+const pickPreview = (shopNo: number | undefined, idx: number) =>
+  PREVIEW_VIDEOS[(shopNo ?? idx) % PREVIEW_VIDEOS.length];
+
 export default function ShopListView() {
   const navigate = useNavigate();
   const { no: mno, grade } = GlobalStoreSession();
@@ -102,7 +118,7 @@ export default function ShopListView() {
   const enterStore = (shop: ShopType) => {
     if (!shop.no) return;
     setShop({ no: shop.no, title: shop.title ?? '' });
-    navigate('/user/dashboard/test1');
+    navigate('/user/dashboard');
   };
 
   // 매장번호(sno)를 GlobalCurrentShop에 물린 뒤 CCTV 목록(/user/cctv)으로 바로 이동합니다.
@@ -151,8 +167,6 @@ export default function ShopListView() {
       <PageHeader
         title="매장 목록"
         description="운영 중인 매장을 선택해 관제 화면으로 전환합니다."
-        createLabel="+ 매장생성"
-        onCreate={() => navigate('new')}
       />
 
       <Filterbar
@@ -183,17 +197,17 @@ export default function ShopListView() {
         ) : rows.length === 0 ? (
           <p style={{ color: 'var(--text-faint)', fontSize: 13 }}>조건에 맞는 매장이 없습니다.</p>
         ) : (
-          rows.map((s) => (
+          rows.map((s, idx) => (
             <div className="card store_card" key={s.no}>
               <div className="store_thumb">
                 {/*
                   실제 CCTV 스냅샷/스트림 연동 전까지 쓰는 임시 미리보기 영상.
-                  public/mock/shop-live-preview.mp4 (합성 생성한 목업, 실제 매장 영상 아님) —
+                  public/mock/shop-live-0X.mp4 (시연용 목업, 실제 매장 영상 아님. 위 PREVIEW_VIDEOS 참고) —
                   실 서비스 연동 시 이 <video> 블록만 실제 스트림 URL로 바꿔주면 됩니다.
                 */}
                 <video
                   className="thumb_video"
-                  src="/mock/shop-live-preview.mp4"
+                  src={pickPreview(s.no, idx)}
                   autoPlay
                   loop
                   muted

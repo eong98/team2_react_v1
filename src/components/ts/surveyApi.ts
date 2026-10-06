@@ -157,14 +157,21 @@ export const analyzeSurvey = async (
 };
 
 /**
- * 기존에 저장된 설문 AI 분석 결과 조회.
- * 분석 실행은 FastAPI가 담당하고 결과 조회는 Spring surveyanalysis API를 사용한다.
+ * H200 FastAPI에 저장된 설문 AI 분석 결과 조회.
+ *
+ * 분석 결과가 있으면 SurveyAnalysis 반환
+ * 아직 분석하지 않은 설문이면 204 응답 → null 반환
  */
 export const getSurveyAnalysis = async (
   surveyNo: string | number
-): Promise<SurveyAnalysis> => {
-  const response = await axiosInstance.get<SurveyAnalysis>(
-    `/api/survey-analysis/${surveyNo}`
+): Promise<SurveyAnalysis | null> => {
+  const response = await axios.get<SurveyAnalysis>(
+    `${FASTAPI_BASE_URL}/api/survey/${surveyNo}/analysis`
   );
+
+  if (response.status === 204 || !response.data) {
+    return null;
+  }
+
   return response.data;
 };

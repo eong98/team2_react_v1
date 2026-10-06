@@ -1,0 +1,27 @@
+/* CCTV 이슈 상세 패널 - AI 검토 영역 (CctvIssueReviewBox.tsx 전용)
+   색/간격은 index.css 토큰과 contents.css의 .conf_box 규칙을 그대로 따릅니다. */
+
+/* word-break:keep-all - 한글이 단어 중간에서 줄바꿈되지 않게(좁은 패널에서 '처리되었/습니다'처럼 끊기는 것 방지) */
+.issue_review{padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:18px;word-break:keep-all;}
+
+.issue_review_head{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.issue_review_head .btn{flex-shrink:0;}
+.issue_review_title{font-size:14px;font-weight:700;}
+.issue_review_desc{font-size:12px;color:var(--text-faint);margin-top:2px;}
+
+.issue_review_loading{font-size:13px;color:var(--text-dim);margin:12px 0 0;line-height:1.6;}
+
+.issue_review_result{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+
+.issue_review_reasons{margin:10px 0 0;padding-left:18px;font-size:13px;color:var(--text-dim);line-height:1.7;}
+
+.issue_review_action{margin-top:12px;padding:10px 12px;background:var(--surface-2);border-radius:8px;font-size:13px;line-height:1.6;}
+.issue_review_action .k,
+.issue_review_steps .k{display:block;font-size:12px;color:var(--text-faint);}
+
+.issue_review_steps{margin-top:12px;font-size:13px;}
+.issue_review_steps summary{cursor:pointer;color:var(--text-dim);}
+.issue_review_steps ul{list-style:none;margin:8px 0 0;padding:0;}
+.issue_review_steps li{padding:8px 0;border-top:1px solid var(--border);color:var(--text-dim);line-height:1.6;}
+
+.issue_review_note{margin:12px 0 0;font-size:12px;color:var(--text-faint);line-height:1.6;}

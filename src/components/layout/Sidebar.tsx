@@ -4,6 +4,7 @@ import { fetchMenuNav, type MenuNavBase, type MenuNavGroup } from '../ts/menuNav
 import { GlobalStoreSession } from '../../store/LoginStore';
 import { axiosInstance } from '../../utils/Tool';
 import { isAdminGrade } from '../ts/MyPage';
+import { getUnreadNotificationCount } from '../ts/notification';
 
 interface SidebarProps {
   open: boolean;
@@ -43,6 +44,28 @@ export default function Sidebar({ open, onNavigate }: SidebarProps) {
 
   const [groups, setGroups] = useState<MenuNavGroup[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    // 관리자 사이드바에서는 알림 표시 안 함
+    if (isDbms || !no) {
+      setUnreadCount(0);
+      return;
+    }
+
+    const loadUnreadCount = async () => {
+      try {
+        const count = await getUnreadNotificationCount(no);
+        setUnreadCount(count);
+      } catch (error) {
+        console.error('미확인 알림 개수 조회 실패:', error);
+        setUnreadCount(0);
+      }
+    };
+
+    loadUnreadCount();
+  }, [isDbms, no]);
 
   useEffect(() => {
     let alive = true;
@@ -122,7 +145,7 @@ export default function Sidebar({ open, onNavigate }: SidebarProps) {
 
   const handleLogout = async () => {
     try {
-        await axiosInstance.post('/auth/logout');
+      await axiosInstance.post('/auth/logout');
     } catch (err) {
       console.error('로그아웃 처리 중 오류(무시 가능):', err);
     } finally {
@@ -195,8 +218,22 @@ export default function Sidebar({ open, onNavigate }: SidebarProps) {
                 </button>
                 <div className={`nav_group_items${isOpen ? ' open' : ''}`} id={`nav-group-${top.no}`}>
                   {children.map((child) => (
-                    <NavLink key={child.no} to={resolveHref(child.purl)} className={navItemClass} onClick={onNavigate}>
+                    <NavLink
+                      key={child.no}
+                      to={resolveHref(child.purl)}
+                      className={navItemClass}
+                      onClick={onNavigate}
+                    >
                       {child.title}
+
+                      {!isDbms &&
+                        child.title === '알림 관리' &&
+                        unreadCount > 0 && (
+                          <span
+                            className="notification_dot"
+                            title={`미확인 알림 ${unreadCount}건`}
+                          />
+                        )}
                     </NavLink>
                   ))}
                 </div>

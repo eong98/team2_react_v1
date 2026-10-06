@@ -137,6 +137,40 @@ export interface ShopSurveyStats {
   questions: ShopSurveyQuestionStat[];
 }
 
+/** AI 요약 결과 (POST /shop_survey/{svno}/summary) */
+export interface ShopSurveySummary {
+  /** 전체 응답 요약 */
+  summary: string;
+  /** 긍정/부정 점수: 0 = 매우 부정, 5 = 중립, 10 = 매우 긍정 */
+  score: number;
+  /** 점수 판단 근거 */
+  reason: string;
+  /** 분석에 사용한 응답 수 */
+  responseCount: number;
+}
+
+/** 응답일 기간 필터 (yyyy-MM-dd, '' = 제한 없음) */
+export interface ShopSurveyDateRange {
+  from: string;
+  to: string;
+}
+
+export const EMPTY_SHOP_SURVEY_RANGE: ShopSurveyDateRange = { from: '', to: '' };
+
+/** 기간 필터 → API 쿼리 파라미터 (빈 값은 보내지 않음) */
+export const toShopSurveyRangeParams = (range: ShopSurveyDateRange) => ({
+  from: range.from || undefined,
+  to: range.to || undefined,
+});
+
+/** 감정 점수 → 라벨/배지 (텍스트와 함께 표시) */
+export const getShopSurveySentiment = (score: number) => {
+  if (score >= 7) return { label: '긍정', badge: 'badge_success' };
+  if (score > 4) return { label: '중립', badge: 'badge_neutral' };
+  return { label: '부정', badge: 'badge_danger' };
+};
+
+
 /** 백엔드 오류 응답 (ShopSurveyExceptionHandler) */
 export interface ShopSurveyError {
   success: false;
