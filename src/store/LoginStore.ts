@@ -8,10 +8,15 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 const cookieStorage = {
   getItem: (name: string) => {
     const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
-    return match ? JSON.parse(match[2]) : null
+    if (!match) return null
+    try {
+      return JSON.parse(decodeURIComponent(match[2]))
+    } catch {
+      return null
+    }
   },
   setItem: (name: string, value: any) => {
-    document.cookie = `${name}=${JSON.stringify(value)}; path=/; max-age=30` // 30초 후 만료
+    document.cookie = `${name}=${encodeURIComponent(JSON.stringify(value))}; path=/; max-age=${60 * 60 * 24 * 30}`
   },
   removeItem: (name: string) => {
     document.cookie = `${name}=; Max-Age=0; path=/`
@@ -73,7 +78,11 @@ export const GlobalStoreSession = create<SessionStore>()(
 // ==========================================
 interface CookieStore {
   storeId: boolean;
-  setStoreId: (value: boolean) => void; 
+  setStoreId: (value: boolean) => void;
+  savedId: string;
+  setSavedId: (value: string) => void;
+  savedDbmsId: string;
+  setSavedDbmsId: (value: string) => void; 
 }
 
 export const GlobalStoreCookie = create<CookieStore>()(
@@ -81,6 +90,10 @@ export const GlobalStoreCookie = create<CookieStore>()(
     (set) => ({
       storeId: false,
       setStoreId: (value) => set({ storeId: value }),
+      savedId: '',
+      setSavedId: (value) => set({ savedId: value }),
+      savedDbmsId: '',
+      setSavedDbmsId: (value) => set({ savedDbmsId: value }),
     }),
     {
       name: 'settings-session-store',

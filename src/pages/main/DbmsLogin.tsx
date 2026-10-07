@@ -10,10 +10,11 @@ export default function DbmsLogin() {
 
   const storeId = GlobalStoreCookie((state) => state.storeId);
   const setStoreId = GlobalStoreCookie((state) => state.setStoreId);
-
+  const savedDbmsId = GlobalStoreCookie((state) => state.savedDbmsId);
+  const setSavedDbmsId = GlobalStoreCookie((state) => state.setSavedDbmsId);
   // storeId(아이디 저장)가 켜져 있을 때만 이전 아이디를 채워줍니다.
   const [input, setInput] = useState({
-    id: storeId ? (GlobalStoreSession.getState().id || '') : '',
+    id: storeId ? savedDbmsId : '',
     password: '',
   });
 
@@ -36,6 +37,7 @@ export default function DbmsLogin() {
 
   const setStoreIdChange = (e: ChangeEvent<HTMLInputElement>) => {
     setStoreId(e.target.checked);
+    if (!e.target.checked) setSavedDbmsId('');
   };
 
   const test = () => {
@@ -77,9 +79,8 @@ export default function DbmsLogin() {
         GlobalStoreSession.getState().setLogin(true);
         GlobalStoreSession.getState().setNo(dbms.no);
         GlobalStoreSession.getState().setGrade(dbms.grade);
-        // "아이디 저장" 체크했을 때만 아이디를 기억하고, 해제했으면 비웁니다. 
-        GlobalStoreSession.getState().setId(storeId ? input.id : '');
-
+        GlobalStoreSession.getState().setId(input.id);
+        setSavedDbmsId(storeId ? input.id : '');
 
         navigate('/dbms/memberlist');
 

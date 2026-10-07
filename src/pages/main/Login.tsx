@@ -10,9 +10,11 @@ export default function Login() {
 
   const storeId = GlobalStoreCookie((state) => state.storeId);
   const setStoreId = GlobalStoreCookie((state) => state.setStoreId);
+  const savedId = GlobalStoreCookie((state) => state.savedId);
+  const setSavedId = GlobalStoreCookie((state) => state.setSavedId);
 
   const [input, setInput] = useState({
-    id: storeId ? (GlobalStoreSession.getState().id || '') : '',
+    id: storeId ? savedId : '',
     password: '',
   });
 
@@ -35,6 +37,7 @@ export default function Login() {
 
   const setStoreIdChange = (e: ChangeEvent<HTMLInputElement>) => {
     setStoreId(e.target.checked);
+    if (!e.target.checked) setSavedId(''); // 체크 해제하면 기억한 아이디도 지움
   };
 
   const test = () => {
@@ -75,7 +78,8 @@ export default function Login() {
         GlobalStoreSession.getState().setLogin(true);
         GlobalStoreSession.getState().setNo(user.no);
         GlobalStoreSession.getState().setGrade(user.grade);
-        GlobalStoreSession.getState().setId(storeId ? input.id : '');
+        GlobalStoreSession.getState().setId(input.id);
+        setSavedId(storeId ? input.id : '');
         GlobalStoreSession.getState().setMname(user.mname);
 
         navigate('/index');
