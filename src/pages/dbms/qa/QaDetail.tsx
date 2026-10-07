@@ -1,11 +1,10 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
 import { AlertModal, AttachViewer, PageHeader, PrevNextNav } from '../../../components/ui';
-import { axiosInstance, getAttachUrl, set_focus } from '../../../utils/Tool';
+import { axiosInstance, set_focus } from '../../../utils/Tool';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import { QA_STATUS_MAP, QA_TYPE_MAP, type QARequest, type QaTypes } from '../../../components/ts/QaType';
 import { usePaging } from '../../../hooks/usePaging';
 import { useParams } from 'react-router-dom';
-import type { AttachType } from '../../../components/ts/Attach';
 import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 
 /**
@@ -15,10 +14,9 @@ import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
  */
 export default function QaDetail() {
   const { no } = useParams<{ no: string }>();
-  const { no:ano, id, grade } = GlobalStoreSession();
+  const { no:ano, grade } = GlobalStoreSession();
 
   const [qa, setQa] = useState<QaTypes | null>(null);
-  const [attach, setAttach] = useState<AttachType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEdit, setIsEdit] = useState<boolean>(false);
@@ -60,7 +58,6 @@ export default function QaDetail() {
           next: data.next ?? null,
         })
 
-        loadAttachList()
       })
       .catch((err) => {
         console.error('문의 상세 조회 실패:', err);
@@ -92,21 +89,6 @@ export default function QaDetail() {
   }, [isEdit]);
 
 
-  /* 첨부파일 목록 조회 */
-  const loadAttachList = () => {
-    setLoading(true);
-    axiosInstance.get<AttachType[]>(`/attach/list/${no}`, { params: { tname: ATTACH_BOARD_LABEL[0].table } })
-      .then((result) => result.data)
-      .then((data) => {
-        setAttach(data);
-
-      })
-      .catch((err) => {
-        console.error('첨부파일 목록 조회 실패:', err);
-        setError('첨부파일을 불러오지 못했습니다.');
-      })
-      .finally(() => setLoading(false));
-  };
 
 
   

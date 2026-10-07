@@ -3,7 +3,7 @@ import { axiosInstance, getAttachUrl } from '../../../utils/Tool';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { GlobalStoreSession } from '../../../store/LoginStore';
-import { AdminToolbar, AlertModal, AttachViewer, ConfirmDeleteModal, DataAcc, DataCard, DbmsPagination, PageHeader } from '../../../components/ui';
+import { AdminToolbar, AlertModal, ConfirmDeleteModal, DataAcc, DataCard, DbmsPagination, PageHeader } from '../../../components/ui';
 import type { DataAccColumn, DataCardColumn  } from '../../../components/ui';
 import { EMPTY_FILTERS, PAGE_SIZE, QA_STATUS_MAP, QA_TYPE_MAP } from '../../../components/ts/QaType';
 import type { Filters, QaSearchResult, QaTypes, TabKey  } from '../../../components/ts/QaType';
@@ -14,7 +14,7 @@ import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 
 
 export default function QaList() {
-  const { no:ano, id, grade } = GlobalStoreSession();
+  const { no:ano, grade } = GlobalStoreSession();
 
   /* 탭 이동시 저장 설정 */
   // 범용 useTab 훅 사용 (URL Query Parameter 기반 탭 제어)
@@ -27,7 +27,6 @@ export default function QaList() {
   const [qaList, setQaList] = useState<QaTypes[]>([]);
   const [attachMap, setAttachMap] = useState<Record<number, AttachType[]>>({});
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState('');
 
   /* 필터바 설정 */
   // draft: 입력 중인 값 (타이핑만으로는 검색 안 됨) / applied: "검색" 눌렀을 때 실제 조회에 쓰이는 값

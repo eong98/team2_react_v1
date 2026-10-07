@@ -7,7 +7,6 @@ import { QA_TYPE_MAP, type QCRequest } from '../../../components/ts/QaType';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import { usePaging } from '../../../hooks/usePaging';
 import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
-import type { MyMemberInfo } from '../../../components/ts/MyPage';
 import { attachErrorMessage } from '../../../components/ui/common/AttachUploader';
 
 /**

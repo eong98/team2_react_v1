@@ -2,11 +2,10 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import axios from 'axios';
-import { axiosInstance, getAttachUrl } from '../../../utils/Tool';
+import { axiosInstance } from '../../../utils/Tool';
 import { usePaging } from '../../../hooks/usePaging';
 import { AlertModal, AttachViewer, ConfirmDeleteModal, PageHeader, PrevNextNav } from '../../../components/ui';
 import { QA_STATUS_MAP, QA_TYPE_MAP, type QaTypes } from '../../../components/ts/QaType';
-import type { AttachType } from '../../../components/ts/Attach';
 import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 
 export default function QaDetail() {
@@ -16,7 +15,6 @@ export default function QaDetail() {
   const { goToList, navigateWithQuery } = usePaging({ basePath: '/user/qa' });
 
   const [qa, setQa] = useState<QaTypes | null>(null);
-  const [attach, setAttach] = useState<AttachType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,11 +45,15 @@ export default function QaDetail() {
           prev : data.prev ?? null,
           next: data.next ?? null,
         })
-        console.log(navPosts)
 
-        loadAttachList()
       })
       .catch((err) => {
+        // 권한 없음(403)·없는 글(404)은 예상된 경우 — 콘솔 오류 없이 서버 안내 문구만 표시
+        const status = err?.response?.status;
+        if (status === 403 || status === 404) {
+          setError(err.response?.data?.message || '문의사항을 볼 수 있는 권한이 없습니다.');
+          return;
+        }
         console.error('문의사항 상세 조회 실패:', err);
         setError('문의사항 내용을 불러오지 못했습니다.');
       })
@@ -70,21 +72,6 @@ export default function QaDetail() {
 
   
 
-  /* 첨부파일 목록 조회 */
-  const loadAttachList = () => {
-    setLoading(true);
-    axiosInstance.get<AttachType[]>(`/attach/list/${no}`, { params: { tname: ATTACH_BOARD_LABEL[0].table } })
-      .then((result) => result.data)
-      .then((data) => {
-        setAttach(data);
-
-      })
-      .catch((err) => {
-        console.error('첨부파일 목록 조회 실패:', err);
-        setError('첨부파일을 불러오지 못했습니다.');
-      })
-      .finally(() => setLoading(false));
-  };
 
 
   // 비밀번호 입력 후 삭제 실행

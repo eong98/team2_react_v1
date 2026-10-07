@@ -125,7 +125,7 @@ export function estimateCancelRefund(order: ShopOrderTypes) {
  * @param order 
  * @returns 
  */
-export const canRenew = (order: RowType | ShopOrderTypes, activeCount = 0) => {
+export const canRenew = (order: RowType | ShopOrderTypes) => {
   // if (isExpired(order.edate) && activeCount === 0) return true;
   const daysLeft = daysUntilExpire(order.edate);
   return daysLeft !== null && daysLeft <= 7 && daysLeft >= 0;

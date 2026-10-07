@@ -1,10 +1,9 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   PageHeader,
   UserPagination,
   DataTable,
-  Modal,
   AlertModal,
   type DataTableColumn,
   Filterbar,
@@ -21,7 +20,6 @@ import {
   type ShopOrderTypes,
   isExpired,
   canRenew,
-  daysUntilExpire,
   canCancel,
   canChange,
 } from '../../../components/ts/ShopOrder';
@@ -88,7 +86,6 @@ export default function ShopOrderList() {
 
       const { content, totalElements: total, totalPages: pages, page: serverPage, size } = res.data;
 
-      console.log(res)
 
       if (content.length === 0 && page > 1) {
         setPage(page - 1);
@@ -161,7 +158,6 @@ export default function ShopOrderList() {
     setGrade();
   };
 
-  console.log(activeCountsMap)
 
   useEffect(() => {
     setGrade();
@@ -229,7 +225,7 @@ export default function ShopOrderList() {
         o.sno && o.edate ? (
           <button type="button" className="btn_link" onClick={() => goToDetail(o.no)}>
             {o.sdate} ~ { }
-            {canRenew(o, activeCountsMap[o.sno ?? -1] ?? 0) ? <span className='danger'>{o.edate}</span> : o.edate}
+            {canRenew(o) ? <span className='danger'>{o.edate}</span> : o.edate}
           </button>
         ) : <span className="cell_sub">-</span>
       ,
@@ -245,7 +241,7 @@ export default function ShopOrderList() {
       width: '190px',
       render: (o) => (
         <div className="actions">
-          {canRenew(o, activeCountsMap[o.sno ?? -1] ?? 0) && (
+          {canRenew(o) && (
             <button type="button" className="btn btn_xsm btn_ghost" onClick={() => setRenewTarget(o)}>
               갱신
             </button>

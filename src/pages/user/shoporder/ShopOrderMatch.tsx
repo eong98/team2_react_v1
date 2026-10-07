@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader, AlertModal } from '../../../components/ui';
 import { axiosInstance } from '../../../utils/Tool';
 import { GlobalStoreSession } from '../../../store/LoginStore';
-import { PAGE_SIZE, type ShopOrderTypes } from '../../../components/ts/ShopOrder';
+import { type ShopOrderTypes } from '../../../components/ts/ShopOrder';
 import { usePaging } from '../../../hooks/usePaging';
 import { GlobalCurrentShop } from '../../../store/UserStore';
 
@@ -30,9 +30,6 @@ export default function ShopOrderMatch() {
   const [linking, setLinking] = useState<string | null>(null);
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error' } | null>(null);
 
-  const [draft, setDraft] = useState({ keyword: '' });
-  const [applied, setApplied] = useState({ keyword: '' });
-  const [page, setPage] = useState(1);
 
   useEffect(() => {
     if (!mno || !sno) return;
@@ -43,32 +40,7 @@ export default function ShopOrderMatch() {
       .finally(() => setLoading(false));
   }, [mno, sno]);
 
-  console.log(orders)
 
-  
-  const filtered = useMemo(() => {
-    const word = applied.keyword.trim();
-    if (!word) return orders;
-    return orders.filter(
-      (s) => s.pname?.includes(word)
-    );
-  }, [orders, applied.keyword]);
-
-  const totalElements = filtered.length;
-  const totalPages = Math.max(1, Math.ceil(totalElements / PAGE_SIZE));
-  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-  const onSearch = () => {
-    setPage(1);
-    setApplied(draft);
-  };
-
-  const onReset = () => {
-    const empty = { keyword: '' };
-    setDraft(empty);
-    setPage(1);
-    setApplied(empty);
-  };
 
 
   const handleLink = async (orderNo: string) => {

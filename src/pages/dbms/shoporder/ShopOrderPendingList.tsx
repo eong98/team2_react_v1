@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { PageHeader, Filterbar, UserPagination, DataTable, Modal, AlertModal, type DataTableColumn, AdminToolbar, DbmsPagination } from '../../../components/ui';
+import { PageHeader, DataTable, Modal, AlertModal, type DataTableColumn, AdminToolbar, DbmsPagination } from '../../../components/ui';
 import { axiosInstance } from '../../../utils/Tool';
 import {
   PAGE_SIZE,
@@ -160,7 +160,6 @@ export default function ShopOrderPendingnList() {
       setProcessing(false);
     }
   };
-  console.log(items)
 
   const columns: DataTableColumn<RowType>[] = [
     { header: '번호', width: '64px', mono: true, render: (o) => o.cnt },

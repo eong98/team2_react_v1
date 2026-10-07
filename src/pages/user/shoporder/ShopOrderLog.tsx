@@ -12,7 +12,7 @@ export default function ShopOrderLog() {
   const { ono } = useParams<{ ono: string }>();
   const url = location.pathname.includes('/order') ? 'order' : 'shoporder';
 
-  const { page, setPage, navigateWithQuery } = usePaging({ basePath: `/user/${url}/${ono}/history` });
+  const { page, setPage } = usePaging({ basePath: `/user/${url}/${ono}/history` });
 
   const [logs, setLogs] = useState<RowType[]>([]);
   const [detailTarget, setDetailTarget] = useState<RowType | null>(null);

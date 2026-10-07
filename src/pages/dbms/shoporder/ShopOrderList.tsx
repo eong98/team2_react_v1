@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { PageHeader, Filterbar, UserPagination, DataTable, type DataTableColumn, DbmsPagination, AdminToolbar } from '../../../components/ui';
+import { PageHeader, DataTable, type DataTableColumn, DbmsPagination, AdminToolbar } from '../../../components/ui';
 import { axiosInstance } from '../../../utils/Tool';
 import {
   ORDER_STATUS_MAP,
@@ -27,7 +26,6 @@ import { usePaging } from '../../../hooks/usePaging';
 --------------------------------------------------------------------- */
 
 export default function ShopOrderList() {
-  const navigate = useNavigate();
   const { no: ano } = GlobalStoreSession();
   const { page, setPage } = usePaging({ basePath: '/dbms/shoporder' });
 
