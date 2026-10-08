@@ -31,6 +31,11 @@ export interface QaTypes {
   ano?: number;
   answer?: string;
   adate?: string;
+  /** AI 자동 답변 (관리자 답변 answer와 별도, 매뉴얼로 답할 수 있을 때만 있음) */
+  aiAnswer?: string | null;
+  aiAdate?: string | null;
+  /** AI 답변 있음 여부 (Y/N) — 목록 배지용 */
+  aiyn?: string;
   vseq?: string;
 
   isdel?: string;

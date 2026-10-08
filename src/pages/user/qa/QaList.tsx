@@ -191,6 +191,8 @@ export default function QaList() {
                   </span> ) : null
                 }
               </button>
+              {/* AI 자동 답변이 달린 문의 — 제목 옆에 반짝이는 배지 (common.css .badge.ai_answer) */}
+              {n.aiyn === 'Y' && <span className="badge ai_answer">✨ AI 답변</span>}
             </div>
             <div className="cell_sub">
               접수유형: {Object.entries(QA_TYPE_MAP).find(([type]) => Number(type) === n.type)?.[1].label ?? n.type} · {n.cdate.split(' ')[0]}
