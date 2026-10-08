@@ -1,32 +1,40 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { usePaging } from '../../../hooks/usePaging';
 import { QA_STATUS_MAP, QA_TYPE_MAP, type QaTypes } from '../../../components/ts/QaType';
 import { axiosInstance } from '../../../utils/Tool';
-import { AlertModal, AttachViewer, ConfirmDeleteModal, PageHeader, PrevNextNav } from '../../../components/ui';
-import axios from 'axios';
-import { GlobalStoreSession } from '../../../store/LoginStore';
-import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
+import { AlertModal, AttachViewer, ConfirmDeleteModal, Modal, PageHeader, PrevNextNav } from '../../../components/ui';
+import { ATTACH_BOARD_LABEL, deleteAttachByBno } from '../../../components/ts/Attach';
+import {
+  QA_TOKEN_REQUIRED,
+  clearQaGuestToken,
+  getQaGuestToken,
+  qaErrorCode,
+  qaErrorMessage,
+  qaGuestHeaders,
+  verifyQaGuest,
+} from '../../../components/ts/QaGuestToken';
 
 /* ---------------------------------------------------------------------
-   비회원 문의 상세 (/board/qna/:no) — 목록에서 비밀번호 확인을 이미
-   마쳤으면 location.state로 pw를 넘겨받아 POST /qa/{no}/verify로 재조회
-   합니다. 안 잠긴 글이면 pw 없이 GET /qa/{no}로 바로 조회됩니다.
+   비회원 문의 상세 (/board/qa/:no)
 
-   pw는 절대 쿼리파라미터로 보내지 않습니다(URL 노출 방지) — 있으면 POST
-   바디로만 전달합니다.
+   비밀번호를 확인하면 서버가 이 글 전용 임시 토큰(10분)을 주고,
+   sessionStorage에 보관했다가 X-Qa-Token 헤더로 보냅니다(QaGuestToken.ts).
+   - 비밀글이 아니면 토큰 없이 조회
+   - 비밀글인데 토큰이 없거나 만료됐으면 비밀번호 확인 모달
+   - 수정·삭제도 토큰으로 본인 확인 (없으면 먼저 비밀번호 확인)
 
    API
-   GET  /qa/{no}          → QaResponse (비밀글 아닐 때)
-   POST /qa/{no}/verify    → QaResponse (pw 필요할 때)
+   GET    /qa/guest/{no}          → QaResponse
+   POST   /qa/guest/{no}/verify   → {token, expiresIn}
+   DELETE /qa/guest/{no}          → 삭제
 --------------------------------------------------------------------- */
 
-export default function QaDetail() {
-  const location = useLocation();
-  const pwFromState = (location.state as { pw?: string } | null)?.pw;
+/** 비밀번호 확인 후 이어서 할 일 */
+type PwPurpose = 'view' | 'edit' | 'delete';
 
+export default function QaDetail() {
   const { no } = useParams<{ no: string }>();
-  const { no: mno, grade } = GlobalStoreSession(); // 현재 로그인한 회원 번호
   const { goToList, navigateWithQuery } = usePaging({ basePath: '../qa' });
 
   const [qa, setQa] = useState<QaTypes | null>(null);
@@ -43,16 +51,20 @@ export default function QaDetail() {
   const [deleting, setDeleting] = useState<boolean>(false);
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
 
+  // 비밀번호 확인 모달
+  const [pwPurpose, setPwPurpose] = useState<PwPurpose | null>(null);
+  const [pw, setPw] = useState('');
+  const [checking, setChecking] = useState(false);
+  const [pwError, setPwError] = useState('');
+
   /* 문의내용 상세 데이터 조회 */
   const loadQa = () => {
+    if (!no) return;
     setLoading(true);
     setError(null);
 
-    const request = pwFromState
-      ? axiosInstance.post(`/qa/${no}/verify`, { pw: pwFromState })
-      : axiosInstance.get(`/qa/${no}`);
-
-    request
+    axiosInstance
+      .get(`/qa/guest/${no}`, { headers: qaGuestHeaders(no) })
       .then((res) => res.data)
       .then((data) => {
         setQa(data);
@@ -60,63 +72,153 @@ export default function QaDetail() {
           prev : data.prev ?? null,
           next: data.next ?? null,
         })
-        
       })
       .catch((err) => {
+        setQa(null);
+        // 비밀글인데 토큰이 없거나 만료 → 비밀번호 확인
+        if (qaErrorCode(err) === QA_TOKEN_REQUIRED) {
+          clearQaGuestToken(no);
+          setError('비밀글입니다. 작성 시 입력한 비밀번호를 확인해 주세요.');
+          openPwModal('view');
+          return;
+        }
+        if (err?.response?.status === 400 || err?.response?.status === 404) {
+          setError(qaErrorMessage(err, '해당 문의를 찾을 수 없거나 권한이 없습니다.'));
+          return;
+        }
         console.error('문의 상세 조회 실패:', err);
-        setError('비밀번호가 일치하지 않거나 접근 권한이 없습니다.');
+        setError('문의 내용을 불러오지 못했습니다.');
       })
       .finally(() => setLoading(false));
-
   };
-    
 
   useEffect(() => {
-    if (!no) return;
-    
     loadQa();
-  }, [no, mno, grade, pwFromState]);
+  }, [no]);
 
+  const openPwModal = (purpose: PwPurpose) => {
+    setPwPurpose(purpose);
+    setPw('');
+    setPwError('');
+  };
 
+  const closePwModal = () => setPwPurpose(null);
 
-  // 비밀번호 입력 후 삭제 실행
-  const handleDeleteWithPw = async (inputPw: string = '') => {
+  /** 비밀번호 확인 → 토큰 저장 후 하려던 일 이어서 */
+  const handleVerify = async () => {
+    if (!no || !pwPurpose) return;
+    if (!pw.trim()) {
+      setPwError('비밀번호를 입력해주세요.');
+      return;
+    }
+    setPwError('');
+    setChecking(true);
+    try {
+      await verifyQaGuest(no, pw);
+      const purpose = pwPurpose;
+      setPwPurpose(null);
+
+      if (purpose === 'view') loadQa();
+      if (purpose === 'edit') navigateWithQuery('edit');
+      if (purpose === 'delete') setDeleteTarget(qa);
+    } catch (err) {
+      // 불일치(남은 횟수)·잠김(5회 실패) 안내는 서버 문구 그대로
+      setPwError(qaErrorMessage(err, '비밀번호가 일치하지 않습니다.'));
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  // 수정 — 확인한 토큰이 없으면 비밀번호부터
+  const handleEdit = () => {
+    if (no && getQaGuestToken(no)) {
+      navigateWithQuery('edit');
+    } else {
+      openPwModal('edit');
+    }
+  };
+
+  // 삭제 — 확인한 토큰이 없으면 비밀번호부터
+  const handleDelete = () => {
+    if (no && getQaGuestToken(no)) {
+      setDeleteTarget(qa);
+    } else {
+      openPwModal('delete');
+    }
+  };
+
+  // 삭제 실행 (토큰으로 본인 확인)
+  const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
 
     setDeleting(true);
     try {
-      await axiosInstance.delete('/qa', {
-        data: { no: deleteTarget.no, pw: inputPw },
-      });
+      await axiosInstance.delete(`/qa/guest/${deleteTarget.no}`, { headers: qaGuestHeaders(deleteTarget.no) });
+      // 글 삭제가 성공한 뒤에만 첨부파일 삭제 (게시판 구분 tname 포함)
+      await deleteAttachByBno(deleteTarget.no, ATTACH_BOARD_LABEL[0].table);
+      clearQaGuestToken(deleteTarget.no);
 
       setAlert({ message: '삭제되었습니다.', variant: 'success', onConfirm: () => goToList() });
       setDeleteTarget(null);
-    } catch (error) {
-      console.error('삭제 실패:', error);
-      if (axios.isAxiosError(error)) {
-        const status = error.response?.status;
-        const data = error.response?.data;
-
-        if (status === 400 || status === 401) {
-          setAlert({ message: '비밀번호가 올바르지 않거나 입력값이 잘못되었습니다.', variant: 'error' });
-        } else if (status === 404) {
-          setAlert({ message: '존재하지 않거나 이미 삭제된 항목입니다.', variant: 'error' });
-        } else if (status === 500) {
-          if (data?.message?.includes('비밀번호') || data?.message?.includes('password')) {
-            setAlert({ message: '비밀번호가 일치하지 않습니다.', variant: 'error' });
-          } else {
-            setAlert({ message: '서버 내부 오류가 발생했습니다. 관리자에게 문의하세요.', variant: 'error' });
-          }
-        } else {
-          setAlert({ message: `오류가 발생했습니다. (에러 코드: ${status || 'Unknown'})`, variant: 'error' });
-        }
-      } else {
-        setAlert({ message: '알 수 없는 오류가 발생했습니다.', variant: 'error' });
+    } catch (err) {
+      setDeleteTarget(null);
+      if (qaErrorCode(err) === QA_TOKEN_REQUIRED) {
+        // 확인 시간(10분)이 지남 → 비밀번호 다시 확인
+        clearQaGuestToken(no ?? '');
+        openPwModal('delete');
+        return;
       }
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status !== 400 && status !== 404) {
+        console.error('삭제 실패:', err);
+      }
+      setAlert({ message: qaErrorMessage(err, '삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.'), variant: 'error' });
     } finally {
       setDeleting(false);
     }
   };
+
+  /** 비밀번호 확인 모달 (조회·수정·삭제 공용) */
+  const pwModal = (
+    <Modal
+      open={pwPurpose !== null}
+      onClose={closePwModal}
+      titleId="qaDetailPwCheckTitle"
+      title="비밀번호 확인"
+      footer={
+        <>
+          <button type="button" className="btn btn_md btn_ghost" onClick={closePwModal}>
+            취소
+          </button>
+          <button type="button" className="btn btn_md btn_primary" disabled={checking} onClick={handleVerify}>
+            {checking ? '확인 중...' : '확인'}
+          </button>
+        </>
+      }
+    >
+      <div>
+        <p className="cell_sub" style={{ marginBottom: 14 }}>
+          {pwPurpose === 'view'
+            ? '비밀글입니다. 작성 시 입력한 비밀번호를 입력해주세요.'
+            : '본인 확인을 위해 작성 시 입력한 비밀번호를 입력해주세요.'}
+        </p>
+        <div className="form_group">
+          <label className="form_label" htmlFor="qaDetailPw">비밀번호</label>
+          <div className="form_control">
+            <input
+              id="qaDetailPw"
+              type="password"
+              className={`form_input ${pwError ? 'is_error' : ''}`}
+              value={pw}
+              onChange={(e) => setPw(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
+            />
+            {pwError && <div className="form_hint error">{pwError}</div>}
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
 
 
   if (loading) {
@@ -145,6 +247,7 @@ export default function QaDetail() {
             <div className="empty_row">해당 문의를 찾을 수 없거나 권한이 없습니다.</div>
           </div>
         </div>
+        {pwModal}
       </section>
     );
   }
@@ -191,7 +294,7 @@ export default function QaDetail() {
               )}
             </h3>
             <p className="b_title">
-              <span>작성자 : 
+              <span>작성자 :
                 {qa.mno !== null ? (
                   ` ${qa.id} (No.${qa.mno})`
                 ):(' 비회원')}
@@ -206,18 +309,14 @@ export default function QaDetail() {
 
           {qa.fileyn === 'Y' && <AttachViewer bno={qa.no} tname={ATTACH_BOARD_LABEL[0].table} onlyList={false} />}
 
-          {/* 본인 글(회원/비회원) 수정/삭제 노출 */}
-          {(mno === qa.mno || !qa.mno) && (
+          {/* 비회원 글만 수정/삭제 노출 (회원 글은 로그인 후 내 문의에서) — 본인 확인은 비밀번호로 */}
+          {!qa.mno && (
             <div className="form_page_footer">
-              <button type="button" className="btn btn_danger" onClick={() => setDeleteTarget(qa)}>
+              <button type="button" className="btn btn_danger" onClick={handleDelete}>
                 삭제
               </button>
               {!isWait && (
-                <button
-                  type="button"
-                  className="btn btn_outline_primary"
-                  onClick={() => navigateWithQuery('edit')}
-                >
+                <button type="button" className="btn btn_outline_primary" onClick={handleEdit}>
                   수정
                 </button>
               )}
@@ -244,16 +343,16 @@ export default function QaDetail() {
       {/* 이전글 / 다음글 Navigation */}
       <PrevNextNav prev={navPosts.prev} next={navPosts.next} basePath="../qa" />
 
-      {/* 비밀번호 입력 삭제 모달 */}
+      {/* 삭제 확인 모달 (본인 확인은 이미 비밀번호로 마침) */}
       <ConfirmDeleteModal
         open={deleteTarget !== null}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={(pw) => handleDeleteWithPw(pw || '')}
+        onConfirm={handleDeleteConfirm}
         loading={deleting}
         targetLabel={deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.title}` : undefined}
-        requirePassword={!deleteTarget?.mno} // 비회원 글일 때만 삭제시 비밀번호 필수
-        deleteWithAttach={deleteTarget?.no}
       />
+
+      {pwModal}
 
       {/* 안내 알림 모달 */}
       <AlertModal

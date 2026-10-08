@@ -6,12 +6,22 @@ import { GlobalStoreSession } from '../../../store/LoginStore';
 import { AdminToolbar, AlertModal, ConfirmDeleteModal, DataAcc, DataCard, DbmsPagination, PageHeader } from '../../../components/ui';
 import type { DataAccColumn, DataCardColumn  } from '../../../components/ui';
 import { EMPTY_FILTERS, PAGE_SIZE, QA_STATUS_MAP, QA_TYPE_MAP } from '../../../components/ts/QaType';
-import type { Filters, QaSearchResult, QaTypes, TabKey  } from '../../../components/ts/QaType';
+import type { Filters, QaSearchResult, QaTypes } from '../../../components/ts/QaType';
 import { useTab } from '../../../hooks/useTab';
 import { usePaging } from '../../../hooks/usePaging';
 import type { AttachType } from '../../../components/ts/Attach';
-import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
+import { ATTACH_BOARD_LABEL, deleteAttachByBno } from '../../../components/ts/Attach';
 
+
+/** 관리자 탭 — 전체 문의 / FAQ / 삭제된 문의(영구 삭제) */
+type AdminTabKey = 'qa' | 'faq' | 'deleted';
+
+/** 탭별 목록 API */
+const LIST_URL: Record<AdminTabKey, string> = {
+  qa: '/qa/list',
+  faq: '/qa/faq',
+  deleted: '/qa/deleted',
+};
 
 export default function QaList() {
   const { no:ano, grade } = GlobalStoreSession();
@@ -19,7 +29,7 @@ export default function QaList() {
   /* 탭 이동시 저장 설정 */
   // 범용 useTab 훅 사용 (URL Query Parameter 기반 탭 제어)
   // 탭을 바꾸면 page와 함께 open(특정 FAQ 펼치기)도 지움
-  const { tab, changeTab } = useTab<TabKey>({ defaultTab: 'qa', resetParamsOnTabChange: ['page', 'open'] });
+  const { tab, changeTab } = useTab<AdminTabKey>({ defaultTab: 'qa', resetParamsOnTabChange: ['page', 'open'] });
   // navigateWithQuery/goToList는 usePaging 쪽에 있음 (탭 없는 화면도 쓸 수 있게 분리됨)
   const { page, setPage, navigateWithQuery } = usePaging({ basePath: '/dbms/qa' });
 
@@ -42,12 +52,16 @@ export default function QaList() {
   const [deleting, setDeleting] = useState<boolean>(false); // 👈 삭제 진행 로딩 상태 추가
 
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
+
+  // 삭제된 문의 영구 삭제 대상
+  const [purgeTarget, setPurgeTarget] = useState<QaTypes | null>(null);
+  const [purging, setPurging] = useState<boolean>(false);
   
   const loadQaList = async () => {
     setLoading(true);
 
     try {
-      const url = tab === 'qa' ? `/qa/list` : '/qa/faq';
+      const url = LIST_URL[tab] ?? LIST_URL.qa;
       const res = await axiosInstance.get<QaSearchResult>(url,  {
         headers: {
           accessNo: String(ano),
@@ -59,7 +73,7 @@ export default function QaList() {
           word: applied.keyword.trim() || undefined,
           type: applied.type === '' ? undefined : Number(applied.type),
           status: tab === 'qa' && applied.state !== '' ? Number(applied.state) : undefined,
-          mno: tab === 'qa' && applied.mno?.trim() !== '' ? Number(applied.mno?.trim()) : undefined,
+          mno: tab !== 'faq' && applied.mno?.trim() !== '' ? Number(applied.mno?.trim()) : undefined,
         },
       });
 
@@ -200,7 +214,7 @@ export default function QaList() {
   // [탭 버튼 클릭] 필터 조건을 초기화. page 쿼리는 changeTab이 알아서 지워줘서(=1페이지로 리셋)
   // 여기서 또 setPage(1)을 부르면 changeTab의 URL 변경이랑 같은 틱에 두 번 겹쳐서
   // 서로 덮어쓰다가 탭 전환 자체가 씹히는 문제가 있었습니다 — 그래서 여기선 안 부릅니다.
-  const handleTabChange = (next: TabKey) => {
+  const handleTabChange = (next: AdminTabKey) => {
     changeTab(next, resetFilters);
   };
 
@@ -218,6 +232,8 @@ export default function QaList() {
           pw: inputPw,
         },
       });
+      // 글 삭제가 성공한 뒤에만 첨부파일 삭제 (게시판 구분 tname 포함)
+      await deleteAttachByBno(deleteTarget.no, ATTACH_BOARD_LABEL[0].table);
       
       // 빈 페이지 보정(현재 페이지에 데이터가 없으면 한 칸 앞으로)은 이제 loadQaList 안에서
       // 알아서 처리하므로, 여기서는 그냥 다시 조회하면 됩니다.
@@ -320,6 +336,78 @@ export default function QaList() {
     },
   ];
 
+  /** 삭제된 문의 영구 삭제 — 성공한 뒤에만 첨부파일도 정리 */
+  const handlePurge = async () => {
+    if (!purgeTarget) return;
+    setPurging(true);
+    try {
+      await axiosInstance.delete(`/qa/deleted/${purgeTarget.no}`);
+      await deleteAttachByBno(purgeTarget.no, ATTACH_BOARD_LABEL[0].table);
+
+      setPurgeTarget(null);
+      setAlert({ message: '영구 삭제되었습니다.', variant: 'success', onConfirm: loadQaList });
+    } catch (error) {
+      console.error('영구 삭제 실패:', error);
+      setPurgeTarget(null);
+      const message = axios.isAxiosError(error) ? error.response?.data?.message : undefined;
+      setAlert({ message: message || '영구 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.', variant: 'error' });
+    } finally {
+      setPurging(false);
+    }
+  };
+
+  /** 삭제된 문의 — 상세로 들어갈 수 없으므로 내용 일부를 목록에서 보여줌 */
+  const deletedColumns: DataCardColumn<QaTypes>[] = [
+    {
+      header: '상태',
+      render: (n) => (
+        <div className='badge_area'>
+          <span className={`badge ${QA_STATUS_MAP[n.status]?.className ?? ''}`}>
+            {QA_STATUS_MAP[n.status]?.label}
+          </span>
+        </div>
+      ),
+    },
+    {
+      header: '제목 및 정보',
+      render: (n) => (
+        <div className="lt">
+          <div className="cell_title">
+            No.{n.no} {n.title}
+            {n.vmode === 'Y' && (
+              <span className='lock'>
+                <span className='hidden'>비밀글</span>
+              </span>
+            )}
+          </div>
+          <div className="cell_sub">
+            {n.content && n.content.length > 60 ? `${n.content.slice(0, 60)}…` : n.content}
+          </div>
+          <div className="cell_sub">
+            작성자: {n.mno ? `${n.id ?? ''} (No.${n.mno})` : '비회원'}
+            {' · '}작성 {n.cdate?.split(' ')[0]}
+            {' · '}삭제 {n.ddate?.split(' ')[0] ?? '-'}
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: '첨부파일 정보',
+      render: (n) => {
+        if (n.fileyn !== 'Y') return null;
+        return (
+          <div className="me">
+            <div className='icon_row'>
+              <div className='icon file'>
+                <span className='hidden'>첨부파일 포함</span>
+              </div>
+            </div>
+          </div>
+        );
+      },
+    },
+  ];
+
   const faqColumns: DataAccColumn<QaTypes>[] = [
     {
       header: 'A. 답변 내용',
@@ -356,8 +444,8 @@ export default function QaList() {
       />
 
       <div className="tabs" role="tablist" aria-label="문의 보기 전환">
-        {(['qa', 'faq'] as TabKey[]).map((tKey) => {
-          const labels: Partial<Record<TabKey, string>> = { qa: '전체 문의', faq: '자주 묻는 질문' };
+        {(['qa', 'faq', 'deleted'] as AdminTabKey[]).map((tKey) => {
+          const labels: Record<AdminTabKey, string> = { qa: '전체 문의', faq: '자주 묻는 질문', deleted: '삭제된 문의' };
           return (
             <button
               key={tKey}
@@ -376,7 +464,7 @@ export default function QaList() {
       <AdminToolbar
         searchValue={draft.keyword}
         onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
-        searchPlaceholder={tab === 'qa' ? '제목으로 검색' : 'FAQ 제목·답변으로 검색'}
+        searchPlaceholder={tab === 'faq' ? 'FAQ 제목·답변으로 검색' : '제목·내용으로 검색'}
         onSearchEnter={onSearch}
         filters={
           <>
@@ -396,9 +484,10 @@ export default function QaList() {
               ))}
             </select>
 
-            {/* 회원번호 필터 (전체 문의 탭에서만 표시) */}
-            {tab === 'qa' && (
+            {/* 답변상태 필터 (전체 문의 탭에서만), 회원번호 필터 (전체 문의·삭제된 문의 탭) */}
+            {tab !== 'faq' && (
               <>
+                {tab === 'qa' && (
                 <select
                   className="form_select"
                   value={draft.state}
@@ -413,6 +502,7 @@ export default function QaList() {
                     </option>
                   ))}
                 </select>
+                )}
 
                 <input
                   type="number"
@@ -445,6 +535,12 @@ export default function QaList() {
         }
       />
 
+      {tab === 'deleted' && (
+        <p className="cell_sub" style={{ margin: '0 0 12px' }}>
+          작성자가 삭제한 문의입니다. [영구 삭제]하면 DB와 첨부파일에서 완전히 지워지며 복구할 수 없습니다.
+        </p>
+      )}
+
       {tab === 'qa' ? (
         <DataCard
           columns={qaColumns}
@@ -452,6 +548,16 @@ export default function QaList() {
           rowKey={(n) => n.no}
           loading={loading}
           emptyMessage="등록된 문의가 없습니다."
+        />
+      ) : tab === 'deleted' ? (
+        <DataCard
+          columns={deletedColumns}
+          data={qaList}
+          rowKey={(n) => n.no}
+          loading={loading}
+          onDelete={(n) => setPurgeTarget(n)}
+          deleteLabel="영구 삭제"
+          emptyMessage="삭제된 문의가 없습니다."
         />
       ) : (
         <DataAcc
@@ -485,6 +591,17 @@ export default function QaList() {
         onChange={setPage}
       />
 
+      {/* 삭제된 문의 영구 삭제 확인 */}
+      <ConfirmDeleteModal
+        open={purgeTarget !== null}
+        onClose={() => setPurgeTarget(null)}
+        onConfirm={handlePurge}
+        loading={purging}
+        title="영구 삭제하시겠습니까?"
+        description="문의글과 첨부파일이 완전히 지워지며 복구할 수 없습니다."
+        targetLabel={purgeTarget ? `No.${purgeTarget.no} · ${purgeTarget.title}` : undefined}
+      />
+
       {/* 🔑 삭제 확인 모달 (수정됨) */}
       <ConfirmDeleteModal
         open={deleteTarget !== null}
@@ -495,7 +612,6 @@ export default function QaList() {
           deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.title}` : undefined
         }
         requirePassword={true}
-        deleteWithAttach={deleteTarget?.no}
       />
 
       

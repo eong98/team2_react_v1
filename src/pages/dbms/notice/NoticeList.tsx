@@ -5,11 +5,17 @@ import { usePaging } from '../../../hooks/usePaging';
 import { AdminToolbar, AlertModal, ConfirmDeleteModal, DataCard, DbmsPagination, PageHeader, type DataCardColumn } from '../../../components/ui';
 import { EMPTY_FILTERS, NOTICE_TYPE_MAP, PAGE_SIZE, type Filters, type NoticeSearchResult, type NoticeTypes } from '../../../components/ts/NoticeType';
 import { GlobalStoreSession } from '../../../store/LoginStore';
+import { ATTACH_BOARD_LABEL, deleteAttachByBno } from '../../../components/ts/Attach';
+import { useTab } from '../../../hooks/useTab';
+
+/** 관리자 탭 — 공지사항 / 삭제된 공지(영구 삭제) */
+type NoticeTabKey = 'list' | 'deleted';
 
 export default function NoticeList() {
   const { no:ano, grade } = GlobalStoreSession();
 
   const { page, setPage, navigateWithQuery } = usePaging({ basePath: '/dbms/notice' });
+  const { tab, changeTab } = useTab<NoticeTabKey>({ defaultTab: 'list', resetParamsOnTabChange: ['page'] });
 
   /* API 데이터 저장 */
   const [noticeList, setNoticeList] = useState<NoticeTypes[]>([]);
@@ -29,12 +35,16 @@ export default function NoticeList() {
   const [deleting, setDeleting] = useState<boolean>(false);
   
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
+
+  // 삭제된 공지 영구 삭제 대상
+  const [purgeTarget, setPurgeTarget] = useState<NoticeTypes | null>(null);
+  const [purging, setPurging] = useState<boolean>(false);
   
 
   const loadNoticeList = async () => {
     setLoading(true);
     try {
-      const res = await axiosInstance.get<NoticeSearchResult>('/notice/list/admin', {
+      const res = await axiosInstance.get<NoticeSearchResult>(tab === 'deleted' ? '/notice/deleted' : '/notice/list/admin', {
         headers: {
           accessNo: String(ano),
           grade: String(grade),
@@ -44,7 +54,7 @@ export default function NoticeList() {
           size: PAGE_SIZE,
           word: applied.keyword.trim() || undefined,
           type: applied.type === '' ? undefined : Number(applied.type),
-          vmode: applied.vmode === '' ? undefined : applied.vmode
+          vmode: tab === 'list' && applied.vmode !== '' ? applied.vmode : undefined
         },
       });
 
@@ -84,7 +94,7 @@ export default function NoticeList() {
   /* Effect 및 이벤트 핸들러 */
   useEffect(() => {
     loadNoticeList();
-  }, [applied, page]);
+  }, [tab, applied, page]);
 
   
   // [검색 버튼 클릭] 현재 작성 중인 draft 값을 applied로 확정짓고 1페이지로 이동
@@ -119,6 +129,8 @@ export default function NoticeList() {
           pw: inputPw,
         },
       });
+      // 글 삭제가 성공한 뒤에만 첨부파일 삭제 (게시판 구분 tname 포함)
+      await deleteAttachByBno(deleteTarget.no, ATTACH_BOARD_LABEL[1].table);
       
       // 빈 페이지 보정(현재 페이지에 데이터가 없으면 한 칸 앞으로)은 이제 loadQaList 안에서
       // 알아서 처리하므로, 여기서는 그냥 다시 조회하면 됩니다.
@@ -167,6 +179,34 @@ export default function NoticeList() {
     } finally {
       setDeleting(false);
     }
+  };
+
+  /** 삭제된 공지 영구 삭제 — 성공한 뒤에만 첨부파일도 정리 */
+  const handlePurge = async () => {
+    if (!purgeTarget) return;
+    setPurging(true);
+    try {
+      await axiosInstance.delete(`/notice/deleted/${purgeTarget.no}`);
+      await deleteAttachByBno(purgeTarget.no, ATTACH_BOARD_LABEL[1].table);
+
+      setPurgeTarget(null);
+      setAlert({ message: '영구 삭제되었습니다.', variant: 'success', onConfirm: loadNoticeList });
+    } catch (error) {
+      console.error('영구 삭제 실패:', error);
+      setPurgeTarget(null);
+      const message = axios.isAxiosError(error) ? error.response?.data?.message : undefined;
+      setAlert({ message: message || '영구 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.', variant: 'error' });
+    } finally {
+      setPurging(false);
+    }
+  };
+
+  /** 탭 전환 — 검색 조건 초기화 (page는 useTab이 지움) */
+  const handleTabChange = (next: NoticeTabKey) => {
+    changeTab(next, () => {
+      setDraft({ ...EMPTY_FILTERS });
+      setApplied({ ...EMPTY_FILTERS });
+    });
   };
 
   // ==========================================
@@ -233,22 +273,88 @@ export default function NoticeList() {
     },
   ];
 
-
+  /** 삭제된 공지 — 상세로 들어갈 수 없으므로 내용 일부를 목록에서 보여줌 */
+  const deletedColumns: DataCardColumn<NoticeTypes>[] = [
+    {
+      header: '상태',
+      render: (n) => (
+        <div className='badge_area'>
+          <span className={`badge ${NOTICE_TYPE_MAP[n.type]?.className ?? ''}`}>
+            {NOTICE_TYPE_MAP[n.type]?.label}
+          </span>
+        </div>
+      ),
+    },
+    {
+      header: '제목 및 정보',
+      render: (n) => (
+        <div className="lt">
+          <div className="cell_title">
+            No.{n.no} {n.title}
+            {n.vmode === 'N' && (
+              <span className='lock'>
+                <span className='hidden'>비공개</span>
+              </span>
+            )}
+          </div>
+          <div className="cell_sub">
+            {n.content && n.content.length > 60 ? `${n.content.slice(0, 60)}…` : n.content}
+          </div>
+          <div className="cell_sub">
+            작성 {n.cdate?.split(' ')[0]} · 삭제 {n.ddate?.split(' ')[0] ?? '-'} · 조회수 {n.vcnt}
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: '파일 정보',
+      render: (n) => {
+        if (n.fileyn !== 'Y') return null;
+        return (
+          <div className="me">
+            <div className='icon_row'>
+              <div className='icon file'>
+                <span className='hidden'>첨부파일 포함</span>
+              </div>
+            </div>
+          </div>
+        );
+      },
+    },
+  ];
 
   return (
     <section className="view active">
       <PageHeader
         title="공지사항"
         description="서비스 업데이트와 점검 안내를 관리할 수 있습니다."
-        createLabel='+ 공지사항 작성'
+        createLabel={tab === 'list' ? '+ 공지사항 작성' : undefined}
         onCreate={() => navigateWithQuery('new')}
       />
+
+      <div className="tabs" role="tablist" aria-label="공지사항 보기 전환">
+        {(['list', 'deleted'] as NoticeTabKey[]).map((tKey) => {
+          const labels: Record<NoticeTabKey, string> = { list: '공지사항', deleted: '삭제된 공지' };
+          return (
+            <button
+              key={tKey}
+              type="button"
+              role="tab"
+              className={`tab${tab === tKey ? ' on' : ''}`}
+              aria-selected={tab === tKey}
+              onClick={() => handleTabChange(tKey)}
+            >
+              {labels[tKey]}
+            </button>
+          );
+        })}
+      </div>
 
       <AdminToolbar
         searchValue={draft.keyword}
         onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
         onSearchEnter={onSearch}
-        searchPlaceholder='제목으로 검색'
+        searchPlaceholder='제목·내용으로 검색'
         filters={
           <>
             {/* 유형 필터 */}
@@ -267,7 +373,8 @@ export default function NoticeList() {
               ))}
             </select>
 
-            {/* 공개여부 필터 */}
+            {/* 공개여부 필터 (공지사항 탭에서만) */}
+            {tab === 'list' && (
             <select
               className="form_select"
               value={draft.vmode}
@@ -279,6 +386,7 @@ export default function NoticeList() {
               <option value="Y">전체공개</option>
               <option value="N">비공개</option>
             </select>
+            )}
           </>
         }
         extra={
@@ -293,15 +401,32 @@ export default function NoticeList() {
         }
       />
 
-      <DataCard
-        columns={noticeColumns}
-        data={noticeList}
-        rowKey={(n) => n.no}
-        loading={loading}
-        emptyMessage="등록된 공지사항이 없습니다."
-        onEdit={(n) => navigateWithQuery(`${n.no}/edit`)}
-        onDelete={(n) => setDeleteTarget(n)}
-      />
+      {tab === 'deleted' ? (
+        <>
+          <p className="cell_sub" style={{ margin: '0 0 12px' }}>
+            삭제한 공지사항입니다. [영구 삭제]하면 DB와 첨부파일에서 완전히 지워지며 복구할 수 없습니다.
+          </p>
+          <DataCard
+            columns={deletedColumns}
+            data={noticeList}
+            rowKey={(n) => n.no}
+            loading={loading}
+            emptyMessage="삭제된 공지사항이 없습니다."
+            onDelete={(n) => setPurgeTarget(n)}
+            deleteLabel="영구 삭제"
+          />
+        </>
+      ) : (
+        <DataCard
+          columns={noticeColumns}
+          data={noticeList}
+          rowKey={(n) => n.no}
+          loading={loading}
+          emptyMessage="등록된 공지사항이 없습니다."
+          onEdit={(n) => navigateWithQuery(`${n.no}/edit`)}
+          onDelete={(n) => setDeleteTarget(n)}
+        />
+      )}
 
       {/* 페이지네이션 컴포넌트 */}
       <DbmsPagination
@@ -310,6 +435,17 @@ export default function NoticeList() {
         totalCount={totalElements}
         pageSize={PAGE_SIZE}
         onChange={setPage}
+      />
+
+      {/* 삭제된 공지 영구 삭제 확인 */}
+      <ConfirmDeleteModal
+        open={purgeTarget !== null}
+        onClose={() => setPurgeTarget(null)}
+        onConfirm={handlePurge}
+        loading={purging}
+        title="영구 삭제하시겠습니까?"
+        description="공지사항과 첨부파일이 완전히 지워지며 복구할 수 없습니다."
+        targetLabel={purgeTarget ? `No.${purgeTarget.no} · ${purgeTarget.title}` : undefined}
       />
 
       {/* 🔑 삭제 확인 모달 (수정됨) */}
@@ -322,7 +458,6 @@ export default function NoticeList() {
           deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.title}` : undefined
         }
         requirePassword={true}
-        deleteWithAttach={deleteTarget?.no}
       />
 
       

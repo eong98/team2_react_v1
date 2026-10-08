@@ -4,6 +4,7 @@ import { usePaging } from '../../../hooks/usePaging';
 import { EMPTY_FILTERS, PAGE_SIZE, QA_STATUS_MAP, QA_TYPE_MAP, type Filters, type QaSearchResult, type QaTypes } from '../../../components/ts/QaType';
 import { axiosInstance } from '../../../utils/Tool';
 import { DataCard, Filterbar, Modal, PageHeader, UserPagination, type DataCardColumn } from '../../../components/ui';
+import { getQaGuestToken, qaErrorMessage, verifyQaGuest } from '../../../components/ts/QaGuestToken';
 
 /* ---------------------------------------------------------------------
    비회원 문의 조회 (/board/qa/search) — 이메일/키워드로 본인 작성 문의
@@ -12,11 +13,12 @@ import { DataCard, Filterbar, Modal, PageHeader, UserPagination, type DataCardCo
    바로 상세로 이동합니다.
 
    비밀번호는 항상 POST 바디로만 전달합니다(GET 쿼리파라미터 전달 금지 —
-   URL/서버 접근로그/브라우저 히스토리 노출 위험).
+   URL/서버 접근로그/브라우저 히스토리 노출 위험). 확인되면 그 글 전용
+   임시 토큰(10분)을 sessionStorage에 저장하고 상세로 이동합니다.
 
    API
-   GET  /qa/guest/list?word=      → PageResponse<QaResponse>
-   POST /qa/{no}/verify            → QaResponse (비밀번호 검증 겸 상세조회)
+   GET  /qa/guest/list?word=        → PageResponse<QaResponse>
+   POST /qa/guest/{no}/verify        → {token, expiresIn} (5회 실패 시 10분 잠금)
 --------------------------------------------------------------------- */
 
 export default function QaList() {
@@ -111,7 +113,8 @@ export default function QaList() {
   const closePwModal = () => setPwTarget(null);
 
   const handleClickItem = (item: QaTypes) => {
-    if (item.vmode === 'Y') {
+    // 비밀글이어도 이미 확인한 토큰이 살아 있으면 바로 이동
+    if (item.vmode === 'Y' && !getQaGuestToken(item.no)) {
       openPwModal(item);
     } else {
       navigateWithQuery(`${item.no}`);
@@ -127,12 +130,12 @@ export default function QaList() {
     setPwError('');
     setChecking(true);
     try {
-      await axiosInstance.post(`/qa/${pwTarget.no}/verify`, { pw });
-      navigate(`/board/qa/${pwTarget.no}`, { state: { pw } });
+      await verifyQaGuest(pwTarget.no, pw);
+      navigate(`/board/qa/${pwTarget.no}`);
       setPwTarget(null);
     } catch (err) {
-      console.error('비밀번호 확인 실패:', err);
-      setPwError('비밀번호가 일치하지 않습니다.');
+      // 불일치·잠김(5회 실패)은 서버 안내 문구를 그대로 표시
+      setPwError(qaErrorMessage(err, '비밀번호가 일치하지 않습니다.'));
     } finally {
       setChecking(false);
     }

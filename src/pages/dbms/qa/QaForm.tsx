@@ -16,7 +16,7 @@ import { attachErrorMessage } from '../../../components/ui/common/AttachUploader
  */
 export default function QaForm() {
   const { no } = useParams<{ no: string }>();
-  const { no:ano, grade } = GlobalStoreSession();
+  const { no:ano } = GlobalStoreSession();
   const isEdit = Boolean(no);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
@@ -45,12 +45,7 @@ export default function QaForm() {
 
   /** 수정 진입 시 기존 데이터를 불러와 폼에 채워 넣는다 */
   const loadQaList = () => {
-    axiosInstance.get(`/qa/${no}`, {
-        headers: {
-          accessNo: String(ano),
-          grade: String(grade),
-        },
-      })
+    axiosInstance.get(`/qa/${no}`) // 관리자 여부는 서버가 로그인 토큰으로 확인
       .then((result) => result.data)
       .then((data) => {
         setInput((prev) => ({

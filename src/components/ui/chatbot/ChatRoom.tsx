@@ -101,6 +101,8 @@ export default function ChatRoom({
   const [endFlow, setEndFlow] = useState<string | null>(null);
 
   const [sessionEnded, setSessionEnded] = useState(false);
+  /** 이 상담에서 남긴 문의글 번호 (CHAT_SESSION.QNO) — 있으면 [다시 문의하기] 대신 [문의한 게시글로 이동] */
+  const [linkedQno, setLinkedQno] = useState<number | null>(null);
   const [summarizing, setSummarizing] = useState(false);
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
 
@@ -314,6 +316,7 @@ export default function ChatRoom({
     sessionIdRef.current = session.no;
     setConsultStarted(session.cmode !== 2);
     setSessionEnded(session.cmode === 2);
+    setLinkedQno(session.qno ?? null);
     setEndFlow(numberToEndFlow(session.endflow));
 
     if (session.endflow === 6) {
@@ -717,7 +720,10 @@ export default function ChatRoom({
       const summary = await summarizeChat(sessionIdRef.current);
       const checkUrl = mno ? 'user' : 'board';
       onClose();
-      navigate(`/${checkUrl}/qa/new`, { state: { title: summary.title, content: summary.content, type: summary.type } });
+      // sno: 문의를 등록하면 서버가 이 상담방에 글번호를 연결 → 다음부터 [문의한 게시글로 이동]
+      navigate(`/${checkUrl}/qa/new`, {
+        state: { title: summary.title, content: summary.content, type: summary.type, sno: sessionIdRef.current },
+      });
       return true;
     } catch (err) {
       console.error('대화 요약 실패:', err);
@@ -725,6 +731,13 @@ export default function ChatRoom({
       setAlert({ message: apiErrorMessage(err, '현재 AI 요약 서비스를 이용할 수 없습니다. 잠시 후 다시 시도해주세요.'), variant: 'error' });
       return false;
     }
+  };
+
+  /** 종료된 상담방 — 이 상담에서 남긴 문의글로 이동 (비회원 비밀글은 상세에서 비밀번호 확인) */
+  const handleGoLinkedQa = () => {
+    if (!linkedQno) return;
+    onClose();
+    navigate(`/${mno ? 'user' : 'board'}/qa/${linkedQno}`);
   };
 
   /** 종료된 상담방 — 이전 대화 내용을 다시 요약해서 문의 작성 화면으로 이동 */
@@ -967,12 +980,18 @@ export default function ChatRoom({
         <div ref={bottomRef} />
       </div>
 
-      {/* 이전 대화 내용을 AI가 다시 요약해서 문의 작성 화면으로 이동 */}
+      {/* 종료된 상담방 — 이 상담에서 남긴 문의가 있으면 그 글로 이동, 없으면 이전 대화를 AI가 요약해서 문의 작성 화면으로 */}
       {sessionEnded && sessionIdRef.current && (
         <div className="chatbot_fixed_actions">
-          <button type="button" className="chat_option_btn" onClick={handleReInquiry} disabled={summarizing || !aiOnline}>
-            이전 내용으로 다시 문의하기
-          </button>
+          {linkedQno ? (
+            <button type="button" className="chat_option_btn" onClick={handleGoLinkedQa}>
+              문의한 게시글로 이동
+            </button>
+          ) : (
+            <button type="button" className="chat_option_btn" onClick={handleReInquiry} disabled={summarizing || !aiOnline}>
+              이전 내용으로 다시 문의하기
+            </button>
+          )}
         </div>
       )}
       

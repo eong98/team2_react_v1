@@ -147,9 +147,12 @@ export default function AttachList() {
   }
 
 
+  /** [게시글로 이동]을 보여줄 게시판 — 문의사항(QA), 공지사항(NOTICE) */
+  const POST_LINK_TABLES = [ATTACH_BOARD_LABEL[0].table, ATTACH_BOARD_LABEL[1].table];
+
   const columns: DataTableColumn<AttachType>[] = [
     {
-      header: '게시판 정보',
+      header: '정보',
       width: '10%',
       render: (a) => {// ATTACH_BOARD_LABEL 객체를 배열로 변환하여 tname과 일치하는 항목을 검색
         const boardInfo = Object.values(ATTACH_BOARD_LABEL).find(
@@ -158,7 +161,8 @@ export default function AttachList() {
 
         return (
           <div>
-            <div className="cell_sub">No.{a.tno}</div>
+            {/* 메뉴에 등록되지 않은 테이블(예: 매장 설문 사진)은 번호가 없으므로 No.를 표시하지 않음 */}
+            {a.tno != null && <div className="cell_sub">No.{a.tno}</div>}
             <div className="cell_title">{boardInfo?.name ?? a.tname}</div>
           </div>
         );
@@ -214,7 +218,8 @@ export default function AttachList() {
       width: '120px',
       render: (a) => (
         <div className="actions">
-          {a.tno !== 10 && (
+          {/* 상세 화면이 있는 문의사항(FAQ 포함)·공지사항만 이동 버튼 표시 */}
+          {POST_LINK_TABLES.includes(a.tname) && (
             <button type="button" className="btn btn_sm btn_ghost" onClick={() => goToPost(a)}>
               게시글로 이동
             </button>

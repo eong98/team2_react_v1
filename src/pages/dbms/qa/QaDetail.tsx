@@ -44,12 +44,7 @@ export default function QaDetail() {
   /* 문의내용 상세 데이터 */
   const loadQa = () => {
     axiosInstance
-      .get(`/qa/${no}`, {
-        headers: {
-          accessNo: String(ano),
-          grade: String(grade),
-        }
-      })
+      .get(`/qa/${no}`) // 관리자 여부는 서버가 로그인 토큰으로 확인
       .then(res => res.data)
       .then((data) => {
         setQa(data);
