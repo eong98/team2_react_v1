@@ -252,6 +252,19 @@ export default function QaDetail() {
         
 
         <form onSubmit={send}  encType="multipart/form-data">
+          {/* AI 자동 답변 — 관리자 답변과 별도 (문의 등록 직후 매뉴얼로 답할 수 있을 때만 등록됨) */}
+          {qa.aiAnswer && (
+            <div className="card card_pad_lg">
+              <h3 className="title sm">AI 답변</h3>
+              <div className="answer_area">
+                <p className="cell_title">{qa.aiAnswer}</p>
+                <div className="cell_sub">
+                  {qa.aiAdate ? `${qa.aiAdate} · ` : ''}고객 화면에도 보이는 AI 자동 답변입니다. 관리자 답변은 아래에 따로 등록하세요.
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="card card_pad_lg">
             <h3 className='title sm'>답변</h3>
 

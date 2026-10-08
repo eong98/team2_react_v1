@@ -203,6 +203,19 @@ export default function QaDetail() {
           )}
         </div>
 
+        {/* AI 자동 답변 — 관리자 답변과 별도 (문의 등록 직후 매뉴얼로 답할 수 있을 때만 등록됨) */}
+        {qa.aiAnswer && (
+          <div className="card card_pad_lg">
+            <h3 className="title sm">AI 답변</h3>
+            <div className="answer_area">
+              <p className="cell_title">{qa.aiAnswer}</p>
+              <div className="cell_sub">
+                {qa.aiAdate ? `${qa.aiAdate} · ` : ''}AI가 매뉴얼을 바탕으로 작성한 답변입니다. 관리자 답변도 함께 확인해 주세요.
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 답변 영역 */}
         <div className="card card_pad_lg">
           <h3 className="title sm">답변</h3>
