@@ -1,3 +1,5 @@
+import { axiosInstance } from '../../utils/Tool';
+
 /** 백엔드 AttachDTO와 1:1로 매칭되는 응답 타입 */
 export interface AttachType {
   /* 첨부파일 고유번호 */
@@ -67,6 +69,21 @@ export const ATTACH_BOARD_LABEL: Record<number, { name: string; table: string }>
   0: { name: '문의사항', table: 'QA'},
   1: { name: '공지사항', table: 'NOTICE'},
   2: { name: 'CCTV 이슈', table: 'CCTV_ISSUE'},
+  3: { name: '고객설문', table: 'SHOP_SURVEY_ANSWER'},
+};
+
+/**
+ * 글 삭제가 성공한 뒤 그 글의 첨부파일 일괄 삭제
+ * tname(게시판 구분)을 꼭 넘김 — 없으면 같은 글번호를 쓰는 다른 게시판(공지·문의)의 첨부까지 지워짐
+ * 실패해도 글 삭제는 이미 끝났으므로 오류만 남기고 넘어감
+ */
+export const deleteAttachByBno = async (bno: number, tname: string): Promise<void> => {
+  if (!bno) return;
+  try {
+    await axiosInstance.delete(`/attach/delete_by_bno/${bno}`, { params: { tname } });
+  } catch (err) {
+    console.error('첨부파일 일괄 삭제 실패 (글은 삭제됨):', err);
+  }
 };
 
 /** 파일 크기(byte)를 KB/MB 단위 문자열로 변환 */

@@ -132,6 +132,10 @@ export interface QCRequest {
   vmode: string;
   fileyn?: string;
   guestEmail?: string;
+  /** 챗봇 상담에서 넘어온 경우 상담 번호 — 등록 후 상담방에 문의글 연결 */
+  sno?: string;
+  /** 비회원 상담 본인 확인용 브라우저 식별값 */
+  gno?: string;
 }
 
 /* 문의사항 댓글 등록 */

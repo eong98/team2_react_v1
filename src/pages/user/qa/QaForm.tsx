@@ -8,10 +8,17 @@ import { GlobalStoreSession } from '../../../store/LoginStore';
 import { usePaging } from '../../../hooks/usePaging';
 import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 import { attachErrorMessage } from '../../../components/ui/common/AttachUploader';
+import { QA_TOKEN_REQUIRED, qaErrorCode, qaErrorMessage, qaGuestHeaders } from '../../../components/ts/QaGuestToken';
+import { getOrCreateGno } from '../../../components/ts/ChatGuest';
 
 /**
  * 
  * USER QaForm.tsx 에서는 본인의 문의사항만 CRUD 가능합니다.
+ * 회원(/user/qa)·비회원(/board/qa) 공용
+ *  - 회원 수정  : GET·PUT /qa/{no}        — 로그인으로 본인 확인
+ *  - 비회원 수정: GET·PUT /qa/guest/{no}  — 상세에서 비밀번호 확인 후 받은 임시 토큰(X-Qa-Token)
+ *  - 등록      : POST /qa (로그인 회원이면 서버가 회원 글로 저장)
+ *  게시글 비밀번호는 등록할 때만 입력합니다.
  * 
  */
 
@@ -19,12 +26,14 @@ export default function QaForm() {
 
   /* 챗봇 상담 문의내용 요약정보 */
   const location = useLocation();
-  const prefill = location.state as { title?: string; content?: string; type?: number } | null;
+  // sno: 챗봇 상담 번호 — 등록하면 그 상담방에 [문의한 게시글로 이동] 버튼이 생김
+  const prefill = location.state as { title?: string; content?: string; type?: number; sno?: string } | null;
 
 
   const { no } = useParams<{ no: string }>(); // URL에 no가 있으면 수정 모드
-  const { no: mno, grade } = GlobalStoreSession();
+  const { no: mno } = GlobalStoreSession();
   const isEdit = Boolean(no);
+  const isGuest = !mno; // 비회원(로그인 안 함)이면 mno 0
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
 
@@ -71,13 +80,11 @@ export default function QaForm() {
 
   // 수정 모드일 때 기존 게시글 정보 조회
   const loadQaList = () => {
-    axiosInstance
-      .get(`/qa/${no}`, {
-        headers: {
-          accessNo: String(mno),
-          grade: String(grade),
-        },
-      })
+    const request = isGuest
+      ? axiosInstance.get(`/qa/guest/${no}`, { headers: qaGuestHeaders(no!) })
+      : axiosInstance.get(`/qa/${no}`);
+
+    request
       .then((result) => result.data)
       .then((data) => {
         setInput((prev) => ({
@@ -87,10 +94,23 @@ export default function QaForm() {
           title: data.title,
           content: data.content,
           vmode: data.vmode === 'Y' || data.vmode === true ? 'Y' : 'N',
-          fileyn: data.fileyn === 'Y' || data.fileyn === true ? 'Y' : 'N'
+          fileyn: data.fileyn === 'Y' || data.fileyn === true ? 'Y' : 'N',
+          guestEmail: data.guestEmail ?? '',
         }));
       })
-      .catch((err) => console.error('게시물 상세 조회 실패:', err));
+      .catch((err) => {
+        const status = err?.response?.status;
+        // 비회원 확인 시간(10분) 만료·권한 없음은 안내 후 상세로 (상세에서 비밀번호 다시 확인)
+        if (qaErrorCode(err) === QA_TOKEN_REQUIRED) {
+          setAlert({ message: '본인 확인 시간이 지났습니다. 상세 화면에서 비밀번호를 다시 확인해 주세요.', variant: 'error', onConfirm: goBack });
+          return;
+        }
+        if (status === 400 || status === 403 || status === 404) {
+          setAlert({ message: qaErrorMessage(err, '수정할 수 없는 게시글입니다.'), variant: 'error', onConfirm: goBack });
+          return;
+        }
+        console.error('게시물 상세 조회 실패:', err);
+      });
   };
 
   useEffect(() => {
@@ -135,7 +155,11 @@ export default function QaForm() {
     let firstErrorId: string | null = null;
 
     for (const { field, label, id } of REQUIRED_FIELDS) {
-      if (field === 'guestEmail' && mno !== 0) {
+      if (field === 'guestEmail' && !isGuest) {
+        continue;
+      }
+      // 게시글 비밀번호는 등록할 때만 (수정은 로그인·임시 토큰으로 본인 확인)
+      if (field === 'pw' && isEdit) {
         continue;
       }
 
@@ -178,11 +202,17 @@ export default function QaForm() {
         pw: input.pw,
         vmode: input.vmode,
         fileyn: input.fileyn,
-        guestEmail: input.guestEmail
+        guestEmail: input.guestEmail,
+        // 챗봇 상담에서 넘어온 새 문의면 상담 번호(+비회원 식별값)를 같이 보내 연결
+        ...(!isEdit && prefill?.sno ? { sno: prefill.sno, gno: isGuest ? getOrCreateGno() : undefined } : {}),
       };
 
       if (isEdit) {
-        await axiosInstance.put(`/qa/${no}`, payload);
+        if (isGuest) {
+          await axiosInstance.put(`/qa/guest/${no}`, payload, { headers: qaGuestHeaders(no!) });
+        } else {
+          await axiosInstance.put(`/qa/${no}`, payload);
+        }
         // 수정: 이미 있는 bno로, 그동안 담아둔 업로드/삭제 예정 파일들을 실제로 반영
         if (attachRef.current?.hasPendingChanges()) {
           try {
@@ -223,6 +253,11 @@ export default function QaForm() {
         onConfirm: goBack,
       });
     } catch (error) {
+      // 서버가 안내 문구를 준 경우(본인 아님·확인 시간 만료·비밀번호 누락 등)는 그대로 표시
+      if (axios.isAxiosError(error) && error.response?.data?.code) {
+        setAlert({ message: qaErrorMessage(error, '저장하지 못했습니다.'), variant: 'error' });
+        return;
+      }
       console.error('문의사항 저장 중 오류 발생:', error);
 
       if (axios.isAxiosError(error)) {
@@ -388,7 +423,8 @@ export default function QaForm() {
             </div>
           </div>
 
-          {/* 게시글 비밀번호 */}
+          {/* 게시글 비밀번호 — 등록할 때만 (비회원은 이후 조회·수정·삭제 때 이 비밀번호로 본인 확인) */}
+          {!isEdit && (
           <div className="form_group">
             <label className="form_label" htmlFor="password">
               게시글 비밀번호<span className="req" title="필수 입력 요소">*</span>
@@ -406,6 +442,7 @@ export default function QaForm() {
               {errors.pw && <div className="form_hint error">{errors.pw}</div>}
             </div>
           </div>
+          )}
 
           {/* 푸터 버튼 */}
           <div className="form_page_footer">

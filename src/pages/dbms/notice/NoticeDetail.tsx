@@ -7,7 +7,7 @@ import { GlobalStoreSession } from '../../../store/LoginStore';
 import { AlertModal, AttachViewer, ConfirmDeleteModal, PageHeader, PrevNextNav } from '../../../components/ui';
 import { NOTICE_TYPE_MAP, type NoticeTypes } from '../../../components/ts/NoticeType';
 import { type AttachType } from '../../../components/ts/Attach';
-import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
+import { ATTACH_BOARD_LABEL, deleteAttachByBno } from '../../../components/ts/Attach';
 
 export default function NoticeDetail() {
   const { no } = useParams<{ no: string }>(); // URL에서 no 추출
@@ -95,6 +95,8 @@ export default function NoticeDetail() {
           pw: inputPw,
         },
       });
+      // 글 삭제가 성공한 뒤에만 첨부파일 삭제 (게시판 구분 tname 포함)
+      await deleteAttachByBno(deleteTarget.no, ATTACH_BOARD_LABEL[1].table);
       
       // 빈 페이지 보정(현재 페이지에 데이터가 없으면 한 칸 앞으로)은 이제 loadQaList 안에서
       // 알아서 처리하므로, 여기서는 그냥 다시 조회하면 됩니다.
@@ -264,7 +266,6 @@ export default function NoticeDetail() {
           deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.title}` : undefined
         }
         requirePassword={true}
-        deleteWithAttach={deleteTarget?.no}
       />
 
 

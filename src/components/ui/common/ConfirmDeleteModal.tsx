@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import Modal from '../Modal';
-import { axiosInstance } from '../../../utils/Tool';
 
 interface ConfirmDeleteModalProps {
   open: boolean;
@@ -15,8 +14,6 @@ interface ConfirmDeleteModalProps {
   loading?: boolean;
   /** 🔑 비밀번호 입력 영역 표시 및 필수 여부 (기본값: false) */
   requirePassword?: boolean;
-  /** 첨부파일이 있는 경우 삭제시 일괄삭제 처리 (선택) */
-  deleteWithAttach?: number;
 }
 
 /**
@@ -46,7 +43,6 @@ export default function ConfirmDeleteModal({
   description,
   loading = false,
   requirePassword = false,
-  deleteWithAttach
 }: ConfirmDeleteModalProps) {
   const [pw, setPw] = useState('');
   const [pwError, setPwError] = useState<string | null>(null);
@@ -72,26 +68,10 @@ export default function ConfirmDeleteModal({
       return;
     }
 
-    /* 글 삭제시 첨부된 파일 일괄 삭제 */
-    if (deleteWithAttach) {
-      deleteAttachAll(deleteWithAttach)
-    }
-    // if (deleteWithAttach) {
-    //   try {
-        
-    //   } catch (error) {
-    //     console.error('목록 조회 실패:', error);
-      
-    //   }
-    // }
-
+    // 첨부파일은 여기서 지우지 않음 — 글 삭제가 실패해도 첨부가 먼저 지워지던 문제
+    // → 각 화면이 글 삭제 성공 후 deleteAttachByBno(bno, tname) 호출 (components/ts/Attach.ts)
     onConfirm(pw);
   };
-
-  const deleteAttachAll = async (bno: number) => {
-    if (!bno) return;
-    await axiosInstance.delete(`/attach/delete_by_bno/${Number(deleteWithAttach)}`);
-  }
 
   return (
     <Modal

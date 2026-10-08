@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { GlobalStoreSession } from '../../../store/LoginStore';
-import axios from 'axios';
 import { axiosInstance } from '../../../utils/Tool';
 import { usePaging } from '../../../hooks/usePaging';
 import { AlertModal, AttachViewer, ConfirmDeleteModal, PageHeader, PrevNextNav } from '../../../components/ui';
 import { QA_STATUS_MAP, QA_TYPE_MAP, type QaTypes } from '../../../components/ts/QaType';
-import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
+import { ATTACH_BOARD_LABEL, deleteAttachByBno } from '../../../components/ts/Attach';
+import { qaErrorMessage } from '../../../components/ts/QaGuestToken';
 
 export default function QaDetail() {
   const { no } = useParams<{ no: string }>(); // URL에서 no 추출
-  const { no: mno, grade } = GlobalStoreSession(); // 현재 로그인한 회원 번호
+  const { no: mno } = GlobalStoreSession(); // 현재 로그인한 회원 번호
 
   const { goToList, navigateWithQuery } = usePaging({ basePath: '/user/qa' });
 
@@ -31,13 +31,9 @@ export default function QaDetail() {
   
   /* 문의내용 상세 데이터 */
   const loadQa = () => {
+    // 본인 확인은 서버가 로그인 토큰으로 (비밀글은 본인 글만)
     axiosInstance
-      .get(`/qa/${no}`, {
-        headers: {
-          accessNo: String(mno),
-          grade: String(grade),
-        },
-      })
+      .get(`/qa/${no}`)
       .then(res => res.data)
       .then((data) => {
         setQa(data);
@@ -68,46 +64,31 @@ export default function QaDetail() {
 
     loadQa();
 
-  }, [no, mno, grade]);
+  }, [no, mno]);
 
   
 
 
 
-  // 비밀번호 입력 후 삭제 실행
-  const handleDeleteWithPw = async (inputPw: string = '') => {
+  // 삭제 실행 — 본인 글인지는 서버가 로그인 토큰으로 확인 (게시글 비밀번호 불필요)
+  const handleDelete = async () => {
     if (!deleteTarget) return;
 
     setDeleting(true);
     try {
-      await axiosInstance.delete('/qa', {
-        data: { no: deleteTarget.no, pw: inputPw },
-      });
+      await axiosInstance.delete(`/qa/${deleteTarget.no}`);
+      // 글 삭제가 성공한 뒤에만 첨부파일 삭제 (게시판 구분 tname 포함)
+      await deleteAttachByBno(deleteTarget.no, ATTACH_BOARD_LABEL[0].table);
 
       setAlert({ message: '삭제되었습니다.', variant: 'success', onConfirm: () => goToList() });
       setDeleteTarget(null);
     } catch (error) {
-      console.error('삭제 실패:', error);
-      if (axios.isAxiosError(error)) {
-        const status = error.response?.status;
-        const data = error.response?.data;
-
-        if (status === 400 || status === 401) {
-          setAlert({ message: '비밀번호가 올바르지 않거나 입력값이 잘못되었습니다.', variant: 'error' });
-        } else if (status === 404) {
-          setAlert({ message: '존재하지 않거나 이미 삭제된 항목입니다.', variant: 'error' });
-        } else if (status === 500) {
-          if (data?.message?.includes('비밀번호') || data?.message?.includes('password')) {
-            setAlert({ message: '비밀번호가 일치하지 않습니다.', variant: 'error' });
-          } else {
-            setAlert({ message: '서버 내부 오류가 발생했습니다. 관리자에게 문의하세요.', variant: 'error' });
-          }
-        } else {
-          setAlert({ message: `오류가 발생했습니다. (에러 코드: ${status || 'Unknown'})`, variant: 'error' });
-        }
-      } else {
-        setAlert({ message: '알 수 없는 오류가 발생했습니다.', variant: 'error' });
+      const status = (error as { response?: { status?: number } })?.response?.status;
+      if (status !== 403 && status !== 404) {
+        console.error('삭제 실패:', error);
       }
+      setDeleteTarget(null);
+      setAlert({ message: qaErrorMessage(error, '삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.'), variant: 'error' });
     } finally {
       setDeleting(false);
     }
@@ -248,15 +229,13 @@ export default function QaDetail() {
 
 
 
-      {/* 비밀번호 입력 삭제 모달 */}
+      {/* 삭제 확인 모달 */}
       <ConfirmDeleteModal
         open={deleteTarget !== null}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={(pw) => handleDeleteWithPw(pw || '')}
+        onConfirm={handleDelete}
         loading={deleting}
         targetLabel={deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.title}` : undefined}
-        requirePassword={true}
-        deleteWithAttach={deleteTarget?.no}
       />
 
       {/* 안내 알림 모달 */}
