@@ -413,6 +413,7 @@ export default function QaList() {
     },
     {
       header: 'A. 답변 내용',
+      className: 'acc_answer',
       render: (n) => {
         const images = (attachMap[n.no] ?? []).filter((a) => a.type === 0);
  
@@ -443,6 +444,20 @@ export default function QaList() {
         description="문의사항 및 FAQ를 관리할 수 있습니다."
         createLabel={tab === 'qa' ? undefined : '+ FAQ 작성'}
         onCreate={() => navigateWithQuery('new')}
+        actions={
+          // 자주 들어온 문의를 AI가 묶어 FAQ 초안을 추천하는 화면(FaqSuggest)으로 — FAQ 탭에서만
+          // (PageHeader는 actions를 넘기면 기본 작성 버튼을 그리지 않으므로 작성 버튼도 같이 넣음)
+          tab === 'faq' ? (
+            <div className="actions" style={{ display: 'flex', gap: 8 }}>
+              <button type="button" className="btn btn_md btn_outline_primary" onClick={() => navigateWithQuery('faq-suggest')}>
+                ✨ AI 추천
+              </button>
+              <button type="button" className="btn btn_md btn_primary" onClick={() => navigateWithQuery('new')}>
+                + FAQ 작성
+              </button>
+            </div>
+          ) : undefined
+        }
       />
 
       <div className="tabs" role="tablist" aria-label="문의 보기 전환">

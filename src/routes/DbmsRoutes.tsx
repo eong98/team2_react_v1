@@ -27,6 +27,7 @@ import MyPage from '../pages/main/mypage/MyPage';
 import ChangePassword from '../pages/main/mypage/ChangePassword';
 
 import QaForm from '../pages/dbms/qa/QaForm';
+import FaqSuggest from '../pages/dbms/qa/FaqSuggest';
 import QaList from '../pages/dbms/qa/QaList';
 import QaDetail from '../pages/dbms/qa/QaDetail';
 import NoticeList from '../pages/dbms/notice/NoticeList';
@@ -56,6 +57,7 @@ export default function DbmsRoutes() {
 
       <Route path="qa" element={<QaList />} />
       <Route path="qa/new" element={<QaForm />} />
+      <Route path="qa/faq-suggest" element={<FaqSuggest />} />
       <Route path="qa/:no/edit" element={<QaForm />} />
       <Route path="qa/:no" element={<QaDetail />} />
 

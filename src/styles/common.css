@@ -433,9 +433,15 @@ table td {padding:0; word-break:break-all;}
 .card_acc .list_row .empty_row {text-align:center;color:var(--text-faint);padding:34px;font-size:13px;}
 /* DataAcc.tsx의 col.header 라벨(예: "A. 답변 내용") — 렌더링되는 본문 내용 위에 캡션처럼 표시 */
 .acc_panel .answer{display:block;font-size:11px;font-weight:700;color:var(--primary);margin-bottom:6px;}
-/* FAQ 문의 내용(Q) — 답변(A) 위에 표시, 줄바꿈 유지 */
-.acc_panel.open .acc_question{margin:8px 0 14px;padding:12px 14px;border-left:2px solid var(--border-strong);border-radius:0 var(--radius-sm, 6px) var(--radius-sm, 6px) 0;background:var(--surface-2);}
+/* FAQ 문의 내용(Q)·답변(A) — 각각 블록으로 구분 (FAQ AI 추천 화면의 후보 카드와 같은 모양), 줄바꿈 유지 */
+.acc_panel.open .acc_question,
+.acc_panel.open .acc_answer{margin-top:12px;padding:12px 14px;border-radius:var(--radius-md, 10px);background:var(--surface-2);}
 .acc_panel .acc_question .answer{color:var(--text-faint);}
+.acc_panel.open .acc_answer .lt{margin-top:0;}
+.acc_panel .acc_answer .cell_title{font-size:13px;font-weight:400;line-height:1.7;color:var(--text-dim);white-space:pre-wrap;word-break:break-word;}
+.acc_panel.open .acc_answer .me{margin-top:8px;}
+/* 펼친 FAQ는 마우스를 올려도 배경을 바꾸지 않음 — 안쪽 블록과 색이 같아져 구분이 사라지지 않게 */
+.acc_item:has(.acc_panel.open .acc_answer):hover{background:var(--surface);}
 .acc_panel .acc_question_text{margin:0;font-size:13px;font-weight:400;line-height:1.7;color:var(--text-dim);white-space:pre-wrap;word-break:break-word;}
 
 /* tab

@@ -218,6 +218,7 @@ export default function QaList() {
     },
     {
       header: 'A. 답변 내용',
+      className: 'acc_answer',
       render: (n) => {
         const images = (attachMap[n.no] ?? []).filter((a) => a.type === 0);
  

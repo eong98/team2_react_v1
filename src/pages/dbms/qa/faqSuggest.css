@@ -1,0 +1,58 @@
+/* FAQ AI 추천 화면 (FaqSuggest.tsx) */
+
+.faq_sg_bar { display: flex; gap: 8px; align-items: center; }
+.faq_sg_bar_text { display: flex; flex-direction: column; gap: 4px; flex: 1 1 auto; min-width: 0; font-size: 14px; color: var(--text); }
+.faq_sg_bar .form_select { flex: 0 0 160px; }
+
+/* 진행 단계 안내 — 결과가 없을 때 화면을 채움 */
+.faq_sg_steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 20px 0 0; padding: 0; list-style: none; }
+.faq_sg_step { padding: 18px; border: 1px solid var(--border); border-radius: var(--radius-md, 10px); background: var(--surface-2); }
+.faq_sg_step strong { display: block; margin-top: 12px; font-size: 14px; color: var(--text); }
+.faq_sg_step p { margin: 6px 0 0; font-size: 12.5px; line-height: 1.6; color: var(--text-dim); word-break: keep-all; }
+.faq_sg_step_no { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--primary-dim); color: var(--primary); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.faq_sg_steps.is_running .faq_sg_step_no { animation: faq_sg_pulse 1.4s ease-in-out infinite; }
+.faq_sg_steps.is_running .faq_sg_step:nth-child(2) .faq_sg_step_no { animation-delay: .25s; }
+.faq_sg_steps.is_running .faq_sg_step:nth-child(3) .faq_sg_step_no { animation-delay: .5s; }
+@keyframes faq_sg_pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .faq_sg_steps.is_running .faq_sg_step_no { animation: none; } }
+
+.faq_sg_message { margin: 16px 0 0; padding: 14px; border-radius: var(--radius-md, 10px); background: var(--surface-2); color: var(--text-dim); font-size: 13px; line-height: 1.6; }
+.faq_sg_message.is_error { color: var(--red-200, #f5a3a3); }
+
+.faq_sg_summary { margin: 16px 0 10px; font-size: 12px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+
+.faq_sg_list { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.faq_sg_item { padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-md, 10px); background: var(--surface); }
+.faq_sg_item.is_checked { border-color: var(--border-strong); }
+
+/* 일괄 등록 줄 */
+.faq_sg_bulk { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; padding: 10px 16px; border: 1px solid var(--border); border-radius: var(--radius-md, 10px); background: var(--surface); }
+.faq_sg_check { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); cursor: pointer; font-variant-numeric: tabular-nums; }
+.faq_sg_check input { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+.faq_sg_item_head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.faq_sg_item_head .badge { flex: 0 0 auto; }
+.faq_sg_reason { font-size: 12px; line-height: 1.6; color: var(--text-faint); }
+
+/* 초안 입력 — 유형·제목은 한 줄, 문의 내용·답변은 아래로 */
+.faq_sg_form { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 0 12px; margin-top: 14px; }
+.faq_sg_form .form_group { grid-column: 1 / -1; margin-bottom: 12px; }
+.faq_sg_form .faq_sg_type { grid-column: 1; }
+.faq_sg_form .faq_sg_title_group { grid-column: 2; }
+.faq_sg_form .form_textarea { min-height: 84px; }
+.faq_sg_form .form_label.is_answer { color: var(--primary); }
+.faq_sg_label { display: block; font-size: 11px; font-weight: 700; color: var(--text-faint); }
+
+.faq_sg_sources { margin-top: 2px; }
+.faq_sg_sources ul { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 0; padding: 0; list-style: none; }
+.faq_sg_source { display: block; max-width: 100%; font-size: 12.5px; color: var(--text-dim); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.faq_sg_source:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+
+.faq_sg_actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+@media (max-width: 720px) {
+  .faq_sg_bar { flex-direction: column; align-items: stretch; }
+  .faq_sg_bar .form_select { flex: 0 0 auto; }
+  .faq_sg_steps { grid-template-columns: 1fr; }
+  .faq_sg_form { grid-template-columns: 1fr; }
+  .faq_sg_form .faq_sg_type, .faq_sg_form .faq_sg_title_group { grid-column: 1; }
+}
