@@ -53,7 +53,13 @@ export const qaGuestHeaders = (no: number | string): Record<string, string> => {
  */
 export const verifyQaGuest = async (no: number | string, pw: string): Promise<void> => {
   const res = await axiosInstance.post<{ token: string; expiresIn: number }>(`/qa/guest/${no}/verify`, { pw });
-  const { token, expiresIn } = res.data;
+  saveQaGuestToken(no, res.data.token, res.data.expiresIn);
+};
+
+/**
+ * 받은 임시 토큰 저장 — 비밀번호 확인 후, 또는 비회원 글을 방금 등록한 직후(서버가 등록 응답에 같이 내려줌)
+ */
+export const saveQaGuestToken = (no: number | string, token: string, expiresIn: number): void => {
   try {
     // 서버 만료보다 10초 일찍 만료 처리 (경계에서 실패하지 않게)
     const stored: StoredToken = { token, expiresAt: Date.now() + Math.max(0, expiresIn - 10) * 1000 };

@@ -1,4 +1,5 @@
 import { axiosInstance } from '../../utils/Tool';
+import { qaGuestHeaders } from './QaGuestToken';
 
 /** 백엔드 AttachDTO와 1:1로 매칭되는 응답 타입 */
 export interface AttachType {
@@ -73,6 +74,14 @@ export const ATTACH_BOARD_LABEL: Record<number, { name: string; table: string }>
 };
 
 /**
+ * 첨부 등록·삭제 요청에 붙일 본인 확인 헤더
+ * 서버는 그 글의 주인만 첨부를 바꿀 수 있게 합니다 (관리자 / 작성 회원 / 비회원 임시 토큰).
+ * 회원·관리자는 로그인 쿠키로 확인되므로 따로 붙일 것이 없고, 비회원 문의글만 임시 토큰(X-Qa-Token)을 붙입니다.
+ */
+export const attachAuthHeaders = (tname: string, bno?: number | string | null): Record<string, string> =>
+  tname?.toUpperCase() === 'QA' && bno ? qaGuestHeaders(bno) : {};
+
+/**
  * 글 삭제가 성공한 뒤 그 글의 첨부파일 일괄 삭제
  * tname(게시판 구분)을 꼭 넘김 — 없으면 같은 글번호를 쓰는 다른 게시판(공지·문의)의 첨부까지 지워짐
  * 실패해도 글 삭제는 이미 끝났으므로 오류만 남기고 넘어감
@@ -80,7 +89,7 @@ export const ATTACH_BOARD_LABEL: Record<number, { name: string; table: string }>
 export const deleteAttachByBno = async (bno: number, tname: string): Promise<void> => {
   if (!bno) return;
   try {
-    await axiosInstance.delete(`/attach/delete_by_bno/${bno}`, { params: { tname } });
+    await axiosInstance.delete(`/attach/delete_by_bno/${bno}`, { params: { tname }, headers: attachAuthHeaders(tname, bno) });
   } catch (err) {
     console.error('첨부파일 일괄 삭제 실패 (글은 삭제됨):', err);
   }

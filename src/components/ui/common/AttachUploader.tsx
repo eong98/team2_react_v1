@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { axiosInstance, download } from '../../../utils/Tool';
-import { formatFileSize, type AttachType } from '../../ts/Attach';
+import { attachAuthHeaders, formatFileSize, type AttachType } from '../../ts/Attach';
 
 interface AttachUploaderProps {
   /** 
@@ -152,7 +152,8 @@ const AttachUploader = forwardRef<AttachUploaderHandle, AttachUploaderProps>(fun
     files.forEach((f) => formData.append('files', f));
 
     const res = await axiosInstance.post<AttachType[]>('/attach/create', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      // 비회원 문의글이면 임시 토큰을 같이 보냄 (서버가 이 글의 주인인지 확인)
+      headers: { 'Content-Type': 'multipart/form-data', ...attachAuthHeaders(tname, targetBno) },
     });
     return res.data;
   };
@@ -214,7 +215,7 @@ const AttachUploader = forwardRef<AttachUploaderHandle, AttachUploaderProps>(fun
       try {
         // 1) 삭제 예정인 것부터 실제로 삭제
         for (const no of pendingDeleteNos) {
-          await axiosInstance.delete(`/attach/delete/${no}`);
+          await axiosInstance.delete(`/attach/delete/${no}`, { headers: attachAuthHeaders(tname, targetBno) });
         }
         // 2) 새로 추가할 파일 업로드
         await uploadFiles(targetBno, pendingFiles);

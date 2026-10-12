@@ -10,7 +10,7 @@ import { GlobalStoreSession } from '../../../store/LoginStore';
 import { usePaging } from '../../../hooks/usePaging';
 import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 import { attachErrorMessage } from '../../../components/ui/common/AttachUploader';
-import { QA_TOKEN_REQUIRED, qaErrorCode, qaErrorMessage, qaGuestHeaders } from '../../../components/ts/QaGuestToken';
+import { QA_TOKEN_REQUIRED, qaErrorCode, qaErrorMessage, qaGuestHeaders, saveQaGuestToken } from '../../../components/ts/QaGuestToken';
 import { getOrCreateGno } from '../../../components/ts/ChatGuest';
 
 /**
@@ -232,6 +232,11 @@ export default function QaForm() {
         // 서버가 등록된 글(QaResponse)을 돌려줌 → 글번호는 res.data.no
         // (예전엔 res.data 자체를 번호로 써서 NaN이 되어 첨부파일이 저장되지 않았음)
         const newNo = typeof res.data === 'object' ? res.data?.no : res.data;
+
+        // 비회원 글이면 서버가 이 글 전용 임시 토큰을 같이 내려줌 → 저장해 두어야 바로 아래 첨부 업로드가 통과함
+        if (isGuest && newNo && res.data?.guestToken) {
+          saveQaGuestToken(newNo, res.data.guestToken, res.data.guestTokenExpiresIn ?? 600);
+        }
 
         if (newNo && attachRef.current?.hasPendingChanges()) {
           try {
