@@ -24,6 +24,8 @@ interface QaLockedViewProps {
     onSubmit: () => void;
     error?: string;
     checking?: boolean;
+    /** [비밀번호를 잊으셨나요?] — 넘기면 입력 칸 아래에 표시 (비회원 글의 이메일 인증 재설정) */
+    onForgot?: () => void;
   };
   /** 구분선 아래 한 줄 — 예: "내 글이 아닌가요?" + [목록으로 돌아가기] */
   footText: string;
@@ -71,6 +73,11 @@ export default function QaLockedView({ post, desc, password, footText, footLinkL
                 </button>
               </form>
               {password.error && <div className="form_hint error qa_locked_error">{password.error}</div>}
+              {password.onForgot && (
+                <button type="button" className="qa_locked_link qa_locked_forgot" onClick={password.onForgot}>
+                  비밀번호를 잊으셨나요?
+                </button>
+              )}
             </>
           )}
 

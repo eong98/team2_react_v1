@@ -43,6 +43,7 @@ import ShopOrderPendingnList from '../pages/dbms/shoporder/ShopOrderPendingList'
 import ChatMenu from '../pages/dbms/chatbot/menu/ChatMenu';
 import PayStats from '../pages/dbms/paystats/PayStats';
 import ChatStats from '../pages/dbms/chatstats/ChatStats';
+import QaMailLog from '../pages/dbms/qamail/QaMailLog';
 
 export default function DbmsRoutes() {
   return (
@@ -68,6 +69,7 @@ export default function DbmsRoutes() {
       <Route path="pending" element={<ShopOrderPendingnList />} />
       <Route path="paystats" element={<PayStats />} />{/* 구독권 결제 통계 */}
       <Route path="chatstats" element={<ChatStats />} />{/* 챗봇 상담 만족도 통계 */}
+      <Route path="qamail" element={<QaMailLog />} />{/* 문의 메일 발송 내역 */}
 
       <Route path="chatmenu" element={<ChatMenu />} />
 

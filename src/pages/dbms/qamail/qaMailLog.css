@@ -1,0 +1,12 @@
+/* /dbms/qamail 문의 메일 발송 내역 */
+.qa_mail_page { width: 100%; min-width: 0; }
+
+.qa_mail_count { margin: 20px 0 12px; font-size: 14px; line-height: 1.5; color: var(--text-dim); }
+.qa_mail_count strong { margin: 0 4px; font-size: 15px; font-weight: 700; color: var(--text); }
+
+/* 두 줄 셀 (윗줄 내용 + 아랫줄 보조 정보) */
+.qa_mail_post { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; }
+.qa_mail_post_link { max-width: 100%; padding: 0; border: none; background: none; font: inherit; color: var(--text); text-align: left; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qa_mail_post_link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.qa_mail_deleted { color: var(--text-faint); font-style: italic; }
+.qa_mail_email, .qa_mail_msg { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

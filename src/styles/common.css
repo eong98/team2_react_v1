@@ -309,6 +309,8 @@ select::-ms-expand {display:none;}
 .qa_locked_form .form_input{flex:1;min-width:0;}
 .qa_locked_form .btn{flex-shrink:0;}
 .qa_locked_error{margin-top:8px;}
+.qa_locked_forgot{margin-top:12px;font-size:13px;font-weight:500;color:var(--text-dim, #c4ccd4);text-decoration:underline;text-underline-offset:3px;}
+.qa_locked_link:disabled{opacity:.5;cursor:not-allowed;}
 .qa_locked_foot{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;width:100%;margin-top:22px;padding-top:16px;border-top:1px solid var(--border, #2a323c);font-size:13px;color:var(--text-faint, #a4aeb7);}
 .qa_locked_link{display:inline-flex;align-items:center;gap:2px;padding:0;border:none;background:none;font:inherit;font-weight:600;color:var(--cyan, #33d6c0);cursor:pointer;}
 .qa_locked_link svg{width:14px;height:14px;transition:transform .2s ease;}

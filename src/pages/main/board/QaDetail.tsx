@@ -6,6 +6,7 @@ import { axiosInstance } from '../../../utils/Tool';
 import { AlertModal, AttachViewer, ConfirmDeleteModal, Modal, PageHeader, PrevNextNav } from '../../../components/ui';
 import { ATTACH_BOARD_LABEL, deleteAttachByBno } from '../../../components/ts/Attach';
 import QaLockedView from '../../../components/ui/common/QaLockedView';
+import QaPwResetModal from '../../../components/ui/common/QaPwResetModal';
 import {
   QA_TOKEN_REQUIRED,
   clearQaGuestToken,
@@ -61,6 +62,7 @@ export default function QaDetail() {
   const [pw, setPw] = useState('');
   const [checking, setChecking] = useState(false);
   const [pwError, setPwError] = useState('');
+  const [resetOpen, setResetOpen] = useState(false); // 비밀번호 재설정(이메일 인증) 모달
 
   /* 문의내용 상세 데이터 조회 */
   const loadQa = () => {
@@ -122,6 +124,12 @@ export default function QaDetail() {
   };
 
   const closePwModal = () => setPwPurpose(null);
+
+  /** [비밀번호를 잊으셨나요?] — 수정·삭제용 확인 모달이 떠 있으면 닫고 재설정 모달을 엶 */
+  const openReset = () => {
+    if (pwPurpose !== 'view') setPwPurpose(null);
+    setResetOpen(true);
+  };
 
   /** 비밀번호 확인 → 토큰 저장 후 하려던 일 이어서 */
   const handleVerify = async () => {
@@ -233,9 +241,27 @@ export default function QaDetail() {
             {pwError && <div className="form_hint error">{pwError}</div>}
           </div>
         </div>
+        <button type="button" className="qa_locked_link qa_locked_forgot" onClick={openReset}>
+          비밀번호를 잊으셨나요?
+        </button>
       </div>
     </Modal>
   );
+
+  // 비밀번호 재설정 모달 — 끝나면 새 비밀번호로 다시 확인하도록 안내
+  const resetModal = no ? (
+    <QaPwResetModal
+      open={resetOpen}
+      no={no}
+      onClose={() => setResetOpen(false)}
+      onDone={() => {
+        setResetOpen(false);
+        setPw('');
+        setPwError('');
+        setAlert({ message: '비밀번호가 변경되었습니다. 새 비밀번호로 확인해주세요.', variant: 'success' });
+      }}
+    />
+  ) : null;
 
 
   if (loading) {
@@ -272,12 +298,20 @@ export default function QaDetail() {
           <QaLockedView
             post={locked}
             desc="작성 시 입력한 비밀번호를 입력하면 내용을 볼 수 있습니다."
-            password={{ value: pw, onChange: setPw, onSubmit: handleVerify, error: pwError, checking }}
+            password={{ value: pw, onChange: setPw, onSubmit: handleVerify, error: pwError, checking, onForgot: openReset }}
             footText="내 글이 아닌가요?"
             footLinkLabel="목록으로 돌아가기"
             onFootLink={() => goToList()}
           />
         )}
+        {resetModal}
+        <AlertModal
+          open={alert !== null}
+          onClose={() => setAlert(null)}
+          onConfirm={alert?.onConfirm}
+          message={alert?.message ?? ''}
+          variant={alert?.variant}
+        />
       </section>
     );
   }
@@ -418,6 +452,7 @@ export default function QaDetail() {
       />
 
       {pwModal}
+      {resetModal}
 
       {/* 안내 알림 모달 */}
       <AlertModal
