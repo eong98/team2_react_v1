@@ -361,7 +361,7 @@ export default function QaForm() {
                 id="seq"
                 name='vseq'
                 className="form_input"
-                value={input.vseq}
+                value={input.vseq ?? ''} // 값이 없을 때 undefined를 넘기면 "uncontrolled → controlled" 콘솔 오류가 남
                 onChange={onChange}
                 style={{ maxWidth: 200 }}
               />
