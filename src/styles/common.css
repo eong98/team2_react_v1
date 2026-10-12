@@ -429,6 +429,10 @@ table td {padding:0; word-break:break-all;}
 .card_acc .list_row .empty_row {text-align:center;color:var(--text-faint);padding:34px;font-size:13px;}
 /* DataAcc.tsx의 col.header 라벨(예: "A. 답변 내용") — 렌더링되는 본문 내용 위에 캡션처럼 표시 */
 .acc_panel .answer{display:block;font-size:11px;font-weight:700;color:var(--primary);margin-bottom:6px;}
+/* FAQ 문의 내용(Q) — 답변(A) 위에 표시, 줄바꿈 유지 */
+.acc_panel.open .faq_question{margin-top:8px;padding-bottom:12px;margin-bottom:4px;border-bottom:1px dashed var(--border);}
+.acc_panel .faq_question .answer{color:var(--text-faint);}
+.acc_panel .faq_question .cell_title{white-space:pre-wrap;word-break:break-word;}
 
 /* tab
 ========================================================================== */

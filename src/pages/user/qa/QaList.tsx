@@ -211,6 +211,12 @@ export default function QaList() {
 
   const faqColumns: DataAccColumn<QaTypes>[] = [
     {
+      // 등록할 때 입력한 문의 내용 — 제목만 보이고 내용이 화면에 나오지 않던 것 추가
+      header: 'Q. 문의 내용',
+      className: 'faq_question',
+      render: (n) => <div className="cell_title">{n.content}</div>,
+    },
+    {
       header: 'A. 답변 내용',
       render: (n) => {
         const images = (attachMap[n.no] ?? []).filter((a) => a.type === 0);
