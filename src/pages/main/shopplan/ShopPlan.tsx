@@ -8,6 +8,8 @@ import type { ShopPlanTypes } from '../../../components/ts/ShopPlan';
 import './shoPlan.css'
 import type { ORRequest, ShopOrderTypes } from '../../../components/ts/ShopOrder';
 import { PMETHOD_MAP, PMETHOD_ICON } from '../../../components/ts/ShopPayment';
+import '../../user/shoporder/subLines.css';
+import '../../user/shoporder/modal/changeModal.css';
 
 
 /* ---------------------------------------------------------------------
@@ -301,11 +303,19 @@ export default function ShopPlan() {
                   <button type="button" className="wz_back" onClick={() => goBack(1)}>요금제 다시 선택</button>
                 </div>
 
-                <div className="order_lines">
+                <div className="order_lines sub_lines plan_lines">
                   <div className="order_line"><span>요금제</span><span>{plan.pname}</span></div>
                   <div className="order_line"><span>결제 주기</span><span>{month}개월</span></div>
                   <div className="order_line"><span>대당 단가</span><span>{Number(plan.bprice).toLocaleString('ko-KR')}원</span></div>
                   <div className="order_line"><span>선택 대수</span><span>{qty}대</span></div>
+                </div>
+
+                {/* 대수를 바꾸면 바로 바뀌는 금액 — 결제 단계로 넘어가기 전에 미리 확인 */}
+                <div className="order_total">
+                  <span>예상 결제 금액</span>
+                  <div className="price mono">
+                    {totalPrice.toLocaleString('ko-KR')}<span>원</span>
+                  </div>
                 </div>
 
                 <button
@@ -340,25 +350,28 @@ export default function ShopPlan() {
                   <button type="button" className="wz_back" onClick={() => goBack(2)}>대수 다시 선택</button>
                 </div>
                 
-                <div className="order_lines">
+                <div className="order_lines sub_lines plan_lines">
                   <div className="order_line"><span>요금제</span><span>{plan.pname}</span></div>
                   <div className="order_line"><span>결제 주기</span><span>{month}개월</span></div>
                   <div className="order_line"><span>대당 단가</span><span>{Number(plan.bprice).toLocaleString('ko-KR')}원</span></div>
                   <div className="order_line"><span>CCTV 대수</span><span>{qty}대</span></div>
                 </div>
 
-                <div className="pmethod_filter_wrap">
-                  <div className="form_label" style={{ marginBottom: 10 }}>결제수단</div>
-                  <div className="pmethod_filter" role="radiogroup" aria-label="결제수단 선택">
+                <div className="chg_field plan_pay">
+                  <div className="chg_field_head">
+                    <span className="chg_label" id="planPmethodLabel">결제 수단</span>
+                  </div>
+                  <div className="chg_pay" role="radiogroup" aria-labelledby="planPmethodLabel">
                     {[0, 1, 2].map((m) => (
                       <button
                         key={m}
                         type="button"
-                        className={`pmethod_chip${pmethod === m ? ' on' : ''}`}
+                        role="radio"
+                        aria-checked={pmethod === m}
+                        className={`chg_seg_btn chg_pay_btn${pmethod === m ? ' active' : ''}`}
                         onClick={() => setPmethod(m as 0 | 1 | 2)}
-                        aria-pressed={pmethod === m}
                       >
-                        <span className="pmethod_chip_icon">{PMETHOD_ICON[m]}</span>
+                        <span className="chg_pay_icon" aria-hidden="true">{PMETHOD_ICON[m]}</span>
                         {PMETHOD_MAP[m].label}
                       </button>
                     ))}

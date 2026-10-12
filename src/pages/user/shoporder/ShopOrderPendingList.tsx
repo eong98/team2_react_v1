@@ -11,6 +11,7 @@ import {
 } from '../../../components/ts/ShopOrderPending';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import { usePaging } from '../../../hooks/usePaging';
+import './subLines.css';
 
 /* ---------------------------------------------------------------------
    CCTV 대수 변경 신청 관리 (/dbms/shop_order_pending) — SHOP_ORDER_PENDING
@@ -131,7 +132,7 @@ export default function ShopOrderPendingnList() {
       width: '180px',
       render: (o) =>
         o.status === 1 && (
-          <button type="button" className="btn btn_xsm btn_ghost" onClick={() => setDetailTarget(o)}>
+          <button type="button" className="sub_tbtn" onClick={() => setDetailTarget(o)}>
             반려사유 보기
           </button>
         ),
@@ -226,7 +227,7 @@ export default function ShopOrderPendingnList() {
         }
       >
         {detailTarget && (
-          <div className="order_lines">
+          <div className="order_lines sub_lines">
             {detailTarget.memo && (
               <p style={{ whiteSpace: 'pre-wrap' }}>{detailTarget.memo}</p>
             )}

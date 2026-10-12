@@ -4,6 +4,7 @@ import { PageHeader } from '../../../components/ui';
 import { axiosInstance } from '../../../utils/Tool';
 import { PMETHOD_MAP, PSTATUS_MAP, type ShopPaymentTypes } from '../../../components/ts/ShopPayment';
 import { usePaging } from '../../../hooks/usePaging';
+import './subLines.css';
 
 /* ---------------------------------------------------------------------
    결제 상세 (/user/shoporder/:ono/payment/:no) — 결제 고유번호(PK) 하나로 조회합니다.
@@ -82,19 +83,17 @@ export default function ShopPaymentDetail() {
       />
 
       <div className="card card_pad_lg" style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+        <div className="sub_amount_head">
           <div>
-            <div className="cell_sub" style={{ marginBottom: 4 }}>
-              {payment.cdate}
-            </div>
-            <h3 style={{ fontSize: 20, margin: 0 }}>{payment.price.toLocaleString('ko-KR')}원</h3>
+            <p className="sub_amount_label">{payment.cdate}</p>
+            <h3 className="sub_amount">{payment.price.toLocaleString('ko-KR')}<small>원</small></h3>
           </div>
           <span className={`badge ${PSTATUS_MAP[payment.pstatus]?.className ?? ''}`}>
             {PSTATUS_MAP[payment.pstatus]?.label ?? '-'}
           </span>
         </div>
 
-        <div className="order_lines">
+        <div className="order_lines sub_lines">
           <div className="order_line">
             <span>결제수단</span>
             <span>{payment.pmethod !== null && PMETHOD_MAP[payment.pmethod] ? PMETHOD_MAP[payment.pmethod].label : '-'}</span>

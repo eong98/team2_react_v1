@@ -3,12 +3,16 @@ import { Modal } from '../../../../components/ui';
 import { axiosInstance } from '../../../../utils/Tool';
 import { PMETHOD_MAP, PMETHOD_ICON } from '../../../../components/ts/ShopPayment';
 import type { ShopOrderTypes } from '../../../../components/ts/ShopOrder';
+import './changeModal.css';
 
 interface RenewModalProps {
   target: ShopOrderTypes | null;
   onClose: () => void;
   onSuccess: (message: string) => void;
 }
+
+/** 연장할 수 있는 기간(개월) */
+const RENEW_MONTHS = [6, 12];
 
 export default function RenewModal({ target, onClose, onSuccess }: RenewModalProps) {
   const [newPmonth, setNewPmonth] = useState<number | undefined>(undefined); // undefined면 동일조건
@@ -24,7 +28,7 @@ export default function RenewModal({ target, onClose, onSuccess }: RenewModalPro
   };
 
   const submit = async () => {
-    if (!target) return;
+    if (!target || renewing) return;
     setRenewing(true);
     setError('');
     try {
@@ -46,12 +50,14 @@ export default function RenewModal({ target, onClose, onSuccess }: RenewModalPro
     }
   };
 
+  const months = target ? (newPmonth ?? target.pmonth) : 0;
+
   return (
     <Modal
       open={target !== null}
       onClose={close}
       titleId="renewModalTitle"
-      title="구독을 갱신하시겠습니까?"
+      title="구독 갱신"
       footer={
         <>
           <button type="button" className="btn btn_md btn_ghost" onClick={close}>
@@ -65,50 +71,70 @@ export default function RenewModal({ target, onClose, onSuccess }: RenewModalPro
     >
       {target && (
         <div>
-          <div className="order_lines">
-            <div className="order_line"><span>구독권</span><span>{target.pname}</span></div>
-            <div className="order_line"><span>현재 종료일</span><span>{target.edate}</span></div>
-            <div className="order_line"><span>CCTV 대수</span><span>{target.ccnt}대 (변경 불가)</span></div>
-          </div>
-
-          <div className="form_group" style={{ marginTop: 16 }}>
-            <label className="form_label" htmlFor="renewPmonth">연장 기간</label>
-            <div className="form_control">
-              <select
-                id="renewPmonth"
-                className="form_select"
-                value={newPmonth ?? target.pmonth}
-                onChange={(e) => {
-                  const v = Number(e.target.value);
-                  setNewPmonth(v === target.pmonth ? undefined : v);
-                }}
-              >
-                <option value={6}>6개월</option>
-                <option value={12}>12개월</option>
-              </select>
-              <div className="form_hint">
-                동일 조건({target.pmonth}개월)으로 두거나, 다른 기간으로 연장할 수 있습니다.
-              </div>
+          {/* 갱신할 구독 */}
+          <div className="chg_current">
+            <div className="chg_current_cell">
+              <span className="chg_current_label">구독권</span>
+              <span className="chg_current_value">{target.pname}</span>
+            </div>
+            <div className="chg_current_cell">
+              <span className="chg_current_label">현재 종료일</span>
+              <span className="chg_current_value">{target.edate}</span>
+            </div>
+            <div className="chg_current_cell">
+              <span className="chg_current_label">CCTV</span>
+              <span className="chg_current_value">{target.ccnt}대</span>
             </div>
           </div>
 
-          <div className="pmethod_filter_wrap" style={{ marginTop: 16 }}>
-            <div className="form_label" style={{ marginBottom: 10 }}>결제 수단</div>
-            <div className="pmethod_filter" role="radiogroup" aria-label="결제수단 선택">
+          {/* 연장 기간 */}
+          <div className="chg_field">
+            <div className="chg_field_head">
+              <span className="chg_label" id="renewPmonthLabel">
+                연장 기간
+                {months !== target.pmonth && <span className="chg_changed">변경됨</span>}
+              </span>
+              <span className="chg_hint">지금 조건은 {target.pmonth}개월 · CCTV 대수는 그대로 갱신됩니다</span>
+            </div>
+            <div className="chg_seg" role="radiogroup" aria-labelledby="renewPmonthLabel">
+              {RENEW_MONTHS.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  role="radio"
+                  aria-checked={months === m}
+                  className={`chg_seg_btn${months === m ? ' active' : ''}`}
+                  onClick={() => setNewPmonth(m === target.pmonth ? undefined : m)}
+                >
+                  {m}개월
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 결제 수단 */}
+          <div className="chg_field">
+            <div className="chg_field_head">
+              <span className="chg_label" id="renewPmethodLabel">결제 수단</span>
+            </div>
+            <div className="chg_pay" role="radiogroup" aria-labelledby="renewPmethodLabel">
               {[0, 1, 2].map((m) => (
                 <button
                   key={m}
                   type="button"
-                  className={`pmethod_chip${pmethod === m ? ' on' : ''}`}
+                  role="radio"
+                  aria-checked={pmethod === m}
+                  className={`chg_seg_btn chg_pay_btn${pmethod === m ? ' active' : ''}`}
                   onClick={() => setPmethod(m as 0 | 1 | 2)}
-                  aria-pressed={pmethod === m}
                 >
-                  <span className="pmethod_chip_icon">{PMETHOD_ICON[m]}</span>
+                  <span className="chg_pay_icon" aria-hidden="true">{PMETHOD_ICON[m]}</span>
                   {PMETHOD_MAP[m].label}
                 </button>
               ))}
             </div>
           </div>
+
+          <p className="form_hint">갱신하면 현재 종료일 다음 날부터 선택한 기간만큼 이어서 이용합니다.</p>
 
           {error && <div className="form_hint error" style={{ marginTop: 10 }}>{error}</div>}
         </div>

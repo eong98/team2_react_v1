@@ -4,6 +4,7 @@ import { axiosInstance } from '../../../utils/Tool';
 import { EMPTY_FILTERS, formatLogAmount, LOG_ACTION_MAP, PAGE_SIZE, type Filters, type LogSearchResult, type RowType } from '../../../components/ts/ShopOrderLog';
 import { usePaging } from '../../../hooks/usePaging';
 import { GlobalStoreSession } from '../../../store/LoginStore';
+import '../../user/shoporder/subLines.css';
 
 /* ---------------------------------------------------------------------
    전체 구독 변경이력 (관리자, /dbms/shop_order_log) — 전체 회원의
@@ -121,7 +122,7 @@ export default function ShopOrderLogList() {
       header: '상세',
       width: '100px',
       render: (l) => (
-        <button type="button" className="btn btn_xsm btn_ghost" onClick={() => setDetailTarget(l)}>
+        <button type="button" className="sub_tbtn" onClick={() => setDetailTarget(l)}>
           보기
         </button>
       ),
@@ -211,7 +212,7 @@ export default function ShopOrderLogList() {
         }
       >
         {detailTarget && (
-          <div className="order_lines">
+          <div className="order_lines sub_lines">
             <div className="order_line">
               <span>구분</span>
               <span style={{fontFamily:'var(--font-disp)'}}>

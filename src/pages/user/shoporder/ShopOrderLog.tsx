@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { EMPTY_FILTERS, formatLogAmount, LOG_ACTION_MAP, PAGE_SIZE, type Filters, type LogSearchResult, type RowType } from "../../../components/ts/ShopOrderLog";
 import { axiosInstance } from "../../../utils/Tool";
 import { DataTable, Filterbar, Modal, UserPagination, type DataTableColumn } from "../../../components/ui";
+import './subLines.css';
 
 
 export default function ShopOrderLog() {
@@ -121,7 +122,7 @@ export default function ShopOrderLog() {
       header: '상세',
       width: '100px',
       render: (l) => (
-        <button type="button" className="btn btn_xsm btn_ghost" onClick={() => setDetailTarget(l)}>
+        <button type="button" className="sub_tbtn" onClick={() => setDetailTarget(l)}>
           보기
         </button>
       ),
@@ -210,7 +211,7 @@ export default function ShopOrderLog() {
         }
       >
         {detailTarget && (
-          <div className="order_lines">
+          <div className="order_lines sub_lines">
             <div className="order_line">
               <span>구분</span>
               <span style={{fontFamily:'var(--font-disp)'}}>

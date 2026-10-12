@@ -28,6 +28,7 @@ import RenewModal from './modal/RenewModal';
 import CancelModal from './modal/CancelModal';
 import ChangeModal from './modal/ChangeModal';
 import { GlobalCurrentShop } from '../../../store/UserStore';
+import './subLines.css';
 
 export default function ShopOrderList() {
   const navigate = useNavigate();
@@ -202,19 +203,17 @@ export default function ShopOrderList() {
         ) : (
           <button
             type="button"
-            className="btn btn_xsm btn_ghost"
+            className="sub_tbtn is_add"
             onClick={() => navigate(`/user/shoporder/${o.no}/match`)}
           >
-            매장 연결
+            + 매장 연결
           </button>
         ),
     },
     { header: '대수', width: '80px', mono: true, 
       render: (o) => 
         o.status === 1 && o.pstatus != null && o.pstatus === 0 ? ( // 승인대기 상태일 때
-          <>
-            <span style={{fontSize:11, color:'var(--danger)'}}>변경대기</span>
-          </>
+          <span className="sub_wait">변경 대기</span>
         ): `${o.ccnt}대` 
     },
     {
@@ -242,17 +241,17 @@ export default function ShopOrderList() {
       render: (o) => (
         <div className="actions">
           {canRenew(o) && (
-            <button type="button" className="btn btn_xsm btn_ghost" onClick={() => setRenewTarget(o)}>
+            <button type="button" className="sub_tbtn is_solid" onClick={() => setRenewTarget(o)}>
               갱신
             </button>
           )}
           {canChange(o) && (
-            <button type="button" className="btn btn_xsm btn_outline_primary" onClick={() => setChangeTarget(o)}>
+            <button type="button" className="sub_tbtn is_primary" onClick={() => setChangeTarget(o)}>
               변경
             </button>
           )}
           {canCancel(o) && (
-            <button type="button" className="btn btn_xsm btn_danger_outline" onClick={() => setCancelTarget(o)}>
+            <button type="button" className="sub_tbtn is_danger" onClick={() => setCancelTarget(o)}>
               취소
             </button>
           )}

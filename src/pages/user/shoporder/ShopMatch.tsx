@@ -6,6 +6,8 @@ import { GlobalStoreSession } from '../../../store/LoginStore';
 import type { LinkShopRequest } from '../../../components/ts/ShopOrder';
 import { PAGE_SIZE, type ShopType } from '../../../components/ts/ShopUser';
 import type { ShopOrderTypes } from '../../../components/ts/ShopOrder';
+import './subLines.css';
+import '../shop/shopOrderList.css';
 
 /* ---------------------------------------------------------------------
    구독 결제 완료 후 매장 연결 (/user/subscribe/:no/shop-select)
@@ -130,9 +132,9 @@ export default function ShopMatch() {
       />
 
       {order && shops.length > 0 && (
-        <div className="order_lines">
-          <p className='b_title lg'>선택한 구독권</p>
-          <div className="card card_pad_lg primary" style={{ marginBottom: 20 }}>
+        <div className="sub_card" style={{ margin: '20px 0' }}>
+          <p className="sub_eyebrow">선택한 구독권</p>
+          <div className="order_lines sub_lines">
             <div className="order_line"><span>구독권</span><span>{order?.pname ?? `구독권 #${order.pno}`}</span></div>
             <div className="order_line"><span>이용 기간</span><span>{order.pmonth}개월</span></div>
             <div className="order_line"><span>CCTV 대수</span><span>{order.ccnt}대</span></div>

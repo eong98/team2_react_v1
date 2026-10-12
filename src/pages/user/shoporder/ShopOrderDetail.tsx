@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Outlet, useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { PageHeader } from '../../../components/ui';
 import { axiosInstance } from '../../../utils/Tool';
-import { isExpired, ORDER_STATUS_MAP, type ShopOrderTypes } from '../../../components/ts/ShopOrder';
+import { daysUntilExpire, isExpired, ORDER_STATUS_MAP, type ShopOrderTypes } from '../../../components/ts/ShopOrder';
+import '../shop/shopOrderList.css';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 
 /* ---------------------------------------------------------------------
@@ -102,6 +103,12 @@ export default function ShopOrderDetail() {
     );
   }
 
+  const expired = isExpired(order.edate);
+  // 구독 기간 중 얼마나 지났는지 — 시작일~종료일 사이의 오늘 위치
+  const periodTotal = order.sdate && order.edate ? new Date(order.edate).getTime() - new Date(order.sdate).getTime() : 0;
+  const periodUsed = order.sdate ? Date.now() - new Date(order.sdate).getTime() : 0;
+  const periodPct = periodTotal > 0 ? Math.min(100, Math.max(0, (periodUsed / periodTotal) * 100)) : 0;
+
   return (
     <section className="view active">
       <PageHeader
@@ -137,130 +144,133 @@ export default function ShopOrderDetail() {
 
       {currentTab === 'info' ? (
         <>
-          {/* 상단 헤더 카드 — 구독권명 + 상태 + 핵심 스펙 */}
-          <div className="card card_pad_lg" style={{ marginBottom: 16 }}>
-            <div className="flex both top" style={{ marginBottom: 16 }}>
-              <h3 className="title">{order.pname}</h3>
-
-              <span className={`badge ${ORDER_STATUS_MAP[isExpired(order.edate) ? 3 : order.status].className}`}>
-                {ORDER_STATUS_MAP[isExpired(order.edate) ? 3 : order.status].label}
-              </span>
+          {/* 구독 요약 — 구독권 이름·상태 / 핵심 숫자 / 기간 진행 */}
+          <div className="sub_card sub_detail_card">
+            <div className="sub_head">
+              <div>
+                <p className="sub_eyebrow">주문번호 <span className="mono">{order.no}</span></p>
+                <div className="sub_name_row">
+                  <h3 className="sub_name">{order.pname}</h3>
+                  <span className={`badge ${ORDER_STATUS_MAP[expired ? 3 : order.status].className}`}>
+                    {ORDER_STATUS_MAP[expired ? 3 : order.status].label}
+                  </span>
+                </div>
+              </div>
+              <div className="sub_order">
+                <span className="sub_order_no">결제일</span>
+                <span className="sub_paid_date mono">{order.cdate}</span>
+              </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-              <div>
-                <div className="cell_sub">이용 기간</div>
-                <div className="mono" style={{ fontSize: 16, fontWeight: 700 }}>
-                  {order.pmonth}개월
-                </div>
+            <div className="sub_stats is_four">
+              <div className="sub_stat">
+                <div className="sub_stat_label">이용 기간</div>
+                <div className="sub_stat_value">{order.pmonth}<small>개월</small></div>
               </div>
-              <div>
-                <div className="cell_sub">CCTV 대수</div>
-                <div className="mono" style={{ fontSize: 16, fontWeight: 700 }}>
-                  {order.ccnt}대
-                </div>
+              <div className="sub_stat">
+                <div className="sub_stat_label">CCTV 대수</div>
+                <div className="sub_stat_value">{order.ccnt}<small>대</small></div>
               </div>
-              <div>
-                <div className="cell_sub">대당 단가</div>
-                <div className="mono" style={{ fontSize: 16, fontWeight: 700 }}>
-                  {order.bprice.toLocaleString('ko-KR')}원
-                </div>
+              <div className="sub_stat">
+                <div className="sub_stat_label">대당 단가</div>
+                <div className="sub_stat_value">{order.bprice.toLocaleString('ko-KR')}<small>원</small></div>
               </div>
-              <div>
-                <div className="cell_sub">결제일</div>
-                <div className="mono" style={{ fontSize: 16, fontWeight: 700 }}>
-                  {order.cdate}
-                </div>
+              <div className="sub_stat">
+                <div className="sub_stat_label">총 결제금액</div>
+                <div className="sub_stat_value is_accent">{order.totalprice.toLocaleString('ko-KR')}<small>원</small></div>
               </div>
+            </div>
+
+            <div className="sub_period">
+              <div className="sub_period_head">
+                <span className="sub_period_label">구독 기간</span>
+                {order.sdate && order.edate && (
+                  <span className="sub_period_left">
+                    {expired ? '기간이 끝났습니다' : `${daysUntilExpire(order.edate)}일 남음`}
+                  </span>
+                )}
+              </div>
+              {order.sdate && order.edate ? (
+                <>
+                  <div className="sub_track" role="img" aria-label={`구독 기간의 ${Math.round(periodPct)}%가 지났습니다`}>
+                    <div className="sub_fill" style={{ width: `${periodPct}%` }} />
+                  </div>
+                  <div className="sub_period_dates mono">
+                    <span>{order.sdate}</span>
+                    <span>{order.edate}</span>
+                  </div>
+                </>
+              ) : (
+                <p className="sub_period_empty">매장을 연결하면 그날부터 구독 기간이 시작됩니다.</p>
+              )}
             </div>
           </div>
 
-          {/* 취소일 */}
-          {order.udate && order.status === 3 && (
-            <div className="card card_pad_lg" style={{ marginBottom: 16 }}>
-              <div className="cell_sub" style={{ marginBottom: 10 }}>
-                취소일
+          <div className="sub_detail_grid">
+            {/* 연결된 매장 — 결제 요약과 같은 줄 목록으로 채움 */}
+            <div className="sub_card">
+              <p className="sub_eyebrow">연결된 매장</p>
+              <div className="sub_rows">
+                <div className="sub_row">
+                  <span>매장</span>
+                  <strong>{order.sno ? order.sname : order.status === 3 ? '취소된 구독입니다' : '연결된 매장 없음'}</strong>
+                </div>
+                <div className="sub_row">
+                  <span>구독 시작일</span>
+                  <strong className="mono">{order.sdate ?? '-'}</strong>
+                </div>
+                <div className="sub_row">
+                  <span>구독 종료일</span>
+                  <strong className="mono">{order.edate ?? '-'}</strong>
+                </div>
+                {/* 취소일 */}
+                {order.udate && order.status === 3 && (
+                  <div className="sub_row">
+                    <span>취소일</span>
+                    <strong className="mono">{order.udate}</strong>
+                  </div>
+                )}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span className="mono" style={{ fontSize: 15 }}>
-                  {order.udate}
-                </span>
-              </div>
-            </div>
-          )}
-          
-          {/* 매장 연결 카드 */}
-          <div className="card card_pad_lg" style={{ marginBottom: 16 }}>
-            <div className="cell_sub" style={{ marginBottom: 10 }}>
-              연결된 매장
-            </div>
-            {order.sno ? (
-              <div>
-                {order.sname}
-              </div>
-            ) : order.status === 3 ? (
-              <div className="cell_title">취소된 구독입니다.</div>
-            ) : (
-              <div className="no_data">
-                <p className="b_title">연결된 매장이 없습니다. 먼저 매장을 연결해 주세요.</p>
-                <button
-                  type="button"
-                  className="btn btn_md btn_primary"
-                  onClick={() => navigate(`/user/${url}/${ono}/match`)}
-                >
-                  + 매장 연결
+              {order.sno ? (
+                <button type="button" className="sub_detail_btn sub_block_link" onClick={() => navigate('/user/shop')}>
+                  매장 관리로 이동
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
                 </button>
-              </div>
-            )}
-          </div>
-
-          {/* 구독 기간 카드 */}
-          <div className="card card_pad_lg" style={{ marginBottom: 16 }}>
-            <div className="cell_sub" style={{ marginBottom: 10 }}>
-              구독 기간
-            </div>
-            {order.sdate && order.edate ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span className="mono" style={{ fontSize: 15 }}>
-                  {order.sdate}
-                </span>
-                <span className="cell_sub">~</span>
-                <span className="mono" style={{ fontSize: 15 }}>
-                  {order.edate}
-                </span>
-              </div>
-            ) : (
-              <div className="no_data">
-                <p className="b_title">연결된 매장이 없어, 구독이 시작되지 않았습니다.</p>
-              </div>
-            )}
-          </div>
-
-
-          {/* 결제 요약 카드 */}
-          <div className="card card_pad_lg">
-            <div className="cell_sub" style={{ marginBottom: 10 }}>
-              결제 요약
-            </div>
-            <div className="order_lines">
-              <div className="order_line">
-                <span>대당 단가 × 대수</span>
-                <span>
-                  {order.bprice.toLocaleString('ko-KR')}원 × {order.ccnt}대
-                </span>
-              </div>
-              <div className="order_line">
-                <span>이용 기간</span>
-                <span>{order.pmonth}개월</span>
-              </div>
+              ) : order.status !== 3 && (
+                <>
+                  <p className="sub_block_note">매장을 연결해야 구독이 시작됩니다.</p>
+                  <button
+                    type="button"
+                    className="btn btn_md btn_outline_primary sub_block_btn"
+                    onClick={() => navigate(`/user/${url}/${ono}/match`)}
+                  >
+                    + 매장 연결
+                  </button>
+                </>
+              )}
             </div>
 
-            <div className="order_total" style={{ marginTop: 12 }}>
-              <span>총 결제금액</span>
-              <div className="price mono">
-                {order.totalprice.toLocaleString('ko-KR')}
-                <span>원</span>
+            {/* 결제 요약 */}
+            <div className="sub_card">
+              <p className="sub_eyebrow">결제 요약</p>
+              <div className="sub_rows">
+                <div className="sub_row">
+                  <span>대당 단가 × 대수</span>
+                  <strong>{order.bprice.toLocaleString('ko-KR')}원 × {order.ccnt}대</strong>
+                </div>
+                <div className="sub_row">
+                  <span>이용 기간</span>
+                  <strong>{order.pmonth}개월</strong>
+                </div>
+                <div className="sub_row is_total">
+                  <span>총 결제금액</span>
+                  <strong>{order.totalprice.toLocaleString('ko-KR')}<small>원</small></strong>
+                </div>
               </div>
+              <button type="button" className="sub_detail_btn sub_block_link" onClick={() => goToTab('payment')}>
+                결제 내역 보기
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+              </button>
             </div>
           </div>
         </>

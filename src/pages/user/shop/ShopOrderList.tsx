@@ -236,12 +236,9 @@ export default function ShopOrderBySno() {
         description={`${shopTitle}에 연결된 현재 구독과 지난 이력을 확인합니다.`} 
         actions={
           <div className='actions'>
+            {/* 변경 신청·구독 취소는 현재 구독 카드 아래쪽으로 옮김 — 그 구독에 대한 동작이라 카드 안에 둠 */}
             {active ? (
-              <>
-                {canChange(active) && (<button type='button' className='btn btn_primary' onClick={() => setChangeTarget(active)}>변경 신청</button>)}
-                {canCancel(active) && (<button type='button' className='btn btn_danger' onClick={() => setCancelTarget(active)}>구독 취소</button>)}
-                {isExpired(active.edate) && (<button type='button' className='btn btn_primary' onClick={() => navigate('/shopplan')}>+ 새 구독</button>)}
-              </>
+              isExpired(active.edate) && (<button type='button' className='btn btn_primary' onClick={() => navigate('/shopplan')}>+ 새 구독</button>)
             ):(
               <button type='button' className='btn btn_primary' onClick={() => navigate('/shopplan')}>+ 새 구독</button>
             )}
@@ -348,6 +345,22 @@ export default function ShopOrderBySno() {
                 </div>
               );
             })()}
+
+            {/* 이 구독에 대한 동작 — 변경 신청 / 구독 취소 */}
+            {(canChange(active) || canCancel(active)) && (
+              <div className="sub_actions">
+                {canCancel(active) && (
+                  <button type="button" className="sub_cancel_btn" onClick={() => setCancelTarget(active)}>
+                    구독 취소
+                  </button>
+                )}
+                {canChange(active) && (
+                  <button type="button" className="btn btn_md btn_outline_primary" onClick={() => setChangeTarget(active)}>
+                    변경 신청
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* 변경 신청 — 관리자 승인 대기 */}

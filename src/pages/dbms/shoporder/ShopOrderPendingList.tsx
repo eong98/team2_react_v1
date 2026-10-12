@@ -12,6 +12,8 @@ import {
 } from '../../../components/ts/ShopOrderPending';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import { usePaging } from '../../../hooks/usePaging';
+import '../../user/shoporder/subLines.css';
+import '../../user/shoporder/modal/changeModal.css';
 
 /* ---------------------------------------------------------------------
    CCTV 대수 변경 신청 관리 (/dbms/shop_order_pending) — SHOP_ORDER_PENDING
@@ -195,15 +197,15 @@ export default function ShopOrderPendingnList() {
       render: (o) =>
         o.status === 0 ? (
           <div className="actions">
-            <button type="button" className="btn btn_xsm btn_primary" onClick={() => setApproveTarget(o)}>
+            <button type="button" className="sub_tbtn is_solid" onClick={() => setApproveTarget(o)}>
               승인
             </button>
-            <button type="button" className="btn btn_xsm btn_danger_outline" onClick={() => openRejectModal(o)}>
+            <button type="button" className="sub_tbtn is_danger" onClick={() => openRejectModal(o)}>
               반려
             </button>
           </div>
         ) : o.status === 1 && (
-        <button type="button" className="btn btn_xsm btn_ghost" onClick={() => setDetailTarget(o)}>
+        <button type="button" className="sub_tbtn" onClick={() => setDetailTarget(o)}>
           반려사유 보기
         </button>
         ),
@@ -285,7 +287,7 @@ export default function ShopOrderPendingnList() {
         open={approveTarget !== null}
         onClose={() => setApproveTarget(null)}
         titleId="approvePendingTitle"
-        title="변경 신청을 승인하시겠습니까?"
+        title="변경 신청 승인"
         footer={
           <>
             <button type="button" className="btn btn_md btn_ghost" onClick={() => setApproveTarget(null)}>
@@ -298,13 +300,20 @@ export default function ShopOrderPendingnList() {
         }
       >
         {approveTarget && (
-          <div className="order_lines">
-            <div className="order_line"><span>매장</span><span>{approveTarget.sname}</span></div>
-            <div className="order_line"><span>신청 대수</span><span>{approveTarget.ccnt}대</span></div>
-            <div className="order_line"><span>신청 기간</span><span>{approveTarget.pmonth}개월</span></div>
-            <p className="form_hint" style={{ marginTop: 10 }}>
-              승인 전 매장에 실제 등록된 CCTV 대수가 신청 대수와 일치하는지 확인해주세요. 불일치하면 승인이 거부됩니다.
-            </p>
+          <div>
+            <div className="order_lines sub_lines">
+              <div className="order_line"><span>매장</span><span>{approveTarget.sname}</span></div>
+              <div className="order_line"><span>신청 대수</span><span>{approveTarget.ccnt}대</span></div>
+              <div className="order_line"><span>신청 기간</span><span>{approveTarget.pmonth}개월</span></div>
+            </div>
+            <div className="chg_notice">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 8v5" />
+                <path d="M12 16.5v.5" />
+              </svg>
+              <span>승인 전 매장에 실제 등록된 CCTV 대수가 신청 대수와 일치하는지 확인해주세요. 불일치하면 승인이 거부됩니다.</span>
+            </div>
           </div>
         )}
       </Modal>
@@ -314,7 +323,7 @@ export default function ShopOrderPendingnList() {
         open={rejectTarget !== null}
         onClose={() => setRejectTarget(null)}
         titleId="rejectPendingTitle"
-        title="변경 신청을 반려하시겠습니까?"
+        title="변경 신청 반려"
         footer={
           <>
             <button type="button" className="btn btn_md btn_ghost" onClick={() => setRejectTarget(null)}>
@@ -328,7 +337,7 @@ export default function ShopOrderPendingnList() {
       >
         {rejectTarget && (
           <div>
-            <div className="order_lines" style={{ marginBottom: 16 }}>
+            <div className="order_lines sub_lines" style={{ marginBottom: 16 }}>
               <div className="order_line"><span>매장</span><span>{rejectTarget.sname}</span></div>
               <div className="order_line"><span>신청 대수</span><span>{rejectTarget.ccnt}대</span></div>
             </div>
@@ -366,7 +375,7 @@ export default function ShopOrderPendingnList() {
         }
       >
         {detailTarget && (
-          <div className="order_lines">
+          <div className="order_lines sub_lines">
             {detailTarget.memo && (
               <p style={{ whiteSpace: 'pre-wrap' }}>{detailTarget.memo}</p>
             )}

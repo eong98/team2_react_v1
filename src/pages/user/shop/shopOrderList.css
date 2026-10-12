@@ -33,6 +33,12 @@
 .sub_fill { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--primary); }
 .sub_period_dates { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
 
+/* 카드 아래 동작 줄 — 변경 신청(주 동작)은 테두리 버튼, 구독 취소(되돌릴 수 없는 동작)는 눈에 덜 띄는 글자 버튼 */
+.sub_actions { display: flex; align-items: center; justify-content: flex-end; gap: 16px; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border); }
+.sub_cancel_btn { padding: 8px 4px; border: none; background: none; font: inherit; font-size: 13px; color: var(--text-faint); cursor: pointer; }
+.sub_cancel_btn:hover { color: var(--red-200); text-decoration: underline; text-underline-offset: 3px; }
+.sub_cancel_btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
+
 /* 변경 신청(승인 대기) 카드 */
 .sub_card.is_pending { background: var(--surface-2); }
 .sub_pending_title { margin: 0; font-size: 16px; font-weight: 700; color: var(--text); }
@@ -45,10 +51,33 @@
 .sub_change_value .same { font-weight: 400; color: var(--text-faint); }
 .sub_pending_foot { margin: 14px 0 0; font-size: 12px; line-height: 1.6; color: var(--text-faint); }
 
+/* 구독 내역 상세 (ShopOrderDetail.tsx) — 같은 카드 모양을 씀 */
+.sub_detail_card { margin: 20px 0 16px; }
+.sub_stats.is_four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.sub_stat_value.is_accent { color: var(--primary); }
+.sub_paid_date { font-size: 13px; color: var(--text); font-variant-numeric: tabular-nums; }
+.sub_period_empty { margin: 10px 0 0; font-size: 13px; color: var(--text-faint); }
+.sub_detail_grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.sub_block_value { margin: 4px 0 0; font-size: 18px; font-weight: 700; color: var(--text); }
+.sub_block_value.is_dim { font-size: 15px; font-weight: 600; color: var(--text-dim); }
+.sub_block_note { margin: 8px 0 0; font-size: 12.5px; color: var(--text-faint); }
+.sub_block_btn { margin-top: 16px; }
+.sub_block_link { margin-top: 14px; }
+.sub_rows { margin-top: 8px; border-radius: var(--radius-md, 10px); background: var(--surface-2); overflow: hidden; }
+.sub_row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 14px; font-size: 13px; color: var(--text-dim); }
+.sub_row + .sub_row { border-top: 1px solid var(--border); }
+.sub_row strong { font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+.sub_row.is_total span { font-weight: 600; color: var(--text); }
+.sub_row.is_total strong { font-size: 20px; font-weight: 700; color: var(--primary); }
+.sub_row.is_total small { margin-left: 2px; font-size: 13px; font-weight: 600; }
+
 @media (max-width: 1100px) {
+  .sub_stats.is_four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
   .sub_top.has_pending { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 640px) {
+  .sub_detail_grid { grid-template-columns: minmax(0, 1fr); }
   .sub_card { padding: 18px; }
   .sub_stats { grid-template-columns: minmax(0, 1fr); }
   .sub_order { align-items: flex-start; }

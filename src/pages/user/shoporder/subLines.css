@@ -1,0 +1,41 @@
+/* 구독 관련 상세 모달·상세 화면의 항목 목록 — order_lines에 sub_lines를 같이 붙여 씀
+   (구독권 구매 화면의 order_lines 모양은 그대로 두고, 구독 내역 쪽만 구독 변경 모달과 같은 줄 목록으로) */
+.order_lines.sub_lines { gap: 0; padding: 0; margin-bottom: 0; border: 1px solid var(--border); border-radius: var(--radius-md, 10px); background: var(--surface-2); overflow: hidden; }
+.sub_lines .order_line { align-items: center; gap: 16px; padding: 11px 14px; font-size: 13px; color: var(--text-dim); }
+.sub_lines .order_line + .order_line { border-top: 1px solid var(--border); }
+.sub_lines .order_line > span:first-child { flex: 0 0 auto; }
+.sub_lines .order_line > span:last-child { font-family: inherit; font-weight: 600; color: var(--text); text-align: right; font-variant-numeric: tabular-nums; word-break: break-word; }
+.sub_lines .order_line > span:last-child.mono { font-family: var(--font-mono); font-weight: 500; }
+/* 목록 안의 긴 글(상세 내용·사유) */
+.sub_lines > div:not(.order_line) { margin: 0 !important; padding: 12px 14px !important; border-top: 1px solid var(--border) !important; background: var(--surface); }
+.sub_lines > div:not(.order_line) p, .sub_lines > p { margin: 0; font-size: 13px; line-height: 1.7; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+.sub_lines > p { padding: 14px; }
+
+/* 결제·환불 상세 — 금액을 크게 보여 주는 머리 */
+.sub_amount_head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.sub_amount_label { margin: 0 0 6px; font-size: 12px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+.sub_amount { margin: 0; font-size: 28px; font-weight: 700; line-height: 1.2; color: var(--text); font-variant-numeric: tabular-nums; }
+.sub_amount small { margin-left: 3px; font-size: 15px; font-weight: 600; color: var(--text-dim); }
+.sub_amount.is_refund { color: var(--teal-300, var(--primary)); }
+
+/* 표 안의 작은 버튼 — 구독 관련 목록 공통
+   기본: 얇은 테두리 / is_primary: 주 동작(변경) / is_solid: 지금 해야 하는 동작(갱신·승인)
+   is_danger: 되돌릴 수 없는 동작(취소·반려, 평소엔 눈에 덜 띄게) / is_add: 비어 있는 칸을 채우는 동작(매장 연결) */
+.sub_tbtn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 28px; padding: 4px 10px; border: 1px solid var(--border-strong, var(--border)); border-radius: 7px; background: transparent; color: var(--text-dim); font: inherit; font-size: 12px; font-weight: 600; line-height: 1.2; white-space: nowrap; cursor: pointer; transition: border-color .15s ease, background .15s ease, color .15s ease; }
+.sub_tbtn:hover { border-color: var(--text-faint); color: var(--text); }
+.sub_tbtn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.sub_tbtn.is_primary { border-color: var(--primary-dim); background: var(--primary-dim); color: var(--primary); }
+.sub_tbtn.is_primary:hover { border-color: var(--primary); }
+.sub_tbtn.is_solid { border-color: var(--primary); background: var(--primary); color: #04211D; }
+.sub_tbtn.is_solid:hover { background: var(--green-400); border-color: var(--green-400); }
+.sub_tbtn.is_danger { border-color: transparent; color: var(--text-faint); }
+.sub_tbtn.is_danger:hover { border-color: rgba(255, 77, 94, .5); background: var(--danger-dim); color: var(--red-200); }
+.sub_tbtn.is_add { border-style: dashed; color: var(--text-dim); }
+.sub_tbtn.is_add:hover { border-style: solid; border-color: var(--primary); color: var(--primary); }
+.actions:has(> .sub_tbtn) { gap: 6px; }
+/* 변경 승인 대기 표시 */
+.sub_wait { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 100px; background: var(--warning-dim, var(--surface-2)); color: var(--amber-400, var(--text-dim)); font-family: var(--font-disp); font-size: 11px; font-weight: 700; white-space: nowrap; }
+
+/* 구독권 구매 화면(ShopPlan.tsx) 2·3단계의 줄 목록과 결제 수단 */
+.plan_lines { margin: 16px 0 18px !important; }
+.plan_pay { margin-bottom: 20px; }

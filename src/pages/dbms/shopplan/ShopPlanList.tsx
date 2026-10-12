@@ -18,6 +18,7 @@ import {
   type Filters,
   type RowType,
 } from '../../../components/ts/ShopPlan';
+import '../../user/shoporder/subLines.css';
 
 /* ---------------------------------------------------------------------
    구독권 관리(/dbms/shop_plan) - 관리자 목록. 등급 x 기간별로 행이 나뉘어 있습니다
@@ -157,7 +158,7 @@ export default function ShopPlanList() {
       header: '미리보기',
       width: '110px',
       render: (sp) => (
-        <button type="button" className="btn btn_xsm btn_ghost" onClick={() => setPreviewTarget(sp)}>
+        <button type="button" className="sub_tbtn" onClick={() => setPreviewTarget(sp)}>
           사용자화면
         </button>
       ),

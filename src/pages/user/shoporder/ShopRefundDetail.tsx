@@ -4,6 +4,7 @@ import { PageHeader } from '../../../components/ui';
 import { axiosInstance } from '../../../utils/Tool';
 import { PMETHOD_MAP, REFUND_STATUS_MAP, type ShopPaymentTypes, type ShopRefundTypes } from '../../../components/ts/ShopPayment';
 import { usePaging } from '../../../hooks/usePaging';
+import './subLines.css';
 
 /* ---------------------------------------------------------------------
    결제 상세 (/user/shoporder/:ono/payment/:no) — 결제 고유번호(PK) 하나로 조회합니다.
@@ -88,14 +89,17 @@ export default function ShopPaymentDetail() {
       />
 
       <div className="card card_pad_lg" style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-          <h3 style={{ fontSize: 20, margin: 0 }}>{refund.amount.toLocaleString('ko-KR')}원</h3>
+        <div className="sub_amount_head">
+          <div>
+            <p className="sub_amount_label">환불 금액</p>
+            <h3 className="sub_amount is_refund">{refund.amount.toLocaleString('ko-KR')}<small>원</small></h3>
+          </div>
           <span className={`badge ${REFUND_STATUS_MAP[refund.status].className}`}>
             {REFUND_STATUS_MAP[refund.status].label}
           </span>
         </div>
 
-        <div className="order_lines">
+        <div className="order_lines sub_lines">
           <div className="order_line">
             <span>결제 취소일</span>
             <span>{payment.cdate}</span>
