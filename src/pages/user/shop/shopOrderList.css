@@ -1,0 +1,56 @@
+/* 매장별 구독 내역 (/user/order) — 현재 구독 카드 · 변경 신청 카드 */
+
+.sub_top { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin: 24px 0 40px; }
+.sub_top.has_pending { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+
+.sub_card { padding: 24px; border: 1px solid var(--border); border-radius: var(--radius-lg, 14px); background: var(--surface); }
+
+/* 머리: 구독권 이름 + 상태 / 주문번호 */
+.sub_head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.sub_eyebrow { margin: 0 0 6px; font-size: 12px; color: var(--text-faint); }
+.sub_name_row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sub_name { margin: 0; font-size: 24px; font-weight: 700; line-height: 1.2; color: var(--text); }
+.sub_order { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.sub_order_no { font-size: 12px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+.sub_detail_btn { display: inline-flex; align-items: center; gap: 2px; padding: 0; border: none; background: none; font: inherit; font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; }
+.sub_detail_btn:hover { text-decoration: underline; text-underline-offset: 3px; }
+.sub_detail_btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* 핵심 숫자 세 칸 */
+.sub_stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+.sub_stat { padding: 14px 16px; border-radius: var(--radius-md, 10px); background: var(--surface-2); min-width: 0; }
+.sub_stat_label { font-size: 12px; color: var(--text-faint); }
+.sub_stat_value { margin-top: 6px; font-size: 20px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.sub_stat_value small { margin-left: 3px; font-size: 13px; font-weight: 500; color: var(--text-dim); }
+
+/* 구독 기간 진행 막대 */
+.sub_period { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border); }
+.sub_period_head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.sub_period_label { font-size: 12px; color: var(--text-faint); }
+.sub_period_left { font-size: 13px; font-weight: 600; color: var(--text); }
+.sub_period_left.is_soon { color: var(--amber-400, var(--text)); }
+.sub_track { position: relative; height: 8px; margin-top: 10px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.sub_fill { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--primary); }
+.sub_period_dates { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+
+/* 변경 신청(승인 대기) 카드 */
+.sub_card.is_pending { background: var(--surface-2); }
+.sub_pending_title { margin: 0; font-size: 16px; font-weight: 700; color: var(--text); }
+.sub_change_list { display: flex; flex-direction: column; gap: 10px; margin: 18px 0 0; padding: 0; list-style: none; }
+.sub_change { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: var(--radius-md, 10px); background: var(--surface); font-size: 13px; }
+.sub_change_label { color: var(--text-faint); }
+.sub_change_value { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+.sub_change_value .from { font-weight: 400; color: var(--text-faint); text-decoration: line-through; }
+.sub_change_value .arrow { color: var(--text-faint); }
+.sub_change_value .same { font-weight: 400; color: var(--text-faint); }
+.sub_pending_foot { margin: 14px 0 0; font-size: 12px; line-height: 1.6; color: var(--text-faint); }
+
+@media (max-width: 1100px) {
+  .sub_top.has_pending { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .sub_card { padding: 18px; }
+  .sub_stats { grid-template-columns: minmax(0, 1fr); }
+  .sub_order { align-items: flex-start; }
+  .sub_name { font-size: 20px; }
+}

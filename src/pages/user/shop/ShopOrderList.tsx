@@ -11,6 +11,7 @@ import type { OrderPendingTypes } from '../../../components/ts/ShopOrderPending'
 import RenewModal from '../shoporder/modal/RenewModal';
 import CancelModal from '../shoporder/modal/CancelModal';
 import ChangeModal from '../shoporder/modal/ChangeModal';
+import './shopOrderList.css';
 
 /* ---------------------------------------------------------------------
    매장별 구독 내역 (/user/shop/:sno/orders) — 회원+매장 기준 단일 검색 API를
@@ -54,12 +55,12 @@ export default function ShopOrderBySno() {
   const [totalElements, setTotalElements] = useState(0);
 
   const loadList = async () => {
-    if (!sno && !mno) return;
+    if (!sno || !mno) return; // 매장을 고르지 않았으면 조회하지 않음 (예전엔 sno=null로 요청이 나가 400이 났음)
 
     setLoading(true);
 
     try {
-      const res = await axiosInstance.get<OrderSearchResult>(`/shop_order/list/${mno}/${sno}`, {
+      const res = await axiosInstance.get<OrderSearchResult>(`/shop_order/my/shop/${sno}`, {
         params: {
           page: page - 1,
           size: PAGE_SIZE,
@@ -108,11 +109,11 @@ export default function ShopOrderBySno() {
 
 
   const loadActive = async () => {
-    if (!sno && !mno) return;
+    if (!sno || !mno) return; // 매장을 고르지 않았으면 조회하지 않음 (예전엔 sno=null로 요청이 나가 400이 났음)
     setActiveLoading(true);
 
     try {
-      const res = await axiosInstance.get<ShopOrderTypes>(`/shop_order/top/${mno}/${sno}`, {
+      const res = await axiosInstance.get<ShopOrderTypes>(`/shop_order/top/${sno}`, {
         params: {status: 1}
       });
 
@@ -283,72 +284,112 @@ export default function ShopOrderBySno() {
             </div>
         )}
 
-        <div className='order_top' style={{margin: '24px 0 40px'}}>
-          <div onClick={() => goToDetail(active.no)} className="card card_pad_lg">
-            <div className='flex top both'>
+        <div className={`sub_top${pending ? ' has_pending' : ''}`}>
+          {/* 현재 구독 */}
+          <div className="sub_card">
+            <div className="sub_head">
               <div>
-                <div className="cell_sub" style={{ marginBottom: 4 }}>현재 이용중인 구독권</div>
-                <p className='b_title' style={{margin:0}}>{active.no}</p>
+                <p className="sub_eyebrow">현재 이용중인 구독권</p>
+                <div className="sub_name_row">
+                  <h3 className="sub_name">{active.pname}</h3>
+                  <span className={`badge ${ORDER_STATUS_MAP[isExpired(active.edate) ? 3 : active.status].className}`}>
+                    {ORDER_STATUS_MAP[isExpired(active.edate) ? 3 : active.status].label}
+                  </span>
+                </div>
               </div>
-              
-              <p className='title' style={{margin:0}}>{active.pname}</p>
-            </div>
-
-            <div className='flex center both' style={{marginTop:8 }}>
-              <div className="cell_sub">구독 상태</div>
-              <span className={`badge ${ORDER_STATUS_MAP[isExpired(active.edate) ? 3 : active.status].className}`}>
-                {ORDER_STATUS_MAP[isExpired(active.edate) ? 3 : active.status].label}
-              </span>
-            </div>
-            
-            {!isExpired(active.edate) && (
-              <div className='flex center both' style={{marginTop:8 }}>
-                <div className="cell_sub">구독일</div>
-                <span>{getDaysFromStart(active.sdate || '-')}일</span>
+              <div className="sub_order">
+                <span className="sub_order_no mono">{active.no}</span>
+                <button type="button" className="sub_detail_btn" onClick={() => goToDetail(active.no)}>
+                  상세 내역 보기
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+                </button>
               </div>
-            )}
-
-            
-            <div className='flex center both' style={{borderTop:'1px solid var(--border)', paddingTop:20, marginTop:20 }}>
-              <div className="cell_sub" style={{ margin: 0 }}>CCTV 대수</div>
-              <div className='b_title lg' style={{margin:0}}>{active.ccnt} 대</div>
             </div>
 
-            <div className='flex center both' style={{marginTop:4 }}>
-              <div className="cell_sub" style={{ margin: 0 }}>구독기간</div>
-              <p className='b_title lg mono' style={{margin:0}}>{active.sdate} ~ {active.edate} ({active.pmonth}개월)</p>
+            <div className="sub_stats">
+              <div className="sub_stat">
+                <div className="sub_stat_label">CCTV 대수</div>
+                <div className="sub_stat_value">{active.ccnt}<small>대</small></div>
+              </div>
+              <div className="sub_stat">
+                <div className="sub_stat_label">이용 기간</div>
+                <div className="sub_stat_value">{active.pmonth}<small>개월</small></div>
+              </div>
+              <div className="sub_stat">
+                <div className="sub_stat_label">{isExpired(active.edate) ? '구독 상태' : '이용한 날'}</div>
+                <div className="sub_stat_value">
+                  {isExpired(active.edate) ? '만료' : <>{getDaysFromStart(active.sdate || '-')}<small>일째</small></>}
+                </div>
+              </div>
             </div>
+
+            {active.sdate && active.edate && (() => {
+              // 구독 기간 중 얼마나 지났는지 — 시작일~종료일 사이의 오늘 위치
+              const total = new Date(active.edate).getTime() - new Date(active.sdate).getTime();
+              const used = Date.now() - new Date(active.sdate).getTime();
+              const pct = total > 0 ? Math.min(100, Math.max(0, (used / total) * 100)) : 0;
+              const left = daysUntilExpire(active.edate);
+              const expired = isExpired(active.edate);
+              return (
+                <div className="sub_period">
+                  <div className="sub_period_head">
+                    <span className="sub_period_label">구독 기간</span>
+                    <span className={`sub_period_left${!expired && canRenew(active) ? ' is_soon' : ''}`}>
+                      {expired ? '기간이 끝났습니다' : `${left}일 남음`}
+                    </span>
+                  </div>
+                  <div className="sub_track" role="img" aria-label={`구독 기간의 ${Math.round(pct)}%가 지났습니다`}>
+                    <div className="sub_fill" style={{ width: `${pct}%` }} />
+                  </div>
+                  <div className="sub_period_dates mono">
+                    <span>{active.sdate}</span>
+                    <span>{active.edate}</span>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
+          {/* 변경 신청 — 관리자 승인 대기 */}
           {pendingLoading ? (
-            <p className="b_title">불러오는 중...</p>
+            <div className="sub_card is_pending"><p className="b_title" style={{ margin: 0 }}>불러오는 중...</p></div>
           ) : pending && (
-            <div className="card card_pad_lg wait">
-              <div className='flex both top' style={{marginTop:8 }}>
+            <div className="sub_card is_pending">
+              <div className="sub_head">
                 <div>
-                  <div className="cell_sub" style={{ marginBottom: 4 }}>변경될 구독권</div>
-                  <p className='title' style={{margin:0, color:'var(--text)'}}>{active.pno !== pending.pno ? pending.pname : '-'}</p>
+                  <p className="sub_eyebrow">변경 신청 · {pending.cdate}</p>
+                  <h3 className="sub_pending_title">신청한 변경 내용</h3>
                 </div>
-
-                <span className='badge info'>관리자 승인 대기 중</span>
+                <span className="badge info">관리자 승인 대기 중</span>
               </div>
 
-              <div className='flex both center' style={{marginTop:8 }}>
-                <div className='cell_sub' style={{margin:0}}>변경 신청일</div>
-                <div className='cell_title' style={{margin:0}}>{pending.cdate}</div>
-              </div>
-
-              
-              <div className='flex center both' style={{borderTop:'1px solid var(--border)', paddingTop:20, marginTop:20 }}>
-                <div className="cell_sub" style={{ margin: 0 }}>신청 CCTV 대수</div>
-                <div className='b_title lg' style={{margin:0}}>{pending.ccnt} 대</div>
-              </div>
-
-                <div className='flex center both' style={{marginTop:4 }}>
-                  <div className="cell_sub" style={{ margin: 0 }}>신청 구독개월 수</div>
-                  <p className='b_title lg mono' style={{margin:0}}>{active.pmonth !== pending.pmonth ? (`${pending.pmonth}개월`): '-'}</p>
-                </div>
-
+              <ul className="sub_change_list">
+                <li className="sub_change">
+                  <span className="sub_change_label">구독권</span>
+                  <span className="sub_change_value">
+                    {active.pno !== pending.pno ? (
+                      <><span className="from">{active.pname}</span><span className="arrow" aria-hidden="true">→</span>{pending.pname}</>
+                    ) : <span className="same">변경 없음</span>}
+                  </span>
+                </li>
+                <li className="sub_change">
+                  <span className="sub_change_label">CCTV 대수</span>
+                  <span className="sub_change_value">
+                    {active.ccnt !== pending.ccnt ? (
+                      <><span className="from">{active.ccnt}대</span><span className="arrow" aria-hidden="true">→</span>{pending.ccnt}대</>
+                    ) : <span className="same">변경 없음</span>}
+                  </span>
+                </li>
+                <li className="sub_change">
+                  <span className="sub_change_label">이용 기간</span>
+                  <span className="sub_change_value">
+                    {active.pmonth !== pending.pmonth ? (
+                      <><span className="from">{active.pmonth}개월</span><span className="arrow" aria-hidden="true">→</span>{pending.pmonth}개월</>
+                    ) : <span className="same">변경 없음</span>}
+                  </span>
+                </li>
+              </ul>
+              <p className="sub_pending_foot">승인 전까지는 지금 구독 조건으로 계속 이용하실 수 있습니다.</p>
             </div>
           )}
         </div>
