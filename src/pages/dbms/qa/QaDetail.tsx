@@ -1,4 +1,5 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
+import { logUnexpected } from '../../../components/ts/ApiError';
 import TextCount from '../../../components/ui/common/TextCount';
 import { AlertModal, AttachViewer, PageHeader, PrevNextNav } from '../../../components/ui';
 import { axiosInstance, set_focus } from '../../../utils/Tool';
@@ -56,7 +57,7 @@ export default function QaDetail() {
 
       })
       .catch((err) => {
-        console.error('문의 상세 조회 실패:', err);
+        logUnexpected('문의 상세 조회 실패:', err);
         setError('문의 내용을 불러오지 못했습니다.');
       })
       .finally(() => setLoading(false));
@@ -157,7 +158,7 @@ export default function QaDetail() {
 
     } catch (error) {
 
-      console.error('답변 저장 중 오류 발생:', error);
+      logUnexpected('답변 저장 중 오류 발생:', error);
 
       setAlert({
         message: '존재하지 않거나 삭제된 게시글입니다.',

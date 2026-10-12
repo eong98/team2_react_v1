@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { logUnexpected } from '../../../components/ts/ApiError';
 import TextCount from '../../../components/ui/common/TextCount';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
@@ -171,7 +172,7 @@ export default function NoticeForm() {
           try {
             await attachRef.current.commit();
           } catch (attachErr) {
-            console.error('첨부파일 반영 실패 (글은 정상 저장됨):', attachErr);
+            logUnexpected('첨부파일 반영 실패 (글은 정상 저장됨):', attachErr);
             attachFailMessage = attachErrorMessage(attachErr);
           }
         }
@@ -186,7 +187,7 @@ export default function NoticeForm() {
           try {
             await attachRef.current.commit(Number(newNo));
           } catch (attachErr) {
-            console.error('첨부파일 반영 실패 (글은 정상 저장됨):', attachErr);
+            logUnexpected('첨부파일 반영 실패 (글은 정상 저장됨):', attachErr);
             attachFailMessage = attachErrorMessage(attachErr);
           }
         }
@@ -207,7 +208,7 @@ export default function NoticeForm() {
         onConfirm: goBack,
       });
     } catch (error) {
-      console.error('공지사항 저장 중 오류 발생:', error);
+      logUnexpected('공지사항 저장 중 오류 발생:', error);
 
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { logUnexpected } from '../../../components/ts/ApiError';
 import TextCount from '../../../components/ui/common/TextCount';
 import { useLocation, useParams } from 'react-router-dom';
 import axios from 'axios';
@@ -222,7 +223,7 @@ export default function QaForm() {
           try {
             await attachRef.current.commit();
           } catch (attachErr) {
-            console.error('첨부파일 반영 실패 (글은 정상 저장됨):', attachErr);
+            logUnexpected('첨부파일 반영 실패 (글은 정상 저장됨):', attachErr);
             attachFailMessage = attachErrorMessage(attachErr);
           }
         }
@@ -236,7 +237,7 @@ export default function QaForm() {
           try {
             await attachRef.current.commit(Number(newNo));
           } catch (attachErr) {
-            console.error('첨부파일 반영 실패 (글은 정상 저장됨):', attachErr);
+            logUnexpected('첨부파일 반영 실패 (글은 정상 저장됨):', attachErr);
             attachFailMessage = attachErrorMessage(attachErr);
           }
         }
@@ -262,7 +263,7 @@ export default function QaForm() {
         setAlert({ message: qaErrorMessage(error, '저장하지 못했습니다.'), variant: 'error' });
         return;
       }
-      console.error('문의사항 저장 중 오류 발생:', error);
+      logUnexpected('문의사항 저장 중 오류 발생:', error);
 
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;

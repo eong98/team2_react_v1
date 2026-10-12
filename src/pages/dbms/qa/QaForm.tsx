@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { logUnexpected } from '../../../components/ts/ApiError';
 import TextCount from '../../../components/ui/common/TextCount';
 import { useParams } from 'react-router-dom';
 import { AlertModal, AttachUploader, PageHeader, type AttachUploaderHandle } from '../../../components/ui';
@@ -158,7 +159,7 @@ export default function QaForm() {
           try {
             await attachRef.current.commit();
           } catch (attachErr) {
-            console.error('첨부파일 반영 실패 (글은 정상 저장됨):', attachErr);
+            logUnexpected('첨부파일 반영 실패 (글은 정상 저장됨):', attachErr);
             attachFailMessage = attachErrorMessage(attachErr);
           }
         }
@@ -172,7 +173,7 @@ export default function QaForm() {
           try {
             await attachRef.current.commit(Number(newNo));
           } catch (attachErr) {
-            console.error('첨부파일 반영 실패 (글은 정상 저장됨):', attachErr);
+            logUnexpected('첨부파일 반영 실패 (글은 정상 저장됨):', attachErr);
             attachFailMessage = attachErrorMessage(attachErr);
           }
         }
@@ -190,7 +191,7 @@ export default function QaForm() {
       setAlert({ message: isEdit ? 'FAQ가 수정되었습니다.' : 'FAQ가 등록되었습니다.', variant: 'success', onConfirm: goToList });
 
     } catch (error) {
-      console.error('FAQ 저장 중 오류 발생:', error);// Axios 에러인지 확인
+      logUnexpected('FAQ 저장 중 오류 발생:', error);// Axios 에러인지 확인
 
       if (axios.isAxiosError(error)) {
         const status = error.response?.status; // HTTP 상태 코드 (400, 401, 404, 500 등)

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { logUnexpected } from '../../../components/ts/ApiError';
 import { useNavigate, useParams } from 'react-router-dom';
 import { usePaging } from '../../../hooks/usePaging';
 import { QA_STATUS_MAP, QA_TYPE_MAP, type QaTypes } from '../../../components/ts/QaType';
@@ -101,7 +102,7 @@ export default function QaDetail() {
           setError(qaErrorMessage(err, '해당 문의를 찾을 수 없거나 권한이 없습니다.'));
           return;
         }
-        console.error('문의 상세 조회 실패:', err);
+        logUnexpected('문의 상세 조회 실패:', err);
         setError('문의 내용을 불러오지 못했습니다.');
       })
       .finally(() => setLoading(false));
@@ -197,7 +198,7 @@ export default function QaDetail() {
       }
       const status = (err as { response?: { status?: number } })?.response?.status;
       if (status !== 400 && status !== 404) {
-        console.error('삭제 실패:', err);
+        logUnexpected('삭제 실패:', err);
       }
       setAlert({ message: qaErrorMessage(err, '삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.'), variant: 'error' });
     } finally {

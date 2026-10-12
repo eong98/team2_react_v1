@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { logUnexpected } from '../../../components/ts/ApiError';
 import { axiosInstance, getAttachUrl } from '../../../utils/Tool';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -45,7 +46,7 @@ export default function NoticeDetail() {
         loadAttachList()
       })
       .catch((err) => {
-        console.error('공지사항 상세 조회 실패:', err);
+        logUnexpected('공지사항 상세 조회 실패:', err);
         setError('공지사항 내용을 불러오지 못했습니다.');
       })
       .finally(() => setLoading(false));
@@ -70,7 +71,7 @@ export default function NoticeDetail() {
 
       })
       .catch((err) => {
-        console.error('첨부파일 목록 조회 실패:', err);
+        logUnexpected('첨부파일 목록 조회 실패:', err);
         setError('첨부파일을 불러오지 못했습니다.');
       })
       .finally(() => setLoading(false));
@@ -102,7 +103,7 @@ export default function NoticeDetail() {
       setDeleteTarget(null);
 
     } catch (error) {
-      console.error('삭제 실패:', error);
+      logUnexpected('삭제 실패:', error);
 
       if (axios.isAxiosError(error)) {
         const status = error.response?.status; // HTTP 상태 코드 (400, 401, 404, 500 등)
@@ -209,7 +210,7 @@ export default function NoticeDetail() {
               )}
             </h3>
             <p className="b_title">
-              <span>작성자 No.{notice.ano}</span>
+              <span>작성자 : 관리자 (No.{notice.ano})</span>
               <span className="right">조회수 {notice.vcnt} · {notice.cdate}</span>
             </p>
           </div>

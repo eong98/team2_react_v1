@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { logUnexpected } from '../../../components/ts/ApiError';
 import { useParams } from 'react-router-dom';
 import { NOTICE_TYPE_MAP, type NoticeTypes } from '../../../components/ts/NoticeType';
 import { axiosInstance, getAttachUrl } from '../../../utils/Tool';
@@ -38,7 +39,7 @@ export default function NoticeDetail() {
         loadAttachList()
       })
       .catch((err) => {
-        console.error('공지사항 상세 조회 실패:', err);
+        logUnexpected('공지사항 상세 조회 실패:', err);
         setError('공지사항 내용을 불러오지 못했습니다.');
       })
       .finally(() => setLoading(false));
@@ -64,7 +65,7 @@ export default function NoticeDetail() {
 
       })
       .catch((err) => {
-        console.error('첨부파일 목록 조회 실패:', err);
+        logUnexpected('첨부파일 목록 조회 실패:', err);
         setError('첨부파일을 불러오지 못했습니다.');
       })
       .finally(() => setLoading(false));
@@ -93,7 +94,7 @@ export default function NoticeDetail() {
         />
         <div className="detail_area">
           <div className="card card_pad_lg">
-            <div className="empty_row">해당 공지사항를 찾을 수 없거나 권한이 없습니다.</div>
+            <div className="empty_row">해당 공지사항을 찾을 수 없거나 권한이 없습니다.</div>
           </div>
         </div>
       </section>
@@ -133,7 +134,7 @@ export default function NoticeDetail() {
               )}
             </h3>
             <p className="b_title">
-              <span>작성자 No.{notice.ano}</span>
+              <span>작성자 : 관리자 (No.{notice.ano})</span>
               <span className="right">조회수 {notice.vcnt} · {notice.cdate}</span>
             </p>
           </div>

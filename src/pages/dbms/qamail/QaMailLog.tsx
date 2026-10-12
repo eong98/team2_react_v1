@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { logUnexpected } from '../../../components/ts/ApiError';
 import { useNavigate } from 'react-router-dom';
 import { AdminToolbar, AlertModal, DataTable, DbmsPagination, PageHeader, type DataTableColumn } from '../../../components/ui';
 import { QA_MAIL_TYPE_LABEL, getQaMailLogs, resendQaMail, type QaMailLog as QaMailLogRow } from '../../../components/ts/QaMail';
@@ -57,7 +58,7 @@ export default function QaMailLog() {
       setTotalPages(Math.max(1, data.totalPages));
     } catch (err) {
       if (seq !== requestSeq.current) return;
-      console.error('문의 메일 발송 내역 조회 실패:', err);
+      logUnexpected('문의 메일 발송 내역 조회 실패:', err);
       setRows([]);
       setTotalCount(0);
       setTotalPages(1);

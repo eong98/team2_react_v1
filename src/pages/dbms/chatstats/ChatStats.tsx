@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { logUnexpected } from '../../../components/ts/ApiError';
 import {
   Bar,
   BarChart,
@@ -279,7 +280,7 @@ export default function ChatStats() {
       if (seq !== aiSeq.current) return;
       const response = (err as { response?: { status?: number; data?: { message?: string } } })?.response;
       // 응답 없음·AI 서버 미반영 등 서버가 안내 문구를 준 경우(409)는 그대로 표시
-      if (response?.status !== 409) console.error('챗봇 만족도 AI 분석 실패:', err);
+      logUnexpected('챗봇 만족도 AI 분석 실패:', err);
       setAiError(response?.data?.message || 'AI 분석에 실패했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
       if (seq === aiSeq.current) setAiLoading(false);

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { logUnexpected } from '../../../components/ts/ApiError';
 import { axiosInstance, getAttachUrl } from '../../../utils/Tool';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -236,7 +237,7 @@ export default function QaList() {
       setDeleteTarget(null);
 
     } catch (error) {
-      console.error('삭제 실패:', error);
+      logUnexpected('삭제 실패:', error);
 
       if (axios.isAxiosError(error)) {
         const status = error.response?.status; // HTTP 상태 코드 (400, 401, 404, 500 등)
@@ -342,7 +343,7 @@ export default function QaList() {
       setPurgeTarget(null);
       setAlert({ message: '영구 삭제되었습니다.', variant: 'success', onConfirm: loadQaList });
     } catch (error) {
-      console.error('영구 삭제 실패:', error);
+      logUnexpected('영구 삭제 실패:', error);
       setPurgeTarget(null);
       const message = axios.isAxiosError(error) ? error.response?.data?.message : undefined;
       setAlert({ message: message || '영구 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.', variant: 'error' });

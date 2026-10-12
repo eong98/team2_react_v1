@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { logUnexpected } from '../../../components/ts/ApiError';
 import { useParams } from 'react-router-dom';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import { axiosInstance } from '../../../utils/Tool';
@@ -60,7 +61,7 @@ export default function QaDetail() {
           setError(err.response?.data?.message || '문의사항을 볼 수 있는 권한이 없습니다.');
           return;
         }
-        console.error('문의사항 상세 조회 실패:', err);
+        logUnexpected('문의사항 상세 조회 실패:', err);
         setError('문의사항 내용을 불러오지 못했습니다.');
       })
       .finally(() => setLoading(false));
@@ -97,7 +98,7 @@ export default function QaDetail() {
     } catch (error) {
       const status = (error as { response?: { status?: number } })?.response?.status;
       if (status !== 403 && status !== 404) {
-        console.error('삭제 실패:', error);
+        logUnexpected('삭제 실패:', error);
       }
       setDeleteTarget(null);
       setAlert({ message: qaErrorMessage(error, '삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.'), variant: 'error' });
