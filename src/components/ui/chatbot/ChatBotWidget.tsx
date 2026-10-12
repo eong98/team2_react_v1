@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { axiosInstance } from '../../../utils/Tool';
 import { GlobalStoreSession } from '../../../store/LoginStore';
-import { getOrCreateGno } from '../../ts/ChatGuest';
+import { chatMemberNo, getOrCreateGno } from '../../ts/ChatGuest';
 import type { ChatSessionResponse, ChatSessionSummary } from '../../ts/ChatBot';
 import ChatRoomList from './ChatRoomList';
 import ChatRoom from './ChatRoom';
-import { fastapiWsUrl } from './ChatApi';
+import { fastapiWsUrl, getChatTicket } from './ChatApi';
 import { backoffDelay } from './aiServer';
 
 /** AI 답변 대기 폴링: 기본 간격 / 연속 실패 허용 횟수 / 최대 대기 시간 */
@@ -29,7 +29,8 @@ export default function ChatBotWidget({ corner = false }: ChatBotWidgetProps) {
   // ---------------------------------------------------------------------------
   // 1. 상태(State) 및 사용자 식별 정보 관리
   // ---------------------------------------------------------------------------
-  const { no: mno } = GlobalStoreSession(); // 로그인한 회원의 회원번호 (없으면 null/undefined)
+  const { no, grade } = GlobalStoreSession();
+  const mno = chatMemberNo(no, grade); // 로그인한 회원이면 회원번호, 비로그인·관리자는 0 (→ gno로 상담)
   const [open, setOpen] = useState(false); // 플로팅 버튼(FAB)을 통한 위젯 열림/닫힘 상태
   const [visible, setVisible] = useState(false); // DOM 상에서 위젯 마운트/언마운트 여부 (트랜지션용)
   const [animating, setAnimating] = useState(false); // CSS 슬라이드 애니메이션 제어용 클래스 flag
@@ -62,7 +63,8 @@ export default function ChatBotWidget({ corner = false }: ChatBotWidgetProps) {
     }
     // 회원일 경우 mno, 비회원일 경우 localstorage 기반 gno 생성/조회하여 파라미터 구성
     const params = mno ? `mno=${mno}` : `gno=${getOrCreateGno()}`;
-    const wsUrl = fastapiWsUrl(`/api/chatbot/ws?${params}`); // http→ws, https→wss (프록시면 현재 사이트 기준)
+    // 누구의 알림을 받을지는 Spring이 발급한 티켓으로 확인 (티켓 기능이 꺼져 있으면 예전처럼 mno/gno만)
+    let forceTicket = false; // 직전 연결이 끊겼으면 티켓을 새로 받아서 재연결
 
     let ws: WebSocket | null = null;
     let retry = 0; // 연속 재연결 시도 횟수 → 대기 시간 1초, 2초, 4초 … 최대 30초
@@ -78,9 +80,13 @@ export default function ChatBotWidget({ corner = false }: ChatBotWidgetProps) {
       reconnectTimer = window.setTimeout(connect, backoffDelay(retry++));
     };
 
-    const connect = () => {
+    const connect = async () => {
       if (stopped) return;
-      ws = new WebSocket(wsUrl);
+      const ticket = await getChatTicket(forceTicket);
+      forceTicket = false;
+      if (stopped) return; // 티켓을 받는 사이 화면을 떠났거나 사용자가 바뀜
+      const ticketParam = ticket ? `&ticket=${encodeURIComponent(ticket)}` : '';
+      ws = new WebSocket(fastapiWsUrl(`/api/chatbot/ws?${params}${ticketParam}`)); // http→ws, https→wss (프록시면 현재 사이트 기준)
 
       ws.onopen = () => {
         retry = 0;
@@ -126,6 +132,7 @@ export default function ChatBotWidget({ corner = false }: ChatBotWidgetProps) {
         window.clearInterval(pingTimer);
         if (stopped) return;
         wasOffline = true;
+        forceTicket = true;
         setAiOnline(false);
         scheduleReconnect();
       };

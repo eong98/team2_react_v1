@@ -1,4 +1,7 @@
 import axios from 'axios';
+import { axiosInstance } from '../../../utils/Tool';
+import { GlobalStoreSession } from '../../../store/LoginStore';
+import { chatMemberNo, getOrCreateGno } from '../../ts/ChatGuest';
 
 export interface ChatSummaryResult {
   title: string;
@@ -35,10 +38,106 @@ export const fastapiWsUrl = (path: string): string => {
 };
 
 
+/* ---------------------------------------------------------------------
+   챗봇 연결용 티켓
+
+   FastAPI(AI 서버)는 Spring의 로그인 쿠키를 볼 수 없어서, 예전에는 화면이 보낸
+   회원번호를 그대로 믿었습니다. 이제 Spring이 요청자를 확인하고 발급한 티켓을
+   FastAPI 호출(X-Chat-Ticket 헤더)과 웹소켓(?ticket=)에 붙입니다.
+   - 서버에 비밀키(CHAT_TICKET_SECRET)가 없으면 Spring이 ticket: null을 주고,
+     그때는 티켓 없이 예전처럼 호출합니다.
+   - 티켓은 10분짜리 — 만료 1분 전까지 재사용하고, 로그인·로그아웃으로 사용자가 바뀌면 새로 받습니다.
+--------------------------------------------------------------------- */
+let ticketCache: { key: string; ticket: string | null; expiresAt: number } | null = null;
+
+/** 지금 사용자 — 회원이면 mno(로그인 알림용, 서버는 토큰으로 확인), 아니면 브라우저 식별값 */
+const chatIdentity = (): { key: string; params: Record<string, string | number> } => {
+  const { no, grade } = GlobalStoreSession.getState();
+  const mno = chatMemberNo(no, grade);
+  if (mno) return { key: `m:${mno}`, params: { mno } };
+  const gno = getOrCreateGno();
+  return { key: `g:${gno}`, params: { gno } };
+};
+
+/** 챗봇 연결용 티켓 (없으면 null — 서버에 티켓 기능이 꺼져 있거나 Spring에 연결할 수 없는 경우) */
+export const getChatTicket = async (force = false): Promise<string | null> => {
+  const { key, params } = chatIdentity();
+  if (!force && ticketCache && ticketCache.key === key && Date.now() < ticketCache.expiresAt) {
+    return ticketCache.ticket;
+  }
+  try {
+    const res = await axiosInstance.get<{ ticket: string | null; expiresIn: number }>('/chat_session/ticket', { params });
+    const seconds = Math.max(30, (res.data.expiresIn ?? 600) - 60); // 만료 1분 전까지만 재사용
+    ticketCache = { key, ticket: res.data.ticket ?? null, expiresAt: Date.now() + seconds * 1000 };
+  } catch {
+    ticketCache = { key, ticket: null, expiresAt: Date.now() + 30_000 }; // 30초 뒤 다시 시도
+  }
+  return ticketCache.ticket;
+};
+
+/* 관리자 화면용 티켓 — 챗봇 매뉴얼·옵션메뉴 관리 API(/api/chatbot/manual-doc/*) 전용.
+   Spring이 관리자 로그인을 확인하고 발급 (GET /chat_session/ticket/admin) */
+let adminTicketCache: { ticket: string | null; expiresAt: number } | null = null;
+
+export const getAdminChatTicket = async (force = false): Promise<string | null> => {
+  if (!force && adminTicketCache && Date.now() < adminTicketCache.expiresAt) return adminTicketCache.ticket;
+  try {
+    const res = await axiosInstance.get<{ ticket: string | null; expiresIn: number }>('/chat_session/ticket/admin');
+    const seconds = Math.max(30, (res.data.expiresIn ?? 600) - 60);
+    adminTicketCache = { ticket: res.data.ticket ?? null, expiresAt: Date.now() + seconds * 1000 };
+  } catch {
+    adminTicketCache = { ticket: null, expiresAt: Date.now() + 30_000 };
+  }
+  return adminTicketCache.ticket;
+};
+
+/**
+ * 관리자 매뉴얼 API용 axios — 요청마다 관리자 티켓(X-Chat-Ticket)을 붙이고,
+ * 티켓 만료(401)면 새로 받아 한 번 더 시도 (서버에 티켓 기능이 꺼져 있으면 티켓 없이 그대로 호출)
+ */
+export const adminFastapi = axios.create();
+adminFastapi.interceptors.request.use(async (config) => {
+  const ticket = await getAdminChatTicket((config as { _retryTicket?: boolean })._retryTicket === true);
+  if (ticket) config.headers.set('X-Chat-Ticket', ticket);
+  return config;
+});
+adminFastapi.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const config = error.config as (typeof error.config & { _retryTicket?: boolean }) | undefined;
+    if (config && error.response?.status === 401 && !config._retryTicket) {
+      config._retryTicket = true;
+      return adminFastapi(config);
+    }
+    return Promise.reject(error);
+  },
+);
+
+/** FastAPI 챗봇 API 호출 — 티켓을 붙이고, 티켓 만료(401)면 새로 받아 한 번 더 시도 */
+const callChatApi = async <T>(method: 'post' | 'put', path: string, body?: unknown): Promise<T> => {
+  const request = async (force: boolean) => {
+    const ticket = await getChatTicket(force);
+    return axios.request<T>({
+      method,
+      url: `${FASTAPI_BASE_URL}${path}`,
+      data: body,
+      headers: ticket ? { 'X-Chat-Ticket': ticket } : undefined,
+    });
+  };
+  try {
+    return (await request(false)).data;
+  } catch (err) {
+    if (axios.isAxiosError(err) && err.response?.status === 401) {
+      return (await request(true)).data;
+    }
+    throw err;
+  }
+};
+
+
 /** H200 FastAPI 챗봇 대화 요약 실행. Spring을 거치지 않고 FastAPI를 직접 호출한다. */
 export const summarizeChat = async (sno: string): Promise<ChatSummaryResult> => {
-  const response = await axios.post<ChatSummaryResult>(`${FASTAPI_BASE_URL}/api/chatbot/${sno}/summarize`);
-  return response.data;
+  return callChatApi<ChatSummaryResult>('post', `/api/chatbot/${sno}/summarize`);
 };
 
 
@@ -47,7 +146,7 @@ export const summarizeChat = async (sno: string): Promise<ChatSummaryResult> => 
  * 완료되면 WebSocket 'session_updated' 알림으로 목록이 새로고침된다.
  */
 export const summarizeTitle = async (sno: string): Promise<void> => {
-  await axios.post(`${FASTAPI_BASE_URL}/api/chatbot/${sno}/summarize-title`);
+  await callChatApi<unknown>('post', `/api/chatbot/${sno}/summarize-title`);
 };
 
 
@@ -65,8 +164,7 @@ export interface AiChatResult {
 
 /** H200 FastAPI AI 자유상담 실행. Spring을 거치지 않고 FastAPI를 직접 호출한다. */
 export const aiChat = async (sno: string, message: string): Promise<AiChatResult> => {
-  const response = await axios.post<AiChatResult>(`${FASTAPI_BASE_URL}/api/chatbot/${sno}/ai-chat`, { message });
-  return response.data;
+  return callChatApi<AiChatResult>('post', `/api/chatbot/${sno}/ai-chat`, { message });
 };
 
 export interface AiStartResult {
@@ -74,11 +172,9 @@ export interface AiStartResult {
 }
 
 export const startAiConsult = async (sno: string): Promise<AiStartResult> => {
-  const response = await axios.put<AiStartResult>(`${FASTAPI_BASE_URL}/api/chatbot/${sno}/ai-start`);
-  return response.data;
+  return callChatApi<AiStartResult>('put', `/api/chatbot/${sno}/ai-start`);
 };
 
 export const endAiConsultDivider = async (sno: string): Promise<AiStartResult> => {
-  const response = await axios.put<AiStartResult>(`${FASTAPI_BASE_URL}/api/chatbot/${sno}/ai-end`);
-  return response.data;
+  return callChatApi<AiStartResult>('put', `/api/chatbot/${sno}/ai-end`);
 };

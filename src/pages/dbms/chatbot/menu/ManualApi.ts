@@ -1,5 +1,5 @@
-import axios from 'axios';
-import { FASTAPI_BASE_URL } from '../../../../components/ui/chatbot/ChatApi';
+// adminFastapi: 요청마다 관리자 티켓을 붙이는 axios (매뉴얼 관리 API는 관리자만 호출 가능)
+import { FASTAPI_BASE_URL, adminFastapi } from '../../../../components/ui/chatbot/ChatApi';
 
 
 /* ---------------------------------------------------------------------
@@ -17,7 +17,7 @@ export interface ManualDocResult {
 export const uploadManualDoc = async (file: File): Promise<ManualDocResult> => {
   const formData = new FormData();
   formData.append('file', file);
-  const response = await axios.post<ManualDocResult>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc`, formData, {
+  const response = await adminFastapi.post<ManualDocResult>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return response.data;
@@ -27,7 +27,7 @@ export const uploadManualDoc = async (file: File): Promise<ManualDocResult> => {
 export const updateManualDoc = async (docNo: number, file: File): Promise<ManualDocResult> => {
   const formData = new FormData();
   formData.append('file', file);
-  const response = await axios.put<ManualDocResult>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/${docNo}`, formData, {
+  const response = await adminFastapi.put<ManualDocResult>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/${docNo}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return response.data;
@@ -43,13 +43,13 @@ export interface ManualDocSummary {
 
 /** 업로드되어 있는 문서 전체 목록 조회. */
 export const getManualDocs = async (): Promise<ManualDocSummary[]> => {
-  const response = await axios.get<ManualDocSummary[]>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/list`);
+  const response = await adminFastapi.get<ManualDocSummary[]>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/list`);
   return response.data;
 };
 
 /** 문서 삭제. 이 문서로 생성된 AI 옵션메뉴도 함께 삭제됨. */
 export const deleteManualDoc = async (docNo: number): Promise<void> => {
-  await axios.delete(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/${docNo}`);
+  await adminFastapi.delete(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/${docNo}`);
 };
 
 export interface BulkDeleteResult {
@@ -59,7 +59,7 @@ export interface BulkDeleteResult {
 
 /** 문서 일괄 삭제. */
 export const deleteManualDocs = async (docNos: number[]): Promise<BulkDeleteResult> => {
-  const response = await axios.post<BulkDeleteResult>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/delete-bulk`, {
+  const response = await adminFastapi.post<BulkDeleteResult>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/delete-bulk`, {
     nos: docNos,
   });
   return response.data;
@@ -67,7 +67,7 @@ export const deleteManualDocs = async (docNos: number[]): Promise<BulkDeleteResu
 
 /** [AI 옵션생성] 버튼 활성화 여부 조회. */
 export const isGenerateAvailable = async (): Promise<boolean> => {
-  const response = await axios.get<{ available: boolean }>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/generate-available`);
+  const response = await adminFastapi.get<{ available: boolean }>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/generate-available`);
   return response.data.available;
 };
 
@@ -105,7 +105,7 @@ export interface GenerateMenuResult {
 
 /** 신규/수정 문서로 옵션형 메뉴 트리를 자동 생성 (USEYN='N' 비공개로 저장). 진행률 없음. */
 export const generateMenu = async (): Promise<GenerateMenuResult> => {
-  const response = await axios.post<GenerateMenuResult>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/generate-menu`);
+  const response = await adminFastapi.post<GenerateMenuResult>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/generate-menu`);
   return response.data;
 };
 
@@ -133,7 +133,7 @@ export interface GenerateJobStatus {
 
 /** AI 옵션생성 시작 (백그라운드). 이미 진행 중이면 그 작업 상태를 그대로 반환. */
 export const startGenerateMenu = async (): Promise<GenerateJobStatus> => {
-  const response = await axios.post<GenerateJobStatus>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/generate-menu/start`);
+  const response = await adminFastapi.post<GenerateJobStatus>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/generate-menu/start`);
   return response.data;
 };
 
@@ -142,19 +142,19 @@ export const startGenerateMenu = async (): Promise<GenerateJobStatus> => {
  * 내부 정보 제외, 긴 제목 요약 같은 바뀐 규칙을 기존 AI 메뉴에 반영할 때 사용.
  */
 export const regenerateAllMenus = async (): Promise<GenerateJobStatus> => {
-  const response = await axios.post<GenerateJobStatus>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/generate-menu/regenerate-all`);
+  const response = await adminFastapi.post<GenerateJobStatus>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/generate-menu/regenerate-all`);
   return response.data;
 };
 
 /** AI 옵션생성 진행 상태 조회 (진입 시 1회 + 진행 중 폴링). */
 export const getGenerateMenuStatus = async (): Promise<GenerateJobStatus> => {
-  const response = await axios.get<GenerateJobStatus>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/generate-menu/status`);
+  const response = await adminFastapi.get<GenerateJobStatus>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/generate-menu/status`);
   return response.data;
 };
 
 /** 완료/실패한 작업 기록 지우기 (진행 패널 [닫기]). */
 export const clearGenerateMenu = async (): Promise<void> => {
-  await axios.post(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/generate-menu/clear`);
+  await adminFastapi.post(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/generate-menu/clear`);
 };
 
 export interface RetryVectorizeResult {
@@ -163,7 +163,7 @@ export interface RetryVectorizeResult {
 
 /** CHAT_MENU 재생성 없이, 벡터화 실패한 문서만 다시 벡터화 시도. */
 export const retryVectorize = async (): Promise<RetryVectorizeResult> => {
-  const response = await axios.post<RetryVectorizeResult>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/retry-vectorize`);
+  const response = await adminFastapi.post<RetryVectorizeResult>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/retry-vectorize`);
   return response.data;
 };
 
@@ -187,7 +187,7 @@ export interface SuggestCategoriesResult {
  * 진행 상황/결과는 getGenerateMenuStatus()로 조회 (kind='suggest').
  */
 export const startSuggestCategories = async (): Promise<GenerateJobStatus> => {
-  const response = await axios.post<GenerateJobStatus>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/suggest-categories/start`);
+  const response = await adminFastapi.post<GenerateJobStatus>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/suggest-categories/start`);
   return response.data;
 };
 
@@ -202,18 +202,18 @@ export interface ReplaceTopMenusResult {
  * 매뉴얼 전체는 [AI 옵션생성] 대상으로 되돌림.
  */
 export const replaceTopMenus = async (menus: { label: string; desc: string }[]): Promise<ReplaceTopMenusResult> => {
-  const response = await axios.put<ReplaceTopMenusResult>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/top-menus`, { menus });
+  const response = await adminFastapi.put<ReplaceTopMenusResult>(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/top-menus`, { menus });
   return response.data;
 };
 
 /** 최상위 메뉴 + 지정한 하위메뉴(STEP2)와 그 하위만 공개. */
 export const publishMenuNodes = async (topNo: number, nos: number[]): Promise<void> => {
-  await axios.put(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/publish-nodes`, { topNo, nos });
+  await adminFastapi.put(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/publish-nodes`, { topNo, nos });
 };
 
 /** 최상위 메뉴(및 하위 전체)를 공개(USEYN='Y')로 전환. */
 export const publishMenuTree = async (topNo: number): Promise<void> => {
-  await axios.put(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/publish/${topNo}`);
+  await adminFastapi.put(`${FASTAPI_BASE_URL}/api/chatbot/manual-doc/publish/${topNo}`);
 };
 
 

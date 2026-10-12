@@ -18,7 +18,7 @@ import {
   numberToEndFlow,
 } from '../../ts/ChatBot';
 import type { ChatMenuTypes } from '../../ts/ChatMenu';
-import { getOrCreateGno } from '../../ts/ChatGuest';
+import { chatMemberNo, getOrCreateGno } from '../../ts/ChatGuest';
 import { aiChat, endAiConsultDivider, startAiConsult, summarizeChat, summarizeTitle } from './ChatApi';
 import { apiErrorMessage, backoffDelay } from './aiServer';
 import { notifyChatChanged, onChatChanged } from './chatSync';
@@ -67,7 +67,8 @@ export default function ChatRoom({
   aiOnline = true,
 }: ChatRoomProps) {
   const navigate = useNavigate();
-  const { no: mno } = GlobalStoreSession(); // 로그인 사용자 회원번호 (비회원이면 null)
+  const { no: loginNo, grade } = GlobalStoreSession();
+  const mno = chatMemberNo(loginNo, grade); // 로그인한 회원이면 회원번호, 비로그인·관리자는 0 (→ gno로 상담)
 
   /* ---------------------------------------------------------------------
      Ref 관리
@@ -478,6 +479,7 @@ export default function ChatRoom({
 
     const res = await axiosInstance.post<ChatActionResult>(
       '/chat_session',
+      // mno는 "로그인한 회원"이라는 알림용 — 상담 주인은 서버가 로그인 토큰에서 찾음 (비회원·관리자는 gno)
       { mno: mno || null, gno: mno ? null : getOrCreateGno(), channel: 10, cmode, cno },
       { params },
     );

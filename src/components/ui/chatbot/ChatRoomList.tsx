@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { axiosInstance } from '../../../utils/Tool';
 import { GlobalStoreSession } from '../../../store/LoginStore';
-import { getOrCreateGno } from '../../ts/ChatGuest';
+import { chatMemberNo, getOrCreateGno } from '../../ts/ChatGuest';
 import { onChatChanged } from './chatSync';
 import { formatMessageDate, formatRelativeTime, type ChatSessionSummary } from '../../ts/ChatBot';
 
@@ -14,7 +14,8 @@ interface ChatRoomListProps {
 }
 
 export default function ChatRoomList({ onClose, onEnterRoom, refreshSignal, aiRespondingSno }: ChatRoomListProps) {
-  const { no: mno } = GlobalStoreSession(); // 로그인한 사용자 ID (회원번호)
+  const { no, grade } = GlobalStoreSession();
+  const mno = chatMemberNo(no, grade); // 로그인한 회원이면 회원번호, 비로그인·관리자는 0 (→ gno로 조회)
   const [rooms, setRooms] = useState<ChatSessionSummary[]>([]); // 조회된 채팅방 목록
   const [loading, setLoading] = useState(true); // 데이터 로딩 상태
 
