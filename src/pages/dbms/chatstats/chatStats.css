@@ -1,0 +1,45 @@
+/* /dbms/chatstats 챗봇 상담 만족도 통계 - 매장 통계(Dashboard.css)에 없는 것만 추가 */
+
+/* 차트 제목 + 범례 (만족 / 불만족) */
+.dashboard_page .chat_stats_title_row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.dashboard_page .chat_stats_legend { display: flex; gap: 14px; list-style: none; margin: 0; padding: 0; font-size: 12px; color: var(--text-dim); }
+.dashboard_page .chat_stats_legend li { display: inline-flex; align-items: center; gap: 6px; }
+.dashboard_page .chat_stats_legend .swatch { width: 10px; height: 10px; border-radius: 2px; }
+
+.dashboard_page .chat_stats_sub_title { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border); }
+
+/* 최근 불만족 의견 — 직접 입력한 의견은 아래 줄에 전체 표시 */
+.dashboard_page .chat_stats_opinion { flex-wrap: wrap; }
+.dashboard_page .chat_stats_opinion .recent_time { margin-left: auto; }
+.dashboard_page .chat_stats_memo { flex-basis: 100%; margin: 2px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--surface-2); color: var(--text-dim); font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+
+@media (max-width: 900px) {
+  .dashboard_page .chat_stats_opinion .recent_time { margin-left: 0; }
+}
+
+/* ---- AI 감정분석 · 요약 패널 (매장 설문 상세의 AI 요약 패널과 같은 구성) ---- */
+.dashboard_page .chat_ai { margin-bottom: 16px; }
+.dashboard_page .chat_ai_head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.dashboard_page .chat_ai_title { margin: 0; font-size: 14px; font-weight: 700; color: var(--text); }
+.dashboard_page .chat_ai_title .cell_sub { margin-left: 8px; font-weight: 400; }
+.dashboard_page .chat_ai_message { margin: 14px 0 0; font-size: 13px; line-height: 1.7; color: var(--text-dim); }
+.dashboard_page .chat_ai_message.is_error { color: var(--red-200, #f5a3a3); }
+.dashboard_page .chat_ai_body { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 24px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.dashboard_page .chat_ai_text p { margin: 0; font-size: 13.5px; line-height: 1.75; color: var(--text); white-space: pre-wrap; word-break: keep-all; }
+.dashboard_page .chat_ai_sub { margin: 0; font-size: 13px; font-weight: 700; color: var(--text); }
+.dashboard_page .chat_ai_text .chat_ai_sub { margin: 16px 0 8px; }
+.dashboard_page .chat_ai_points { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.6; color: var(--text-dim); }
+.dashboard_page .chat_ai_sentiment { padding-left: 24px; border-left: 1px solid var(--border); }
+.dashboard_page .chat_ai_sentiment_head { display: flex; align-items: center; justify-content: space-between; }
+.dashboard_page .chat_ai_score { display: flex; align-items: baseline; gap: 6px; margin: 12px 0 10px; }
+.dashboard_page .chat_ai_score .mono:first-child { font-size: 32px; font-weight: 700; color: var(--text); }
+.dashboard_page .chat_ai_score_max { color: var(--text-faint); }
+.dashboard_page .chat_ai_track { position: relative; height: 10px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.dashboard_page .chat_ai_fill { position: absolute; inset: 0 auto 0 0; border-radius: 0 4px 4px 0; background: var(--primary); }
+.dashboard_page .chat_ai_legend { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; color: var(--text-faint); }
+.dashboard_page .chat_ai_reason { margin: 12px 0 0; font-size: 12.5px; line-height: 1.6; color: var(--text-dim); }
+
+@media (max-width: 860px) {
+  .dashboard_page .chat_ai_body { grid-template-columns: 1fr; }
+  .dashboard_page .chat_ai_sentiment { padding: 16px 0 0; border-left: 0; border-top: 1px solid var(--border); }
+}

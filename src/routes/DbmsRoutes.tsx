@@ -42,6 +42,7 @@ import ShopOrderLogList from '../pages/dbms/shoporder/ShopOrderLogList';
 import ShopOrderPendingnList from '../pages/dbms/shoporder/ShopOrderPendingList';
 import ChatMenu from '../pages/dbms/chatbot/menu/ChatMenu';
 import PayStats from '../pages/dbms/paystats/PayStats';
+import ChatStats from '../pages/dbms/chatstats/ChatStats';
 
 export default function DbmsRoutes() {
   return (
@@ -66,6 +67,7 @@ export default function DbmsRoutes() {
       <Route path="/order/history" element={<ShopOrderLogList />} />
       <Route path="pending" element={<ShopOrderPendingnList />} />
       <Route path="paystats" element={<PayStats />} />{/* 구독권 결제 통계 */}
+      <Route path="chatstats" element={<ChatStats />} />{/* 챗봇 상담 만족도 통계 */}
 
       <Route path="chatmenu" element={<ChatMenu />} />
 
