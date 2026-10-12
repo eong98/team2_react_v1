@@ -49,7 +49,7 @@ export default function ShopOrderPendingnList() {
     setLoading(true);
 
     try {
-      const res = await axiosInstance.get<PendingSearchResult>(`/shop_order_pending/list/${mno}`, {
+      const res = await axiosInstance.get<PendingSearchResult>('/shop_order_pending/my', {
         params: {
           status: applied.status === '' ? undefined : Number(applied.status),
           word: applied.word.trim() || undefined,

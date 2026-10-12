@@ -53,7 +53,7 @@ export default function ShopPaymentList() {
     setLoading(true);
 
     try {
-      const res = await axiosInstance.get<SearchResult>(`/shop_payment/${mno}/${ono}`, {
+      const res = await axiosInstance.get<SearchResult>(`/shop_payment/my/${ono}`, {
         params: {
           page: page - 1,
           size: PAGE_SIZE,

@@ -29,7 +29,7 @@ export default function ShopOrderLog() {
     setLoading(true);
 
     try {
-      const res = await axiosInstance.get<LogSearchResult>(`/shop_order_log/list/${mno}/${ono}`, {
+      const res = await axiosInstance.get<LogSearchResult>(`/shop_order_log/my/${ono}`, {
         params: {
           page: page - 1,
           size: PAGE_SIZE,

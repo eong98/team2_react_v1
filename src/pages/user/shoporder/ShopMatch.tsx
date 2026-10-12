@@ -55,7 +55,7 @@ export default function ShopMatch() {
       return;
     }
     axiosInstance
-      .get<ShopType[]>(`/shop_order/linkable-shops/${mno}`)
+      .get<ShopType[]>('/shop_order/linkable-shops')
       .then((res) => {
         setShops(res.data);
       })

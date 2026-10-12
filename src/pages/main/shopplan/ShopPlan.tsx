@@ -104,7 +104,7 @@ export default function ShopPlan() {
       const orderRes = await axiosInstance.post<ShopOrderTypes>('/shop_order', orderPayload);
       navigate(`/user/shoporder/${orderRes.data.no}/match`);
 
-      const getGrade = await axiosInstance.get(`/shop_order/grade/${mno}`)
+      const getGrade = await axiosInstance.get('/shop_order/grade')
       GlobalStoreSession.getState().setGrade(getGrade.data);
       
     } catch (err) {

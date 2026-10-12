@@ -34,7 +34,7 @@ export default function ShopOrderMatch() {
   useEffect(() => {
     if (!mno || !sno) return;
     axiosInstance
-      .get<ShopOrderTypes[]>(`/shop_order/linkable-plans/${mno}/${sno}`)
+      .get<ShopOrderTypes[]>(`/shop_order/linkable-plans/${sno}`)
       .then((res) => setOrders(res.data))
       .catch((err) => console.error('연결 가능한 구독권 조회 실패:', err))
       .finally(() => setLoading(false));

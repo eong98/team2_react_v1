@@ -55,7 +55,7 @@ export default function ShopOrderList() {
   
   /* 구독상태 변경으로 스토리지 grade 재설정 */
   const setGrade = async () => {
-    const getGrade = await axiosInstance.get(`/shop_order/grade/${mno}`)
+    const getGrade = await axiosInstance.get('/shop_order/grade')
     const res = getGrade.data
     GlobalStoreSession.getState().setGrade(res);
 
@@ -72,7 +72,7 @@ export default function ShopOrderList() {
     setLoading(true);
 
     try {
-      const res = await axiosInstance.get<OrderSearchResult>(`/shop_order/list/${mno}`, {
+      const res = await axiosInstance.get<OrderSearchResult>('/shop_order/my', {
         params: {
           page: page - 1,
           size: PAGE_SIZE,
