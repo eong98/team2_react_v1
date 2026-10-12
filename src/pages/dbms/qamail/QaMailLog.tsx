@@ -216,10 +216,6 @@ export default function QaMailLog() {
         }
       />
 
-      <div className="qa_mail_count">
-        전체<strong>{totalCount.toLocaleString()}</strong>건
-      </div>
-
       <DataTable
         columns={columns}
         data={rows}
