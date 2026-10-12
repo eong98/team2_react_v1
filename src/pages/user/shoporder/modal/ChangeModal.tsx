@@ -51,6 +51,9 @@ export default function ChangeModal({ target, onClose, onSuccess }: ChangeModalP
 
   const ccntChanged = target ? ccnt !== target.ccnt : false;
   const requiresApproval = ccntChanged; // 대수가 바뀌면 승인 필요
+  // 기간·대수 중 하나라도 지금과 달라야 변경 신청 가능
+  // (그대로인 채 예상액을 확인하면 서버가 "변경 사항이 없습니다"로 거절해 오류 문구가 떴음)
+  const hasChange = target ? ccntChanged || pmonth !== target.pmonth : false;
 
   const onCcntChange = (v: number) => {
     setCcnt(Math.min(maxCcnt, Math.max(minCcnt, v)));
@@ -63,7 +66,7 @@ export default function ChangeModal({ target, onClose, onSuccess }: ChangeModalP
   };
 
   const checkPreview = async () => {
-    if (!target) return;
+    if (!target || !hasChange) return;
     setPreviewLoading(true);
     setError('');
     try {
@@ -177,11 +180,16 @@ export default function ChangeModal({ target, onClose, onSuccess }: ChangeModalP
             <button
               type="button"
               className="btn btn_md btn_outline_primary chg_preview_btn"
-              disabled={previewLoading}
+              disabled={previewLoading || !hasChange}
               onClick={checkPreview}
             >
               {previewLoading ? '계산 중...' : preview ? '예상액 다시 확인' : '예상액 확인'}
             </button>
+            {!hasChange && (
+              <p className="form_hint" style={{ textAlign: 'center' }}>
+                이용 기간이나 CCTV 대수를 지금과 다르게 선택하면 예상액을 확인할 수 있습니다.
+              </p>
+            )}
 
             {/* 예상 결과 */}
             {preview && (
