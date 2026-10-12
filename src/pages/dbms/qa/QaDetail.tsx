@@ -1,4 +1,5 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
+import TextCount from '../../../components/ui/common/TextCount';
 import { AlertModal, AttachViewer, PageHeader, PrevNextNav } from '../../../components/ui';
 import { axiosInstance, set_focus } from '../../../utils/Tool';
 import { GlobalStoreSession } from '../../../store/LoginStore';
@@ -243,8 +244,14 @@ export default function QaDetail() {
               )}
             </h3>
             <p className="b_title">
-              <span>작성자 No.{qa.mno}</span>
-              <span className='right'>{qa.cdate}</span>
+              <span>작성자 :
+                {qa.mno !== null ? (
+                  ` ${qa.id} (No.${qa.mno})`
+                ):(' 비회원')}
+              </span>
+              <span className="right">
+                {qa.cdate} | 조회수 {qa.vcnt}
+              </span>
             </p>
 
           </div>
@@ -303,6 +310,7 @@ export default function QaDetail() {
                       value={input.answer}
                       onChange={onChange}
                     />
+                    <TextCount value={input.answer} />
                     {errors.answer && <div className="form_hint error">{errors.answer}</div>}
                   </div>
                 </div>

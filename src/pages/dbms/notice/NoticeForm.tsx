@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import TextCount from '../../../components/ui/common/TextCount';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { AlertModal, AttachUploader, PageHeader, type AttachUploaderHandle } from '../../../components/ui';
@@ -276,24 +277,6 @@ export default function NoticeForm() {
             </div>
           </div>
 
-          {/* 작성자 ID (읽기 전용) */}
-          <div className="form_group">
-            <label className="form_label" htmlFor="user_id">
-              작성자 ID
-            </label>
-            <div className="form_control">
-              <input
-                type="text"
-                id="user_id"
-                name="ano"
-                className="form_input"
-                value={`${isEdit ? id : '등록할때 저장된 아이디 수정예정'}  (No.${ano})`}
-                readOnly
-                style={{ maxWidth: 200 }}
-              />
-            </div>
-          </div>
-
           {/* 공지 제목 */}
           <div className="form_group">
             <label className="form_label" htmlFor="title">
@@ -309,6 +292,7 @@ export default function NoticeForm() {
                 value={input.title}
                 onChange={onChange}
               />
+              <TextCount value={input.title} maxBytes={200} />
               {errors.title ? (
                 <div className="form_hint error">{errors.title}</div>
               ) : (
@@ -332,6 +316,7 @@ export default function NoticeForm() {
                 onChange={onChange}
                 style={{ minHeight: 220 }}
               />
+              <TextCount value={input.content} />
               {errors.content ? (
                 <div className="form_hint error">{errors.content}</div>
               ) : (

@@ -307,6 +307,8 @@ export default function QaList() {
           </div>
           <div className="cell_sub">
             접수유형: {Object.entries(QA_TYPE_MAP).find(([type]) => Number(type) === n.type)?.[1].label ?? n.type} · {n.cdate.split(' ')[0]}
+            {/* 작성자 — 회원이면 아이디(번호), 비회원이면 '비회원' (상세·삭제된 글 탭과 같은 표시) */}
+            {' · '}작성자: {n.mno ? `${n.id ?? ''} (No.${n.mno})` : '비회원'}
           </div>
         </div>
       ),

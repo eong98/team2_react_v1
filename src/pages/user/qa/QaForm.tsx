@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import TextCount from '../../../components/ui/common/TextCount';
 import { useLocation, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { AlertModal, AttachUploader, PageHeader, type AttachUploaderHandle } from '../../../components/ui';
@@ -367,6 +368,7 @@ export default function QaForm() {
                 value={input.title}
                 onChange={onChange}
               />
+              <TextCount value={input.title} maxBytes={200} />
               {errors.title && <div className="form_hint error">{errors.title}</div>}
             </div>
           </div>
@@ -386,6 +388,7 @@ export default function QaForm() {
                 onChange={onChange}
                 style={{ minHeight: 220 }}
               />
+              <TextCount value={input.content} />
               {errors.content ? (
                 <div className="form_hint error">{errors.content}</div>
               ) : (
