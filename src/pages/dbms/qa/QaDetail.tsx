@@ -78,7 +78,9 @@ export default function QaDetail() {
     
     setInput((prev) => ({
       ...prev,
-      answer: qa?.answer
+      // 기존 답변이 없으면(첫 답변 저장 중) 입력한 내용을 그대로 둠
+      // — null을 넣으면 textarea가 비워지고 콘솔에 "value prop should not be null" 오류가 남
+      answer: qa?.answer ?? prev.answer
     }));
 
   }, [isEdit]);
@@ -132,7 +134,8 @@ export default function QaDetail() {
   const send = async () => {
     if (!validate() || submitting) return;
 
-    setIsEdit(true);
+    // 여기서 수정 모드로 바꾸지 않음 — 바꾸면 상세를 다시 불러오는 요청이 답변 저장과 동시에 나가
+    // 입력한 내용이 지워지고(textarea value=null), 서버에서도 저장된 답변이 덮어써지는 일이 있었음
     setSubmitting(true);
     try {
       // 답변 관리자 번호는 보내지 않음 — 서버가 로그인 토큰에서 찾음
@@ -145,7 +148,10 @@ export default function QaDetail() {
       setAlert({
         message: isEdit ? '답변 내용이 수정되었습니다.' : '답변 내용이 등록되었습니다.',
         variant: 'success',
-        onConfirm: () => setIsEdit(false)
+        onConfirm: () => {
+          setIsEdit(false);
+          loadQa(); // 저장된 답변으로 화면 갱신
+        }
       });
 
     } catch (error) {
