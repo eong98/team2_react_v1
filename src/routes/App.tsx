@@ -19,6 +19,7 @@ import BaseLayout from '../components/layout/BaseLayout';
 import UserRoutes from './UserRoutes';
 import DbmsRoutes from './DbmsRoutes';
 import RequireUserAuth from './RequireUserAuth';
+import RequireDbmsAuth from './RequireDbmsAuth';
 
 import Sidebar from '../components/layout/Sidebar';
 import Topbar from '../components/ui/common/Topbar';
@@ -90,9 +91,11 @@ function App() {
             </Route>
           </Route>
 
-          {/* 서비스 영역 - 관리자 */}
-          <Route element={<BaseLayout Sidebar={Sidebar} Topbar={Topbar} />}>
-            <Route path="/dbms/*" element={<DbmsRoutes />} />
+          {/* 서비스 영역 - 관리자 (관리자 로그인 + grade 1~5 필요, 아니면 /dbms/login) */}
+          <Route element={<RequireDbmsAuth />}>
+            <Route element={<BaseLayout Sidebar={Sidebar} Topbar={Topbar} />}>
+              <Route path="/dbms/*" element={<DbmsRoutes />} />
+            </Route>
           </Route>
 
 
