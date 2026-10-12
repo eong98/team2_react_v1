@@ -57,7 +57,6 @@ export default function NoticeForm() {
           content: '첨부파일 테스트',
           fixyn: 'N',
           vmode: 'Y',
-          pw:'1234',
           vseq: 0
         }));
   }
@@ -113,7 +112,6 @@ export default function NoticeForm() {
   const REQUIRED_FIELDS: { field: keyof FormErrors; label: string; id: string }[] = [
     { field: 'title', label: '공지사항 제목', id: 'notice_title' },
     { field: 'content', label: '공지사항 내용', id: 'notice_content' },
-    { field: 'pw', label: '게시글 비밀번호', id: 'password' },
   ];
 
   // 유효성 검사: 필수 필드 전부 검사해서 전부 에러로 잡고, 포커스는 맨 첫 번째 오류 필드로만 이동
@@ -158,7 +156,7 @@ export default function NoticeForm() {
         title: input.title,
         content: input.content,
         cdate: getNowDate(),
-        pw: input.pw,
+        pw: '', // 공지는 게시글 비밀번호를 쓰지 않음 (관리자 로그인으로 권한 확인)
         fixyn: input.fixyn,
         fileyn: input.fileyn,
         vmode: input.vmode,
@@ -400,25 +398,6 @@ export default function NoticeForm() {
               </div>
 
               {errors.vmode && <div className="form_hint error">{errors.vmode}</div>}
-            </div>
-          </div>
-
-          {/* 게시글 비밀번호 */}
-          <div className="form_group">
-            <label className="form_label" htmlFor="password">
-              게시글 비밀번호<span className="req" title="필수 입력 요소">*</span>
-            </label>
-            <div className="form_control">
-              <input
-                type="password"
-                id="password"
-                name="pw"
-                className={`form_input ${errors.pw ? 'is_error' : ''}`}
-                value={input.pw}
-                onChange={onChange}
-                style={{ maxWidth: 200 }}
-              />
-              {errors.pw && <div className="form_hint error">{errors.pw}</div>}
             </div>
           </div>
 

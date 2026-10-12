@@ -109,8 +109,8 @@ export default function NoticeList() {
     setPage(1);
   };
 
-  /** 삭제 핸들러 (비밀번호 입력) */
-  const handleDeleteWithPw = async (inputPw: string = '') => {
+  /** 삭제 핸들러 — 관리자 로그인으로 권한 확인 (게시글 비밀번호 없음) */
+  const handleDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
 
@@ -119,7 +119,6 @@ export default function NoticeList() {
       await axiosInstance.delete('/notice', {
         data: {
           no: deleteTarget.no,
-          pw: inputPw,
         },
       });
       // 글 삭제가 성공한 뒤에만 첨부파일 삭제 (게시판 구분 tname 포함)
@@ -445,12 +444,11 @@ export default function NoticeList() {
       <ConfirmDeleteModal
         open={deleteTarget !== null}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={(pw) => handleDeleteWithPw(pw)}
+        onConfirm={() => handleDelete()}
         loading={deleting}
         targetLabel={
           deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.title}` : undefined
         }
-        requirePassword={true}
       />
 
       
