@@ -46,6 +46,20 @@
 .chg_notice { display: flex; gap: 10px; margin-top: 12px; padding: 12px 14px; border-radius: var(--radius-md, 10px); background: var(--warning-dim, var(--surface-2)); color: var(--text-dim); font-size: 12.5px; line-height: 1.6; }
 .chg_notice svg { flex: 0 0 16px; width: 16px; height: 16px; margin-top: 2px; fill: none; stroke: var(--amber-400, currentColor); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
+/* 2단계(결제 정보 입력) — 결제 수단 */
+.chg_pay { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.chg_pay_btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 11px 8px; font-size: 13px; }
+.chg_pay_icon { display: inline-flex; align-items: center; line-height: 1; }
+
+/* 2단계 — 환불 계좌 */
+.chg_bank { margin-bottom: 4px; }
+.chg_bank_grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.chg_bank_cell { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.chg_bank_cell.is_wide { grid-column: 1 / -1; }
+.chg_bank_label { font-size: 12px; color: var(--text-faint); }
+.chg_bank_cell .form_input { width: 100%; }
+
 @media (max-width: 480px) {
   .chg_current { grid-template-columns: 1fr; }
+  .chg_pay, .chg_bank_grid { grid-template-columns: 1fr; }
 }

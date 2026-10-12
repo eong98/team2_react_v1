@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Modal from '../Modal';
 import { QA_RESET_PW_MIN, confirmQaReset, requestQaReset } from '../../ts/QaReset';
 import { qaErrorMessage } from '../../ts/QaGuestToken';
+import { set_focus } from '../../../utils/Tool';
 
 /* ---------------------------------------------------------------------
    비회원 문의글 비밀번호 재설정 모달 — 비회원 문의 상세(/board/qa/:no)에서 사용
@@ -20,12 +21,16 @@ interface QaPwResetModalProps {
   onDone: () => void;
 }
 
+type ResetField = 'code' | 'pw' | 'pwCheck';
+type ResetErrors = Partial<Record<ResetField, string>>;
+
 export default function QaPwResetModal({ open, no, onClose, onDone }: QaPwResetModalProps) {
   const [sentEmail, setSentEmail] = useState(''); // 값이 있으면 2단계
   const [code, setCode] = useState('');
   const [pw, setPw] = useState('');
   const [pwCheck, setPwCheck] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(''); // 서버 요청 실패 안내
+  const [errors, setErrors] = useState<ResetErrors>({}); // 입력 항목별 오류
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -37,6 +42,7 @@ export default function QaPwResetModal({ open, no, onClose, onDone }: QaPwResetM
       setPw('');
       setPwCheck('');
       setError('');
+      setErrors({});
       setNotice('');
       setBusy(false);
     }
@@ -62,19 +68,21 @@ export default function QaPwResetModal({ open, no, onClose, onDone }: QaPwResetM
   /** 인증번호 확인 + 비밀번호 변경 */
   const changePw = async () => {
     setNotice('');
-    if (!code.trim()) {
-      setError('인증번호를 입력해주세요.');
-      return;
-    }
-    if (pw.length < QA_RESET_PW_MIN) {
-      setError(`새 비밀번호는 ${QA_RESET_PW_MIN}자 이상 입력해주세요.`);
-      return;
-    }
-    if (pw !== pwCheck) {
-      setError('새 비밀번호가 서로 일치하지 않습니다.');
-      return;
-    }
     setError('');
+
+    // 다른 폼과 같은 방식: 전부 검사해서 항목마다 오류를 표시하고, 첫 오류 항목으로 포커스
+    const newErrors: ResetErrors = {};
+    if (!code.trim()) newErrors.code = '인증번호를 입력해주세요.';
+    if (pw.length < QA_RESET_PW_MIN) newErrors.pw = `새 비밀번호는 ${QA_RESET_PW_MIN}자 이상 입력해주세요.`;
+    if (!pwCheck) newErrors.pwCheck = '새 비밀번호를 한 번 더 입력해주세요.';
+    else if (pw !== pwCheck) newErrors.pwCheck = '새 비밀번호가 서로 일치하지 않습니다.';
+    setErrors(newErrors);
+
+    const firstErrorId = newErrors.code ? 'qaResetCode' : newErrors.pw ? 'qaResetPw' : newErrors.pwCheck ? 'qaResetPwCheck' : null;
+    if (firstErrorId) {
+      set_focus(firstErrorId);
+      return;
+    }
     setBusy(true);
     try {
       await confirmQaReset(no, code.trim(), pw);
@@ -132,11 +140,15 @@ export default function QaPwResetModal({ open, no, onClose, onDone }: QaPwResetM
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 maxLength={6}
-                className="form_input"
+                className={`form_input ${errors.code ? 'is_error' : ''}`}
                 placeholder="6자리 숫자"
                 value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                onChange={(e) => {
+                  setCode(e.target.value.replace(/\D/g, ''));
+                  if (errors.code) setErrors((prev) => ({ ...prev, code: undefined }));
+                }}
               />
+              {errors.code && <div className="form_hint error">{errors.code}</div>}
             </div>
           </div>
 
@@ -147,11 +159,15 @@ export default function QaPwResetModal({ open, no, onClose, onDone }: QaPwResetM
                 id="qaResetPw"
                 type="password"
                 autoComplete="new-password"
-                className="form_input"
+                className={`form_input ${errors.pw ? 'is_error' : ''}`}
                 placeholder={`${QA_RESET_PW_MIN}자 이상`}
                 value={pw}
-                onChange={(e) => setPw(e.target.value)}
+                onChange={(e) => {
+                  setPw(e.target.value);
+                  if (errors.pw) setErrors((prev) => ({ ...prev, pw: undefined }));
+                }}
               />
+              {errors.pw && <div className="form_hint error">{errors.pw}</div>}
             </div>
           </div>
 
@@ -162,11 +178,16 @@ export default function QaPwResetModal({ open, no, onClose, onDone }: QaPwResetM
                 id="qaResetPwCheck"
                 type="password"
                 autoComplete="new-password"
-                className="form_input"
+                className={`form_input ${errors.pwCheck ? 'is_error' : ''}`}
                 value={pwCheck}
-                onChange={(e) => setPwCheck(e.target.value)}
+                onChange={(e) => {
+                  setPwCheck(e.target.value);
+                  if (errors.pwCheck) setErrors((prev) => ({ ...prev, pwCheck: undefined }));
+                }}
                 onKeyDown={(e) => e.key === 'Enter' && changePw()}
               />
+              {errors.pwCheck && <div className="form_hint error">{errors.pwCheck}</div>}
+              {/* 서버가 돌려준 안내(인증번호 불일치·만료 등)와 재발송 안내 */}
               {error && <div className="form_hint error">{error}</div>}
               {!error && notice && <div className="form_hint">{notice}</div>}
             </div>
