@@ -4,6 +4,7 @@ import { axiosInstance } from '../../../../utils/Tool';
 import type { ShopOrderTypes } from '../../../../components/ts/ShopOrder';
 import type { ChangePreview, ChangeRequest } from '../../../../components/ts/ShopOrderPending';
 import ChangeConfirmModal from './ChangeConfirmModal';
+import './changeModal.css';
 
 interface ChangeModalProps {
   target: ShopOrderTypes | null;
@@ -111,65 +112,115 @@ export default function ChangeModal({ target, onClose, onSuccess }: ChangeModalP
       >
         {target && (
           <div>
-            <p className="cell_sub" style={{ marginBottom: 16 }}>
-              현재: {target.pname} · {target.pmonth}개월 · {target.ccnt}대
-            </p>
-
-            <div className="form_group">
-              <label className="form_label" htmlFor="changePmonth">이용 기간</label>
-              <div className="form_control">
-                <select id="changePmonth" className="form_select" value={pmonth} onChange={(e) => onPmonthChange(Number(e.target.value))}>
-                  <option value={6}>6개월</option>
-                  <option value={12}>12개월</option>
-                </select>
+            {/* 현재 구독 요약 */}
+            <div className="chg_current" aria-label="현재 구독">
+              <div className="chg_current_cell">
+                <span className="chg_current_label">현재 구독권</span>
+                <span className="chg_current_value" title={target.pname}>{target.pname}</span>
+              </div>
+              <div className="chg_current_cell">
+                <span className="chg_current_label">이용 기간</span>
+                <span className="chg_current_value">{target.pmonth}개월</span>
+              </div>
+              <div className="chg_current_cell">
+                <span className="chg_current_label">CCTV 대수</span>
+                <span className="chg_current_value">{target.ccnt}대</span>
               </div>
             </div>
 
-            <div className="cctv_stepper">
-              <label htmlFor="changeCcnt">CCTV 대수</label>
-              <div className="stepper">
-                <button type="button" className="stepper_btn" disabled={ccnt <= minCcnt} onClick={() => onCcntChange(ccnt - 1)}>–</button>
+            {/* 이용 기간 */}
+            <div className="chg_field">
+              <div className="chg_field_head">
+                <span className="chg_label" id="changePmonthLabel">
+                  이용 기간
+                  {pmonth !== target.pmonth && <span className="chg_changed">변경됨</span>}
+                </span>
+              </div>
+              <div className="chg_seg" role="radiogroup" aria-labelledby="changePmonthLabel">
+                {[6, 12].map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    role="radio"
+                    aria-checked={pmonth === m}
+                    className={`chg_seg_btn${pmonth === m ? ' active' : ''}`}
+                    onClick={() => onPmonthChange(m)}
+                  >
+                    {m}개월
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* CCTV 대수 */}
+            <div className="chg_field">
+              <div className="chg_field_head">
+                <label className="chg_label" htmlFor="changeCcnt">
+                  CCTV 대수
+                  {ccntChanged && <span className="chg_changed">변경됨</span>}
+                </label>
+                <span className="chg_hint">{minCcnt}대 ~ {maxCcnt}대</span>
+              </div>
+              <div className="chg_stepper">
+                <button type="button" className="chg_stepper_btn" aria-label="1대 줄이기" disabled={ccnt <= minCcnt} onClick={() => onCcntChange(ccnt - 1)}>–</button>
                 <input
                   id="changeCcnt"
                   type="number"
-                  className="stepper_input"
+                  className="chg_stepper_input"
                   value={ccnt}
                   onChange={(e) => onCcntChange(Number(e.target.value) || minCcnt)}
                 />
-                <button type="button" className="stepper_btn" disabled={ccnt >= maxCcnt} onClick={() => onCcntChange(ccnt + 1)}>+</button>
+                <button type="button" className="chg_stepper_btn" aria-label="1대 늘리기" disabled={ccnt >= maxCcnt} onClick={() => onCcntChange(ccnt + 1)}>+</button>
               </div>
-              <p className="cell_sub" style={{ marginTop: 4 }}>
-                최소 {minCcnt}대 ~ 최대 {maxCcnt}대까지 선택 가능합니다.
-              </p>
             </div>
 
             <button
               type="button"
-              className="btn btn_md btn_outline_primary"
-              style={{ width: '100%', marginTop: 12 }}
+              className="btn btn_md btn_outline_primary chg_preview_btn"
               disabled={previewLoading}
               onClick={checkPreview}
             >
-              {previewLoading ? '계산 중...' : '예상액 확인'}
+              {previewLoading ? '계산 중...' : preview ? '예상액 다시 확인' : '예상액 확인'}
             </button>
 
+            {/* 예상 결과 */}
             {preview && (
-              <div className="order_lines" style={{ marginTop: 16 }}>
-                <div className="order_line"><span>적용될 구독권</span><span>{preview.pname}</span></div>
-                <div className="order_line"><span>구독 종료일</span><span>{preview.edate}</span></div>
+              <div className="chg_result" aria-live="polite">
+                <div className="chg_result_row"><span>적용될 구독권</span><strong>{preview.pname}</strong></div>
+                <div className="chg_result_row"><span>구독 종료일</span><strong>{preview.edate}</strong></div>
                 {preview.extraCharge > 0 && (
-                  <div className="order_line"><span>추가 결제 금액</span><span>{preview.extraCharge.toLocaleString('ko-KR')}원</span></div>
+                  <div className="chg_result_row chg_result_total">
+                    <span>추가 결제 금액</span>
+                    <strong>{preview.extraCharge.toLocaleString('ko-KR')}<small>원</small></strong>
+                  </div>
                 )}
                 {preview.refundAmount > 0 && (
-                  <div className="order_line"><span>환불 금액</span><span>{preview.refundAmount.toLocaleString('ko-KR')}원</span></div>
+                  <div className="chg_result_row chg_result_total is_refund">
+                    <span>환불 금액</span>
+                    <strong>{preview.refundAmount.toLocaleString('ko-KR')}<small>원</small></strong>
+                  </div>
+                )}
+                {preview.extraCharge <= 0 && preview.refundAmount <= 0 && (
+                  <div className="chg_result_row chg_result_total">
+                    <span>추가 결제 금액</span>
+                    <strong>0<small>원</small></strong>
+                  </div>
                 )}
               </div>
             )}
 
             {preview && requiresApproval && (
-              <p className="form_hint" style={{ marginTop: 10 }}>
-                CCTV 대수가 바뀌는 변경이라, 신청 후 관리자가 매장 설치 상태를 확인하고 승인해야 최종 반영됩니다. 승인 전까지는 기존 조건으로 계속 이용하실 수 있습니다.
-              </p>
+              <div className="chg_notice">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 8v5" />
+                  <path d="M12 16.5v.5" />
+                </svg>
+                <span>
+                  CCTV 대수가 바뀌는 변경은 관리자가 매장 설치 상태를 확인하고 승인해야 반영됩니다.
+                  승인 전까지는 기존 조건으로 계속 이용하실 수 있습니다.
+                </span>
+              </div>
             )}
 
             {error && <div className="form_hint error" style={{ marginTop: 10 }}>{error}</div>}

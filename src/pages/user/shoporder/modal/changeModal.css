@@ -1,0 +1,51 @@
+/* 구독권 변경 모달 (ChangeModal.tsx) — 이 파일만으로 모양이 나오도록 다른 화면의 CSS에 기대지 않음 */
+
+/* 현재 구독 요약 — 세 칸 */
+.chg_current { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin-bottom: 20px; border: 1px solid var(--border); border-radius: var(--radius-md, 10px); background: var(--border); overflow: hidden; }
+.chg_current_cell { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; background: var(--surface-2); min-width: 0; }
+.chg_current_label { font-size: 11px; color: var(--text-faint); }
+.chg_current_value { font-size: 14px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 입력 항목 — 라벨은 위, 입력은 아래 (두 항목 같은 구성) */
+.chg_field { margin-bottom: 18px; }
+.chg_field_head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.chg_label { font-size: 13px; font-weight: 600; color: var(--text); }
+.chg_hint { font-size: 11.5px; color: var(--text-faint); }
+.chg_changed { margin-left: 6px; font-size: 11px; font-weight: 600; color: var(--primary); }
+
+/* 이용 기간 — 두 개 중 고르기 */
+.chg_seg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.chg_seg_btn { padding: 11px 12px; border: 1px solid var(--border-strong, var(--border)); border-radius: var(--radius-md, 10px); background: var(--surface); color: var(--text-dim); font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: border-color .15s ease, background .15s ease, color .15s ease; }
+.chg_seg_btn:hover { border-color: var(--primary); color: var(--text); }
+.chg_seg_btn.active { border-color: var(--primary); background: var(--primary-dim); color: var(--primary); }
+.chg_seg_btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* CCTV 대수 — 가로로 꽉 차는 증감 입력 */
+.chg_stepper { display: grid; grid-template-columns: 48px minmax(0, 1fr) 48px; border: 1px solid var(--border-strong, var(--border)); border-radius: var(--radius-md, 10px); overflow: hidden; background: var(--surface); }
+.chg_stepper_btn { height: 44px; border: none; background: var(--surface-2); color: var(--text); font-size: 18px; line-height: 1; cursor: pointer; transition: background .15s ease; }
+.chg_stepper_btn:hover:not(:disabled) { background: var(--primary-dim); color: var(--primary); }
+.chg_stepper_btn:disabled { color: var(--text-faint); cursor: not-allowed; opacity: .5; }
+.chg_stepper_input { width: 100%; height: 44px; border: none; border-left: 1px solid var(--border); border-right: 1px solid var(--border); background: transparent; color: var(--text); font: inherit; font-size: 16px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; }
+.chg_stepper_input::-webkit-outer-spin-button, .chg_stepper_input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.chg_stepper_input:focus { outline: none; background: var(--surface-2); }
+
+.chg_preview_btn { width: 100%; margin-top: 2px; }
+
+/* 예상 결과 */
+.chg_result { margin-top: 16px; border: 1px solid var(--border); border-radius: var(--radius-md, 10px); background: var(--surface-2); overflow: hidden; }
+.chg_result_row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 14px; font-size: 13px; color: var(--text-dim); }
+.chg_result_row + .chg_result_row { border-top: 1px solid var(--border); }
+.chg_result_row strong { font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+.chg_result_total { padding: 14px; background: var(--surface); }
+.chg_result_total span { font-size: 13px; font-weight: 600; color: var(--text); }
+.chg_result_total strong { font-size: 20px; font-weight: 700; color: var(--primary); }
+.chg_result_total.is_refund strong { color: var(--teal-300, var(--primary)); }
+.chg_result_total small { margin-left: 2px; font-size: 13px; font-weight: 600; }
+
+/* 승인 안내 */
+.chg_notice { display: flex; gap: 10px; margin-top: 12px; padding: 12px 14px; border-radius: var(--radius-md, 10px); background: var(--warning-dim, var(--surface-2)); color: var(--text-dim); font-size: 12.5px; line-height: 1.6; }
+.chg_notice svg { flex: 0 0 16px; width: 16px; height: 16px; margin-top: 2px; fill: none; stroke: var(--amber-400, currentColor); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+@media (max-width: 480px) {
+  .chg_current { grid-template-columns: 1fr; }
+}
