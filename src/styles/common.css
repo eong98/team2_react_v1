@@ -430,9 +430,9 @@ table td {padding:0; word-break:break-all;}
 /* DataAcc.tsx의 col.header 라벨(예: "A. 답변 내용") — 렌더링되는 본문 내용 위에 캡션처럼 표시 */
 .acc_panel .answer{display:block;font-size:11px;font-weight:700;color:var(--primary);margin-bottom:6px;}
 /* FAQ 문의 내용(Q) — 답변(A) 위에 표시, 줄바꿈 유지 */
-.acc_panel.open .faq_question{margin-top:8px;padding-bottom:12px;margin-bottom:4px;border-bottom:1px dashed var(--border);}
-.acc_panel .faq_question .answer{color:var(--text-faint);}
-.acc_panel .faq_question .cell_title{white-space:pre-wrap;word-break:break-word;}
+.acc_panel.open .acc_question{margin:8px 0 14px;padding:12px 14px;border-left:2px solid var(--border-strong);border-radius:0 var(--radius-sm, 6px) var(--radius-sm, 6px) 0;background:var(--surface-2);}
+.acc_panel .acc_question .answer{color:var(--text-faint);}
+.acc_panel .acc_question_text{margin:0;font-size:13px;font-weight:400;line-height:1.7;color:var(--text-dim);white-space:pre-wrap;word-break:break-word;}
 
 /* tab
 ========================================================================== */

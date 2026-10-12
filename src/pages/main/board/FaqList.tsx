@@ -122,8 +122,8 @@ export default function FaqList() {
     {
       // 등록할 때 입력한 문의 내용 — 제목만 보이고 내용이 화면에 나오지 않던 것 추가
       header: 'Q. 문의 내용',
-      className: 'faq_question',
-      render: (n) => <div className="cell_title">{n.content}</div>,
+      className: 'acc_question',
+      render: (n) => <p className="acc_question_text">{n.content}</p>,
     },
     {
       header: 'A. 답변 내용',
