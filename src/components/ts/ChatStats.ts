@@ -4,7 +4,8 @@
 
    API (ChatStatsCont, /chat_stats) - 관리자(ROLE_MANAGER) 쿠키 로그인 필요
    GET  /chat_stats/stats?days=        → ChatStats
-   POST /chat_stats/ai-summary?days=   → ChatAiSummary (AI 감정분석 + 요약, 버튼을 눌렀을 때만)
+   GET  /chat_stats/ai-summary?days=   → ChatAiSummary (저장된 마지막 분석 결과, 없으면 204)
+   POST /chat_stats/ai-summary?days=   → ChatAiSummary (AI 감정분석 + 요약, 버튼을 눌렀을 때만 · 결과 저장)
 
    기준: 종료된 상담(CHAT_SESSION.CMODE=2)을 종료 시각으로 집계
    만족도 SATISFY : 1 만족 / 0 불만족 / NULL 미응답

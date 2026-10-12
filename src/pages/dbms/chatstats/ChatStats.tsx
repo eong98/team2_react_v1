@@ -238,7 +238,8 @@ export default function ChatStats() {
   const [updatedAt, setUpdatedAt] = useState('');
   const [alert, setAlert] = useState<AlertState>(null);
 
-  // AI 감정분석 · 요약 — 버튼을 눌렀을 때만 실행, 조회기간을 바꾸면 이전 결과는 지움
+  // AI 감정분석 · 요약 — 분석은 버튼을 눌렀을 때만 실행하고 결과는 서버에 저장됨
+  // 화면에 들어오거나 조회기간을 바꾸면 그 기간의 마지막 분석 결과를 불러옴
   const [aiResult, setAiResult] = useState<ChatAiSummary | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState('');
@@ -246,9 +247,20 @@ export default function ChatStats() {
 
   useEffect(() => {
     aiSeq.current++; // 진행 중이던 분석 결과는 버림 (다른 기간의 결과가 뒤늦게 표시되지 않게)
+    const seq = aiSeq.current;
     setAiResult(null);
     setAiError('');
     setAiLoading(false);
+
+    axiosInstance
+      .get<ChatAiSummary | ''>('/chat_stats/ai-summary', { params: { days } })
+      .then((res) => {
+        // 분석한 적이 없으면 204(빈 응답) — 그 사이 [AI 분석]을 눌렀으면 덮어쓰지 않음
+        if (seq === aiSeq.current && res.status === 200 && res.data) setAiResult(res.data);
+      })
+      .catch((err: unknown) => {
+        console.error('챗봇 만족도 AI 분석 결과 조회 실패:', err);
+      });
   }, [days]);
 
   const analyze = async () => {
