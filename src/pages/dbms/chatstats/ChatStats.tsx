@@ -376,6 +376,9 @@ export default function ChatStats() {
               aria-selected={p.days === days}
               className={`period_tab${p.days === days ? ' active' : ''}`}
               onClick={() => setDays(p.days)}
+              // 분석 중에 기간을 바꾸면 진행 중인 분석 결과를 화면에 못 보여 주므로 끝날 때까지 막음
+              disabled={aiLoading && p.days !== days}
+              title={aiLoading && p.days !== days ? 'AI 분석이 끝난 뒤에 바꿀 수 있어요' : undefined}
             >
               {p.label}
             </button>
