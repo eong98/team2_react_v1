@@ -174,6 +174,23 @@ export default function NoticeList() {
     }
   };
 
+  /** 삭제된 공지 복원 — 공지사항 목록으로 되돌림 (첨부파일은 영구 삭제 전까지 남아 있어 그대로 다시 보임) */
+  const [restoringNo, setRestoringNo] = useState<number | null>(null);
+  const handleRestore = async (target: NoticeTypes) => {
+    if (restoringNo !== null) return;
+    setRestoringNo(target.no);
+    try {
+      await axiosInstance.put(`/notice/deleted/${target.no}/restore`);
+      setAlert({ message: `No.${target.no} 공지사항을 복원했습니다.`, variant: 'success', onConfirm: loadNoticeList });
+    } catch (error) {
+      logUnexpected('공지 복원 실패:', error);
+      const message = axios.isAxiosError(error) ? error.response?.data?.message : undefined;
+      setAlert({ message: message || '복원하지 못했습니다. 잠시 후 다시 시도해 주세요.', variant: 'error', onConfirm: loadNoticeList });
+    } finally {
+      setRestoringNo(null);
+    }
+  };
+
   /** 삭제된 공지 영구 삭제 — 성공한 뒤에만 첨부파일도 정리 */
   const handlePurge = async () => {
     if (!purgeTarget) return;
@@ -397,7 +414,7 @@ export default function NoticeList() {
       {tab === 'deleted' ? (
         <>
           <p className="cell_sub" style={{ margin: '0 0 12px' }}>
-            삭제한 공지사항입니다. [영구 삭제]하면 DB와 첨부파일에서 완전히 지워지며 복구할 수 없습니다.
+            삭제한 공지사항입니다. [복원]하면 공지사항 목록으로 돌아가고, [영구 삭제]하면 DB와 첨부파일에서 완전히 지워지며 복구할 수 없습니다.
           </p>
           <DataCard
             columns={deletedColumns}
@@ -405,6 +422,8 @@ export default function NoticeList() {
             rowKey={(n) => n.no}
             loading={loading}
             emptyMessage="삭제된 공지사항이 없습니다."
+            onEdit={handleRestore}
+            editLabel="복원"
             onDelete={(n) => setPurgeTarget(n)}
             deleteLabel="영구 삭제"
           />
@@ -447,6 +466,7 @@ export default function NoticeList() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => handleDelete()}
         loading={deleting}
+        description="삭제한 공지사항은 [삭제된 공지] 탭에서 복원할 수 있습니다."
         targetLabel={
           deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.title}` : undefined
         }

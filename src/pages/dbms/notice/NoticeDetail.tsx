@@ -257,6 +257,7 @@ export default function NoticeDetail() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => handleDelete()}
         loading={deleting}
+        description="삭제한 공지사항은 [삭제된 공지] 탭에서 복원할 수 있습니다."
         targetLabel={
           deleteTarget ? `No.${deleteTarget.no} · ${deleteTarget.title}` : undefined
         }
