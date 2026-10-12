@@ -51,6 +51,8 @@ export const SYSTEM_MESSAGES: { code: number; label: string }[] = [
   { code: 7, label: '여기부터 AI 상담입니다.' },
   { code: 8, label: '여기까지가 AI 상담입니다.' },
   { code: 9, label: '안녕하세요! AI 입니다!\n무엇을 도와드릴까요?' },
+  { code: 10, label: '응답이 없어 약 5분 뒤 상담이 자동으로 종료됩니다.\n종료 전에 상담 만족도를 알려 주세요.' },
+  { code: 11, label: '상담을 계속 진행합니다.\n무엇을 도와드릴까요?' },
 ];
 
 /** code로 문구 텍스트를 바로 찾는 헬퍼 */
@@ -112,7 +114,15 @@ export interface ChatActionResult {
   hasChildren?: boolean;
   sessionEnded?: boolean;
   needsAdmin?: boolean;
+  /** 자동 종료 경고(idle-warn)에서만 — 아직 경고할 때가 아니면 다시 확인할 때까지 남은 시간(초) */
+  retryAfterSeconds?: number | null;
 }
+
+/**
+ * 마지막 활동 후 이 시간이 지나면 자동 종료 경고를 요청 (서버 자동 종료 30분의 5분 전).
+ * 실제로 경고할 때가 됐는지는 서버(ChatSessionService.idleWarn)가 마지막 활동 시각으로 판단합니다.
+ */
+export const IDLE_WARN_AFTER_MS = 25 * 60 * 1000;
 
 export interface ChatStepRequest {
   /* 0 'END' | 1 'SATISFY' | 2 'UNSATISFY_REASON' | 3 'UNSATISFY_MEMO' | 4 'ESCALATE' | 5 'ESCALATE_CONFIRM' */

@@ -16,6 +16,7 @@ import {
   getMessage,
   SYSTEM_MESSAGES,
   numberToEndFlow,
+  IDLE_WARN_AFTER_MS,
 } from '../../ts/ChatBot';
 import type { ChatMenuTypes } from '../../ts/ChatMenu';
 import { chatMemberNo, getOrCreateGno } from '../../ts/ChatGuest';
@@ -124,8 +125,12 @@ export default function ChatRoom({
    * 질문이 사라졌다가 답변과 함께 나타나던 문제 방지 (창 전환 시 갱신과 질문 전송이 겹칠 때)
    */
   const localChangeSeq = useRef(0);
+  /** 마지막 활동 시각(ms) — 자동 종료 경고를 언제 확인할지 계산하는 데 사용 */
+  const lastActivityRef = useRef(Date.now());
+  const idleTimerRef = useRef<number | null>(null);
   const markLocalChange = () => {
     localChangeSeq.current += 1;
+    lastActivityRef.current = Date.now();
   };
   busyRef.current = aiLoading || optionLoading || summarizing;
 
@@ -203,8 +208,75 @@ export default function ChatRoom({
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
       if (aiPollTimerRef.current) window.clearTimeout(aiPollTimerRef.current);
+      if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current);
     };
   }, []);
+
+  /* ---------------------------------------------------------------------
+     자동 종료 전 경고
+     - 한동안 반응이 없으면 서버에 확인 → 때가 됐으면 경고 문구와 함께 만족도 질문을 먼저 띄움
+     - 그래도 답이 없으면 서버 배치가 만족도 없이 자동 종료 (이 창을 닫아 둔 경우도 같음)
+  --------------------------------------------------------------------- */
+  const armIdleTimer = (delayMs: number) => {
+    if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = window.setTimeout(checkIdle, Math.max(1000, delayMs));
+  };
+
+  const checkIdle = async () => {
+    const sno = sessionIdRef.current;
+    if (!sno) return;
+    if (busyRef.current) {
+      armIdleTimer(60_000); // 답변을 기다리는 중이면 잠시 뒤 다시 확인
+      return;
+    }
+    try {
+      const res = await axiosInstance.put<ChatActionResult>(`/chat_session/${sno}/idle-warn`, {
+        systemMessage: getMessage(SYSTEM_MESSAGES, 10),
+      });
+      if (sessionIdRef.current !== sno) return;
+      if (res.data.retryAfterSeconds != null) {
+        // 다른 창에서 상담이 이어졌거나 아직 때가 아님 → 서버가 알려준 시간 뒤에 다시 확인
+        armIdleTimer(res.data.retryAfterSeconds * 1000 + 1000);
+        return;
+      }
+      if (res.data.logs.length > 0) {
+        appendLogs(res.data.logs);
+        setEndFlow('ASK_SATISFY');
+        notifyChatChanged(sno);
+        return;
+      }
+      await reloadRoom(); // 이미 종료됐거나 다른 창에서 종료 단계로 넘어감 → 화면만 맞춤
+    } catch (err) {
+      console.error('자동 종료 경고 확인 실패:', err);
+      armIdleTimer(60_000);
+    }
+  };
+
+  useEffect(() => {
+    if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = null;
+    // 상담이 진행 중이고 사용자의 다음 행동을 기다리는 상태일 때만
+    const waiting = endFlow === null || endFlow === 'FAIL_AI_ANSWER' || endFlow === 'ASK_ESCALATE_CONFIRM';
+    if (!consultStarted || sessionEnded || !waiting || !sessionIdRef.current) return;
+    armIdleTimer(lastActivityRef.current + IDLE_WARN_AFTER_MS - Date.now());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [consultStarted, sessionEnded, endFlow, bubbles.length]);
+
+  /** 자동 종료 경고가 떠 있는 상태 — 만족도 질문 중이고 마지막 말풍선이 경고 문구 */
+  const lastBubble = bubbles[bubbles.length - 1];
+  const idleWarned =
+    endFlow === 'ASK_SATISFY' && !!lastBubble && lastBubble.sender === 2 && lastBubble.content === getMessage(SYSTEM_MESSAGES, 10);
+
+  // 경고가 떠 있는 동안에는 서버가 자동 종료했는지 1분마다 확인해 화면에 반영
+  useEffect(() => {
+    if (!idleWarned) return;
+    const timer = window.setInterval(() => {
+      if (busyRef.current) return;
+      reloadRoom().catch((err) => console.error('자동 종료 여부 확인 실패:', err));
+    }, 60_000);
+    return () => window.clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idleWarned]);
 
   /* ---------------------------------------------------------------------
      공통 헬퍼 메서드
@@ -319,6 +391,9 @@ export default function ChatRoom({
     setSessionEnded(session.cmode === 2);
     setLinkedQno(session.qno ?? null);
     setEndFlow(numberToEndFlow(session.endflow));
+    // 자동 종료 경고 기준 시각을 서버의 마지막 활동 시각으로 맞춤 (예전 상담을 다시 연 경우)
+    const udateMs = session.udate ? new Date(session.udate.replace(' ', 'T')).getTime() : NaN;
+    lastActivityRef.current = Number.isNaN(udateMs) ? Date.now() : udateMs;
 
     if (session.endflow === 6) {
       // 로딩 표시/화면 갱신은 이 컴포넌트(로컬)가 직접 담당한다.
@@ -353,7 +428,8 @@ export default function ChatRoom({
     } else {
       setStage('INTRO');
       setCurrentOptions([]);
-      setEndFlow(null);
+      // 진행 단계(endFlow)는 위에서 서버 값으로 맞춘 그대로 둠 — 여기서 지우면 처음 화면에 머물던 상담은
+      // 만족도 질문(상담 종료·자동 종료 경고) 중에 다시 불러올 때 질문이 사라지고 메뉴가 다시 나옴
       if (rootMenus.length === 0) loadRootMenus();
     }
 
@@ -779,6 +855,26 @@ export default function ChatRoom({
     }
   };
 
+  /** 자동 종료 경고 뒤 [상담 계속하기] — 만족도 질문을 거두고 상담을 이어감 */
+  const handleIdleContinue = async (e: React.MouseEvent) => {
+    const sno = sessionIdRef.current;
+    if (!sno) return;
+    const label = e.currentTarget.textContent;
+    markLocalChange();
+    try {
+      const res = await axiosInstance.put<ChatActionResult>(`/chat_session/${sno}/idle-continue`, {
+        label,
+        systemMessage: getMessage(SYSTEM_MESSAGES, 11),
+      });
+      appendLogs(res.data.logs);
+      setEndFlow(null);
+      notifyChatChanged(sno);
+    } catch (err) {
+      console.error('상담 계속하기 처리 실패:', err);
+      await handleActionError(err);
+    }
+  };
+
   /** 불만족 사유 옵션 선택 */
   const handleSelectUnsatisfyReason = async (code: number, label: string) => {
     const systemMessage = code === 9 ? getMessage(SYSTEM_MESSAGES, 4) : getMessage(SYSTEM_MESSAGES, 2);
@@ -940,6 +1036,12 @@ export default function ChatRoom({
             <button type="button" className="chat_option_btn" onClick={(e) => handleSatisfy(e, 0)}>
               불만족스럽고 아쉬워요
             </button>
+            {/* 자동 종료 경고로 뜬 질문일 때만 — 상담을 이어갈 수 있게 */}
+            {idleWarned && (
+              <button type="button" className="chat_option_btn" onClick={handleIdleContinue}>
+                상담 계속하기
+              </button>
+            )}
           </div>
         )}
 

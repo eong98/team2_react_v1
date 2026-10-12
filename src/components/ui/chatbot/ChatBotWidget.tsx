@@ -271,11 +271,13 @@ export default function ChatBotWidget({ corner = false }: ChatBotWidgetProps) {
         const rooms = Array.isArray(res.data) ? res.data : [];
         const unread = rooms.some((room) => !room.readat || new Date(room.udate) > new Date(room.readat));
         setHasUnread(unread);
+        setHasActiveRoom(rooms.some((room) => room.cmode !== 2));
       })
       .catch((err) => {
         // 서버가 꺼져 있는 등 확인 실패 — 화면 동작엔 영향 없으니 경고만 남기고 N 표시는 끔
         console.warn('챗봇 안 읽음 확인 실패:', err);
         setHasUnread(false);
+        setHasActiveRoom(false);
       });
   };
 
@@ -285,6 +287,18 @@ export default function ChatBotWidget({ corner = false }: ChatBotWidgetProps) {
     checkUnread();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mno]);
+
+  // 진행 중인 상담을 두고 위젯을 닫아 둔 동안에는 1분마다 다시 확인
+  // — 서버가 자동 종료 경고(곧 종료 + 만족도 질문)를 남기면 N 표시로 알림. 진행 중인 상담이 없으면 확인하지 않음
+  const [hasActiveRoom, setHasActiveRoom] = useState(false);
+  useEffect(() => {
+    if (open || !hasActiveRoom) return;
+    const timer = window.setInterval(() => {
+      if (!document.hidden) checkUnread();
+    }, 60_000);
+    return () => window.clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, hasActiveRoom, mno]);
 
   // ---------------------------------------------------------------------------
   // 5. 위젯 열기/닫기 및 세션 진입 로직
