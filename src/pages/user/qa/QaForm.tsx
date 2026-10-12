@@ -18,7 +18,7 @@ import { getOrCreateGno } from '../../../components/ts/ChatGuest';
  *  - 회원 수정  : GET·PUT /qa/{no}        — 로그인으로 본인 확인
  *  - 비회원 수정: GET·PUT /qa/guest/{no}  — 상세에서 비밀번호 확인 후 받은 임시 토큰(X-Qa-Token)
  *  - 등록      : POST /qa (로그인 회원이면 서버가 회원 글로 저장)
- *  게시글 비밀번호는 등록할 때만 입력합니다.
+ *  게시글 비밀번호는 비회원이 등록할 때만 입력합니다. (회원은 로그인으로 본인 확인 → 비밀번호 없음)
  * 
  */
 
@@ -161,8 +161,8 @@ export default function QaForm() {
       if (field === 'guestEmail' && !isGuest) {
         continue;
       }
-      // 게시글 비밀번호는 등록할 때만 (수정은 로그인·임시 토큰으로 본인 확인)
-      if (field === 'pw' && isEdit) {
+      // 게시글 비밀번호는 비회원이 등록할 때만 (회원은 로그인, 수정은 임시 토큰으로 본인 확인)
+      if (field === 'pw' && (isEdit || !isGuest)) {
         continue;
       }
 
@@ -202,7 +202,7 @@ export default function QaForm() {
         title: input.title,
         content: input.content,
         cdate: getNowDate(),
-        pw: input.pw,
+        pw: isGuest ? input.pw : '', // 회원 글은 게시글 비밀번호를 쓰지 않음
         vmode: input.vmode,
         fileyn: input.fileyn,
         guestEmail: input.guestEmail,
@@ -426,8 +426,8 @@ export default function QaForm() {
             </div>
           </div>
 
-          {/* 게시글 비밀번호 — 등록할 때만 (비회원은 이후 조회·수정·삭제 때 이 비밀번호로 본인 확인) */}
-          {!isEdit && (
+          {/* 게시글 비밀번호 — 비회원이 등록할 때만 (이후 조회·수정·삭제 때 이 비밀번호로 본인 확인) */}
+          {!isEdit && isGuest && (
           <div className="form_group">
             <label className="form_label" htmlFor="password">
               게시글 비밀번호<span className="req" title="필수 입력 요소">*</span>

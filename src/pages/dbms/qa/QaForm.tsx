@@ -95,7 +95,6 @@ export default function QaForm() {
     { field: 'title', label: '문의 제목', id: 'qa_title' },
     { field: 'content', label: '문의 내용', id: 'qa_content' },
     { field: 'answer', label: '답변 내용', id: 'qa_answer' },
-    { field: 'pw', label: '게시글 비밀번호', id: 'password' }
   ];
 
 
@@ -143,7 +142,7 @@ export default function QaForm() {
         content: input.content,
         answer: input.answer,
         cdate: getNowDate(),
-        pw: input.pw,
+        pw: '', // FAQ는 게시글 비밀번호를 쓰지 않음 (관리자 로그인으로 권한 확인)
         vseq: input.vseq,
         fileyn: input.fileyn
       };
@@ -367,25 +366,6 @@ export default function QaForm() {
                 style={{ maxWidth: 200 }}
               />
               <div className="form_hint">출력순서 미지정시 등록일 순으로 노출됩니다.</div>
-            </div>
-          </div>
-
-          {/* 게시글 비밀번호 */}
-          <div className="form_group">
-            <label className="form_label" htmlFor="password">
-              게시글 비밀번호<span className="req" title="필수 입력 요소">*</span>
-            </label>
-            <div className="form_control">
-              <input
-                type='password'
-                id="password"
-                name='pw'
-                className={`form_input ${errors.pw ? 'is_error' : ''}`}
-                value={input.pw}
-                onChange={onChange}
-                style={{ maxWidth: 200 }}
-              />
-              {errors.pw && <div className="form_hint error">{errors.pw}</div>}
             </div>
           </div>
 
