@@ -36,6 +36,8 @@ export interface QaTypes {
   aiAdate?: string | null;
   /** AI 답변 있음 여부 (Y/N) — 목록 배지용 */
   aiyn?: string;
+  /** 잠긴 비밀글 — true면 내용 없이 번호·제목 등만 옴 (비회원 상세, 비밀번호 확인 전) */
+  locked?: boolean | null;
   vseq?: string;
 
   isdel?: string;
@@ -115,7 +117,8 @@ export interface QaSearchResult {
 
 /* FAQ 등록 */
 export interface FaqCRequest {
-  ano: number;
+  /** 보내지 않음 — 서버가 로그인 토큰에서 관리자번호를 찾음 */
+  ano?: number;
   type: number;
   title: string;
   content: string;
@@ -128,7 +131,8 @@ export interface FaqCRequest {
 
 /* 문의사항 등록 */
 export interface QCRequest {
-  mno: number | null;
+  /** 보내지 않음 — 작성자는 서버가 로그인 토큰에서 찾음 (예전 호환용으로 타입만 남김) */
+  mno?: number | null;
   type: number;
   title: string;
   content: string;
@@ -145,6 +149,7 @@ export interface QCRequest {
 
 /* 문의사항 댓글 등록 */
 export interface QARequest {
-  ano: number;
+  /** 보내지 않음 — 서버가 로그인 토큰에서 관리자번호를 찾음 */
+  ano?: number;
   answer?: string;
 }

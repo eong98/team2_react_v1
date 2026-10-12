@@ -3,7 +3,7 @@ import { GlobalStoreSession } from '../../../store/LoginStore';
 import { axiosInstance, getAttachUrl } from '../../../utils/Tool';
 import { useTab } from '../../../hooks/useTab';
 import { usePaging } from '../../../hooks/usePaging';
-import { AlertModal, Filterbar, UserPagination, PageHeader, DataAcc, DataCard } from '../../../components/ui';
+import { Filterbar, UserPagination, PageHeader, DataAcc, DataCard } from '../../../components/ui';
 import type { DataCardColumn, DataAccColumn } from '../../../components/ui';
 import { EMPTY_FILTERS, PAGE_SIZE, QA_STATUS_MAP, QA_TYPE_MAP } from '../../../components/ts/QaType';
 import type { Filters, QaSearchResult, QaTypes, TabKey } from '../../../components/ts/QaType';
@@ -18,18 +18,8 @@ export default function QaList() {
   const { tab, changeTab } = useTab<TabKey>({ defaultTab: 'qa' });
   const { page, setPage, navigateWithQuery } = usePaging({ basePath: '/user/qa' });
 
-  /** 안내 모달 문구 (남의 비밀글을 눌렀을 때) */
-  const [alert, setAlert] = useState<string | null>(null);
-
-  /**
-   * 상세로 이동 — 다른 사람의 비밀글은 서버에 요청하지 않고 바로 안내
-   * (요청하면 서버가 거부하고, 브라우저가 실패한 요청을 콘솔에 오류로 남김)
-   */
+  /** 상세로 이동 — 남의 비밀글도 그대로 이동 (상세가 내용 대신 잠금 안내를 보여줌) */
   const openDetail = (n: QaTypes) => {
-    if (n.vmode === 'Y' && n.mno !== mno) {
-      setAlert('비밀글은 작성자만 볼 수 있습니다.');
-      return;
-    }
     navigateWithQuery(`${n.no}`);
   };
 
@@ -53,7 +43,7 @@ export default function QaList() {
 
   /* 탭별 API 데이터 URL */
   const urlMap: Record<TabKey, string> = {
-    my: `/qa/my/${mno}`,  // 내 문의
+    my: '/qa/my',  // 내 문의 — 회원번호는 서버가 로그인 토큰에서 찾음
     qa: '/qa/list',   // 전체 문의
     faq: '/qa/faq',   // 자주 묻는 질문
   };
@@ -369,12 +359,6 @@ export default function QaList() {
         onChange={setPage}
       />
 
-      <AlertModal
-        open={alert !== null}
-        onClose={() => setAlert(null)}
-        message={alert ?? ''}
-        variant="error"
-      />
 
     </section>
   );

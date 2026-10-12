@@ -11,7 +11,7 @@ import { attachErrorMessage } from '../../../components/ui/common/AttachUploader
 
 export default function NoticeForm() {
   const { no } = useParams<{ no: string }>(); // URL에 no가 있으면 수정 모드
-  const { no: ano, id, grade } = GlobalStoreSession();
+  const { no: ano, id } = GlobalStoreSession();
   const isEdit = Boolean(no);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error'; onConfirm?: () => void } | null>(null);
@@ -66,12 +66,7 @@ export default function NoticeForm() {
   // 수정 모드일 때 기존 게시글 정보 조회
   const loadNotice = () => {
     axiosInstance
-      .get(`/notice/${no}`, {
-        headers: {
-          accessNo: String(ano),
-          grade: String(grade),
-        },
-      })
+      .get(`/notice/${no}`)
       .then((result) => result.data)
       .then((data) => {
         setInput((prev) => ({
@@ -157,8 +152,8 @@ export default function NoticeForm() {
         return;
       }
       let attachFailMessage: string | null = null; // 글 저장 후 첨부 반영이 실패했을 때 안내
+      // 작성 관리자 번호는 보내지 않음 — 서버가 로그인 토큰에서 찾음
       const payload: NCRequest = {
-        ano: ano,
         type: Number(input.type),
         title: input.title,
         content: input.content,

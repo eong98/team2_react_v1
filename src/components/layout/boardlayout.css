@@ -46,6 +46,30 @@
   min-width: 0;
 }
 
+/* 좁은 화면(태블릿 세로·휴대폰) — 왼쪽 메뉴가 폭을 다 차지해 본문이 찌그러지던 문제
+   → 메뉴를 본문 위로 올리고, 메뉴 항목은 가로로 나란히 */
+@media (max-width: 768px) {
+  .board_layout {
+    flex-direction: column;
+    gap: 20px;
+  }
+  .board_lnb {
+    flex: 0 0 auto;
+  }
+  .board_lnb_title {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+  }
+  .board_lnb nav ul {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .board_lnb_link {
+    padding: 8px 12px;
+  }
+}
+
 /* FAQ 아코디언 */
 .faq_list {
   display: flex;

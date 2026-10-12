@@ -33,12 +33,7 @@ export default function NoticeDetail() {
   /* 공지사항내용 상세 데이터 */
   const loadNotice = () => {
     axiosInstance
-      .get(`/notice/${no}`, {
-        headers: {
-          accessNo: String(ano),
-          grade: String(grade),
-        }
-      })
+      .get(`/notice/${no}`)
       .then(result => result.data)
       .then(data => {
         setNotice(data);

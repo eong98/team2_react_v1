@@ -297,6 +297,24 @@ select::-ms-expand {display:none;}
 .badge.neutral_30{background:var(--n-300);color:var(--n-850);}
 .badge.check{background:var(--teal-600);color:var(--n-900);}
 
+/* 잠긴 비밀글 화면 (비회원 문의 상세) — 구독권 화면 로그인 안내(.login_confirm)와 같은 구성 */
+.qa_locked{display:flex;flex-direction:column;align-items:center;text-align:center;max-width:420px;margin:0 auto;padding:28px 0 8px;}
+.qa_locked_icon{display:flex;align-items:center;justify-content:center;width:56px;height:56px;margin-bottom:16px;border-radius:50%;background:var(--cyan-dim, rgba(51,214,192,.14));color:var(--cyan, #33d6c0);}
+.qa_locked_icon svg,.qa_locked_link svg{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.qa_locked_icon svg{width:26px;height:26px;}
+.qa_locked_title{margin:0 0 6px;font-size:18px;font-weight:700;}
+.qa_locked_post{margin:0 0 10px;font-size:13px;color:var(--text-faint, #a4aeb7);word-break:break-all;}
+.qa_locked_desc{margin:0;font-size:14px;color:var(--text-dim, #adb7c0);}
+.qa_locked_form{display:flex;gap:8px;width:100%;max-width:320px;margin-top:18px;}
+.qa_locked_form .form_input{flex:1;min-width:0;}
+.qa_locked_form .btn{flex-shrink:0;}
+.qa_locked_error{margin-top:8px;}
+.qa_locked_foot{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;width:100%;margin-top:22px;padding-top:16px;border-top:1px solid var(--border, #2a323c);font-size:13px;color:var(--text-faint, #a4aeb7);}
+.qa_locked_link{display:inline-flex;align-items:center;gap:2px;padding:0;border:none;background:none;font:inherit;font-weight:600;color:var(--cyan, #33d6c0);cursor:pointer;}
+.qa_locked_link svg{width:14px;height:14px;transition:transform .2s ease;}
+.qa_locked_link:hover{text-decoration:underline;text-underline-offset:3px;}
+.qa_locked_link:hover svg{transform:translateX(2px);}
+
 /* AI 자동 답변 표시 — 문의 목록 제목 옆, 빛이 지나가며 반짝임 */
 .badge.ai_answer{position:relative;overflow:hidden;margin-left:8px;white-space:nowrap;vertical-align:middle;background:var(--secondary-dim);color:var(--teal-300);box-shadow:inset 0 0 0 1px var(--teal-300);animation:ai_badge_glow 2s ease-in-out infinite;}
 .badge.ai_answer::after{content:'';position:absolute;top:0;left:-60%;width:45%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.6),transparent);transform:skewX(-20deg);animation:ai_badge_shine 2.4s ease-in-out infinite;}

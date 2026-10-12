@@ -135,8 +135,8 @@ export default function QaDetail() {
     setIsEdit(true);
     setSubmitting(true);
     try {
+      // 답변 관리자 번호는 보내지 않음 — 서버가 로그인 토큰에서 찾음
       const payload: QARequest = {
-        ano,
         answer: input.answer
       };
 

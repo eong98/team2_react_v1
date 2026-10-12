@@ -56,7 +56,6 @@ export default function QaForm() {
   };
   
   const [input, setInput] = useState<QCRequest>({
-    mno: mno,
     type: 0,
     title: '',
     content: '',
@@ -87,9 +86,13 @@ export default function QaForm() {
     request
       .then((result) => result.data)
       .then((data) => {
+        // 비회원 확인 시간(10분)이 지난 비밀글 — 서버가 내용 없이 locked로 응답 → 상세에서 비밀번호 다시 확인
+        if (data.locked) {
+          setAlert({ message: '본인 확인 시간이 지났습니다. 상세 화면에서 비밀번호를 다시 확인해 주세요.', variant: 'error', onConfirm: goBack });
+          return;
+        }
         setInput((prev) => ({
           ...prev,
-          mno: mno,
           type: data.type,
           title: data.title,
           content: data.content,
@@ -193,8 +196,8 @@ export default function QaForm() {
         return;
       }
       let attachFailMessage: string | null = null; // 글 저장 후 첨부 반영이 실패했을 때 안내
+      // 회원번호는 보내지 않음 — 작성자는 서버가 로그인 토큰에서 찾음
       const payload: QCRequest = {
-        mno: mno,
         type: Number(input.type),
         title: input.title,
         content: input.content,

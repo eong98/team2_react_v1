@@ -7,6 +7,7 @@ import { AlertModal, AttachViewer, ConfirmDeleteModal, PageHeader, PrevNextNav }
 import { QA_STATUS_MAP, QA_TYPE_MAP, type QaTypes } from '../../../components/ts/QaType';
 import { ATTACH_BOARD_LABEL, deleteAttachByBno } from '../../../components/ts/Attach';
 import { qaErrorMessage } from '../../../components/ts/QaGuestToken';
+import QaLockedView from '../../../components/ui/common/QaLockedView';
 
 export default function QaDetail() {
   const { no } = useParams<{ no: string }>(); // URL에서 no 추출
@@ -15,6 +16,8 @@ export default function QaDetail() {
   const { goToList, navigateWithQuery } = usePaging({ basePath: '/user/qa' });
 
   const [qa, setQa] = useState<QaTypes | null>(null);
+  /** 잠긴 비밀글(남의 글) — 번호·제목만 있음 */
+  const [locked, setLocked] = useState<QaTypes | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,6 +39,13 @@ export default function QaDetail() {
       .get(`/qa/${no}`)
       .then(res => res.data)
       .then((data) => {
+        // 남의 비밀글 — 서버가 내용 없이 locked로 응답 → 잠금 안내 화면
+        if (data.locked) {
+          setQa(null);
+          setLocked(data);
+          return;
+        }
+        setLocked(null);
         setQa(data);
         setNavPosts({
           prev : data.prev ?? null,
@@ -61,6 +71,8 @@ export default function QaDetail() {
     if (!no) return;
     setLoading(true);
     setError(null);
+    setQa(null);      // 다른 글로 이동하면 앞 글 내용·잠금 상태를 먼저 비움
+    setLocked(null);
 
     loadQa();
 
@@ -98,6 +110,30 @@ export default function QaDetail() {
     return (
       <section className="view active">
         <PageHeader title="문의사항 상세" description="내용을 불러오는 중입니다." />
+      </section>
+    );
+  }
+
+  // 남의 비밀글 — 내용 대신 잠금 안내
+  if (locked) {
+    return (
+      <section className="view active">
+        <PageHeader
+          title="문의사항 상세"
+          description="비밀글은 작성자만 볼 수 있습니다."
+          actions={
+            <button type="button" className="btn btn_md btn_ghost" onClick={() => goToList()}>
+              ← 목록으로
+            </button>
+          }
+        />
+        <QaLockedView
+          post={locked}
+          desc="비밀글은 작성자만 볼 수 있습니다."
+          footText="내 글이 아닌가요?"
+          footLinkLabel="목록으로 돌아가기"
+          onFootLink={() => goToList()}
+        />
       </section>
     );
   }

@@ -2,7 +2,6 @@ import axios from 'axios';
 import { axiosInstance, getAttachUrl } from '../../../utils/Tool';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { GlobalStoreSession } from '../../../store/LoginStore';
 import { AdminToolbar, AlertModal, ConfirmDeleteModal, DataAcc, DataCard, DbmsPagination, PageHeader } from '../../../components/ui';
 import type { DataAccColumn, DataCardColumn  } from '../../../components/ui';
 import { EMPTY_FILTERS, PAGE_SIZE, QA_STATUS_MAP, QA_TYPE_MAP } from '../../../components/ts/QaType';
@@ -24,8 +23,6 @@ const LIST_URL: Record<AdminTabKey, string> = {
 };
 
 export default function QaList() {
-  const { no:ano, grade } = GlobalStoreSession();
-
   /* 탭 이동시 저장 설정 */
   // 범용 useTab 훅 사용 (URL Query Parameter 기반 탭 제어)
   // 탭을 바꾸면 page와 함께 open(특정 FAQ 펼치기)도 지움
@@ -63,10 +60,6 @@ export default function QaList() {
     try {
       const url = LIST_URL[tab] ?? LIST_URL.qa;
       const res = await axiosInstance.get<QaSearchResult>(url,  {
-        headers: {
-          accessNo: String(ano),
-          grade: String(grade),
-        },
         params: {
           page: page - 1,
           size: PAGE_SIZE,
@@ -142,7 +135,6 @@ export default function QaList() {
       try {
         for (let p = 0; p < 100; p++) {
           const res = await axiosInstance.get<QaSearchResult>('/qa/faq', {
-            headers: { accessNo: String(ano), grade: String(grade) },
             params: { page: p, size: PAGE_SIZE },
           });
           if (cancelled) return;

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { usePaging } from '../../../hooks/usePaging';
 import { QA_STATUS_MAP, QA_TYPE_MAP, type QaTypes } from '../../../components/ts/QaType';
 import { axiosInstance } from '../../../utils/Tool';
 import { AlertModal, AttachViewer, ConfirmDeleteModal, Modal, PageHeader, PrevNextNav } from '../../../components/ui';
 import { ATTACH_BOARD_LABEL, deleteAttachByBno } from '../../../components/ts/Attach';
+import QaLockedView from '../../../components/ui/common/QaLockedView';
 import {
   QA_TOKEN_REQUIRED,
   clearQaGuestToken,
@@ -21,7 +22,8 @@ import {
    비밀번호를 확인하면 서버가 이 글 전용 임시 토큰(10분)을 주고,
    sessionStorage에 보관했다가 X-Qa-Token 헤더로 보냅니다(QaGuestToken.ts).
    - 비밀글이 아니면 토큰 없이 조회
-   - 비밀글인데 토큰이 없거나 만료됐으면 비밀번호 확인 모달
+   - 비밀글인데 토큰이 없거나 만료됐으면 서버가 locked=true(내용 없음)로 응답
+     → 오류 화면·모달 대신 비밀번호 입력 칸이 있는 잠금 화면을 보여줌 (요청이 실패가 아니라 콘솔 오류도 없음)
    - 수정·삭제도 토큰으로 본인 확인 (없으면 먼저 비밀번호 확인)
 
    API
@@ -35,9 +37,12 @@ type PwPurpose = 'view' | 'edit' | 'delete';
 
 export default function QaDetail() {
   const { no } = useParams<{ no: string }>();
+  const navigate = useNavigate();
   const { goToList, navigateWithQuery } = usePaging({ basePath: '../qa' });
 
   const [qa, setQa] = useState<QaTypes | null>(null);
+  /** 잠긴 비밀글(비밀번호 확인 전) — 번호·제목 등만 있음 */
+  const [locked, setLocked] = useState<QaTypes | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,6 +72,15 @@ export default function QaDetail() {
       .get(`/qa/guest/${no}`, { headers: qaGuestHeaders(no) })
       .then((res) => res.data)
       .then((data) => {
+        // 토큰이 없거나 만료된 비밀글 → 잠금 화면 (비밀번호 확인 후 다시 조회)
+        if (data.locked) {
+          clearQaGuestToken(no);
+          setQa(null);
+          setLocked(data);
+          setPwPurpose('view');
+          return;
+        }
+        setLocked(null);
         setQa(data);
         setNavPosts({
           prev : data.prev ?? null,
@@ -78,8 +92,7 @@ export default function QaDetail() {
         // 비밀글인데 토큰이 없거나 만료 → 비밀번호 확인
         if (qaErrorCode(err) === QA_TOKEN_REQUIRED) {
           clearQaGuestToken(no);
-          setError('비밀글입니다. 작성 시 입력한 비밀번호를 확인해 주세요.');
-          openPwModal('view');
+          setError('비밀글입니다. 목록에서 다시 열어 비밀번호를 확인해 주세요.');
           return;
         }
         if (err?.response?.status === 400 || err?.response?.status === 404) {
@@ -93,6 +106,12 @@ export default function QaDetail() {
   };
 
   useEffect(() => {
+    // 다른 글로 이동하면(이전글·다음글 등) 앞 글의 내용·잠금·비밀번호 입력을 먼저 비움
+    setQa(null);
+    setLocked(null);
+    setPwPurpose(null);
+    setPw('');
+    setPwError('');
     loadQa();
   }, [no]);
 
@@ -181,7 +200,7 @@ export default function QaDetail() {
   /** 비밀번호 확인 모달 (조회·수정·삭제 공용) */
   const pwModal = (
     <Modal
-      open={pwPurpose !== null}
+      open={pwPurpose !== null && pwPurpose !== 'view'} // 조회용 비밀번호는 잠금 화면에서 직접 입력
       onClose={closePwModal}
       titleId="qaDetailPwCheckTitle"
       title="비밀번호 확인"
@@ -198,9 +217,7 @@ export default function QaDetail() {
     >
       <div>
         <p className="cell_sub" style={{ marginBottom: 14 }}>
-          {pwPurpose === 'view'
-            ? '비밀글입니다. 작성 시 입력한 비밀번호를 입력해주세요.'
-            : '본인 확인을 위해 작성 시 입력한 비밀번호를 입력해주세요.'}
+          본인 확인을 위해 작성 시 입력한 비밀번호를 입력해주세요.
         </p>
         <div className="form_group">
           <label className="form_label" htmlFor="qaDetailPw">비밀번호</label>
@@ -229,6 +246,41 @@ export default function QaDetail() {
     );
   }
 
+
+  // 잠긴 비밀글 — 내용 대신 비밀번호 입력 화면 (회원이 쓴 비밀글이면 로그인 안내)
+  if (locked) {
+    return (
+      <section className="view active">
+        <PageHeader
+          title="문의사항 상세"
+          description="비밀글은 작성자만 볼 수 있습니다."
+          actions={
+            <button type="button" className="btn btn_md btn_ghost" onClick={() => goToList()}>
+              ← 목록으로
+            </button>
+          }
+        />
+        {locked.mno ? (
+          <QaLockedView
+            post={locked}
+            desc="회원이 작성한 비밀글은 작성자만 볼 수 있습니다."
+            footText="작성자이신가요?"
+            footLinkLabel="로그인하러가기"
+            onFootLink={() => navigate('/login')}
+          />
+        ) : (
+          <QaLockedView
+            post={locked}
+            desc="작성 시 입력한 비밀번호를 입력하면 내용을 볼 수 있습니다."
+            password={{ value: pw, onChange: setPw, onSubmit: handleVerify, error: pwError, checking }}
+            footText="내 글이 아닌가요?"
+            footLinkLabel="목록으로 돌아가기"
+            onFootLink={() => goToList()}
+          />
+        )}
+      </section>
+    );
+  }
 
   if (error || !qa) {
     return (

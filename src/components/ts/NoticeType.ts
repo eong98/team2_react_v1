@@ -79,7 +79,8 @@ export interface NoticeSearchResult {
 
 /* 등록 */
 export interface NCRequest {  
-  ano: number;
+  /** 보내지 않음 — 서버가 로그인 토큰에서 관리자번호를 찾음 */
+  ano?: number;
   type: number;
   title: string;
   content: string;

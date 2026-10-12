@@ -1,29 +1,20 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { usePaging } from '../../../hooks/usePaging';
 import { EMPTY_FILTERS, PAGE_SIZE, QA_STATUS_MAP, QA_TYPE_MAP, type Filters, type QaSearchResult, type QaTypes } from '../../../components/ts/QaType';
 import { axiosInstance } from '../../../utils/Tool';
-import { DataCard, Filterbar, Modal, PageHeader, UserPagination, type DataCardColumn } from '../../../components/ui';
-import { getQaGuestToken, qaErrorMessage, verifyQaGuest } from '../../../components/ts/QaGuestToken';
+import { DataCard, Filterbar, PageHeader, UserPagination, type DataCardColumn } from '../../../components/ui';
 
 /* ---------------------------------------------------------------------
-   비회원 문의 조회 (/board/qa/search) — 이메일/키워드로 본인 작성 문의
-   목록을 검색합니다. 목록에서 비밀글(vmode='Y')을 클릭하면 Modal로
-   비밀번호 입력을 먼저 받고, 확인되면 상세로 이동합니다. 비밀글이 아니면
-   바로 상세로 이동합니다.
-
-   비밀번호는 항상 POST 바디로만 전달합니다(GET 쿼리파라미터 전달 금지 —
-   URL/서버 접근로그/브라우저 히스토리 노출 위험). 확인되면 그 글 전용
-   임시 토큰(10분)을 sessionStorage에 저장하고 상세로 이동합니다.
+   비회원 문의사항 (/board/qa/search) — 이메일/키워드로 본인 작성 문의
+   목록을 검색합니다. 글을 클릭하면 상세로 이동하고, 비밀글이면 상세의
+   잠금 화면에서 비밀번호를 입력합니다 (목록 모달 없음 — 주소·챗봇·이전글 등
+   어느 경로로 들어와도 같은 화면에서 처리).
 
    API
    GET  /qa/guest/list?word=        → PageResponse<QaResponse>
-   POST /qa/guest/{no}/verify        → {token, expiresIn} (5회 실패 시 10분 잠금)
 --------------------------------------------------------------------- */
 
 export default function QaList() {
-  const navigate = useNavigate();
-  
   const { page, setPage, navigateWithQuery } = usePaging({ basePath: '/board/qa' });
 
   /* API 데이터 저장 */
@@ -37,11 +28,6 @@ export default function QaList() {
   const [totalElements, setTotalElements] = useState(0);
 
 
-  // 비밀번호 확인 모달 상태
-  const [pwTarget, setPwTarget] = useState<QaTypes | null>(null);
-  const [pw, setPw] = useState('');
-  const [checking, setChecking] = useState(false);
-  const [pwError, setPwError] = useState('');
 
   const loadQaList = async () => {
     setLoading(true);
@@ -104,41 +90,9 @@ export default function QaList() {
     setPage(1);
   };
 
-  const openPwModal = (item: QaTypes) => {
-    setPwTarget(item);
-    setPw('');
-    setPwError('');
-  };
-
-  const closePwModal = () => setPwTarget(null);
-
+  /** 상세로 이동 — 비밀글도 그대로 이동 (비밀번호는 상세의 잠금 화면에서 입력) */
   const handleClickItem = (item: QaTypes) => {
-    // 비밀글이어도 이미 확인한 토큰이 살아 있으면 바로 이동
-    if (item.vmode === 'Y' && !getQaGuestToken(item.no)) {
-      openPwModal(item);
-    } else {
-      navigateWithQuery(`${item.no}`);
-    }
-  };
-
-  const handleVerify = async () => {
-    if (!pwTarget) return;
-    if (!pw.trim()) {
-      setPwError('비밀번호를 입력해주세요.');
-      return;
-    }
-    setPwError('');
-    setChecking(true);
-    try {
-      await verifyQaGuest(pwTarget.no, pw);
-      navigate(`/board/qa/${pwTarget.no}`);
-      setPwTarget(null);
-    } catch (err) {
-      // 불일치·잠김(5회 실패)은 서버 안내 문구를 그대로 표시
-      setPwError(qaErrorMessage(err, '비밀번호가 일치하지 않습니다.'));
-    } finally {
-      setChecking(false);
-    }
+    navigateWithQuery(`${item.no}`);
   };
 
 
@@ -199,7 +153,7 @@ export default function QaList() {
   return (
     <section className="view active">
       <PageHeader
-        title="문의 조회"
+        title="문의사항"
         description="비회원 문의 작성 시 입력하신 이메일로 내역을 조회합니다."
         createLabel={'+ 비회원 문의 작성'}
         onCreate={() => navigateWithQuery('new')}
@@ -244,42 +198,6 @@ export default function QaList() {
 
 
 
-      <Modal
-        open={pwTarget !== null}
-        onClose={closePwModal}
-        titleId="qaPwCheckTitle"
-        title="비밀번호 확인"
-        footer={
-          <>
-            <button type="button" className="btn btn_md btn_ghost" onClick={closePwModal}>
-              취소
-            </button>
-            <button type="button" className="btn btn_md btn_primary" disabled={checking} onClick={handleVerify}>
-              {checking ? '확인 중...' : '확인'}
-            </button>
-          </>
-        }
-      >
-        <div>
-          <p className="cell_sub" style={{ marginBottom: 14 }}>
-            비밀글입니다. 작성 시 입력한 비밀번호를 입력해주세요.
-          </p>
-          <div className="form_group">
-            <label className="form_label" htmlFor="qaPw">비밀번호</label>
-            <div className="form_control">
-              <input
-                id="qaPw"
-                type="password"
-                className={`form_input ${pwError ? 'is_error' : ''}`}
-                value={pw}
-                onChange={(e) => setPw(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
-              />
-              {pwError && <div className="form_hint error">{pwError}</div>}
-            </div>
-          </div>
-        </div>
-      </Modal>
     </section>
   );
 }

@@ -4,7 +4,6 @@ import { axiosInstance } from '../../../utils/Tool';
 import { usePaging } from '../../../hooks/usePaging';
 import { AdminToolbar, AlertModal, ConfirmDeleteModal, DataCard, DbmsPagination, PageHeader, type DataCardColumn } from '../../../components/ui';
 import { EMPTY_FILTERS, NOTICE_TYPE_MAP, PAGE_SIZE, type Filters, type NoticeSearchResult, type NoticeTypes } from '../../../components/ts/NoticeType';
-import { GlobalStoreSession } from '../../../store/LoginStore';
 import { ATTACH_BOARD_LABEL, deleteAttachByBno } from '../../../components/ts/Attach';
 import { useTab } from '../../../hooks/useTab';
 
@@ -12,8 +11,6 @@ import { useTab } from '../../../hooks/useTab';
 type NoticeTabKey = 'list' | 'deleted';
 
 export default function NoticeList() {
-  const { no:ano, grade } = GlobalStoreSession();
-
   const { page, setPage, navigateWithQuery } = usePaging({ basePath: '/dbms/notice' });
   const { tab, changeTab } = useTab<NoticeTabKey>({ defaultTab: 'list', resetParamsOnTabChange: ['page'] });
 
@@ -45,10 +42,6 @@ export default function NoticeList() {
     setLoading(true);
     try {
       const res = await axiosInstance.get<NoticeSearchResult>(tab === 'deleted' ? '/notice/deleted' : '/notice/list/admin', {
-        headers: {
-          accessNo: String(ano),
-          grade: String(grade),
-        },
         params: {
           page: page - 1,
           size: PAGE_SIZE,
