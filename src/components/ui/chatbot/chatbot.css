@@ -1371,3 +1371,145 @@
   color: var(--warning, #f5b94a);
   font-size: 13px;
 }
+
+/* ══════════════════════════════════════════════
+   관리자 화면 — 챗봇 옵션 메뉴 관리 디자인 정리 (위 규칙을 덮어씀)
+   - 자동생성 / 메뉴 구성 두 영역을 같은 카드·머리 모양으로
+   - 메뉴 구성은 항상 STEP1~3 세 칸, 칸 안에서 스크롤
+   - 오른쪽 상세·미리보기는 스크롤해도 따라옴
+   ══════════════════════════════════════════════ */
+.chatmenu_section_head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.chatmenu_section_title { margin: 0; font-size: 16px; font-weight: 700; color: var(--text, #e8ebed); }
+.chatmenu_section_desc { margin: 6px 0 0; font-size: 12.5px; line-height: 1.6; color: var(--text-faint, #6b7684); }
+.chatmenu_count { flex: 0 0 auto; padding: 4px 10px; border-radius: 100px; background: var(--primary-dim, rgba(51, 214, 138, .12)); color: var(--primary, #33d68a); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.chatmenu_count.is_full { background: var(--surface-2, rgba(255, 255, 255, .05)); color: var(--text-dim, #adb7c0); }
+
+.chatmenu_generate_section { padding: 24px; border-color: var(--border, #222a33); border-radius: 14px; }
+.chatmenu_doc_upload_row { flex-wrap: wrap; margin: 14px 0 0; }
+.chatmenu_action_hint { margin: 10px 0 18px; font-size: 12.5px; color: var(--text-faint, #6b7684); }
+/* 매뉴얼 파일 목록 — 두 줄로 나눠 촘촘하게, 네 줄을 넘으면 목록 안에서 스크롤 (파일이 많아도 아래 메뉴 구성이 밀려 내려가지 않게) */
+.chatmenu_doc_list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 8px; max-height: 190px; padding-right: 2px; overflow-y: auto; scrollbar-width: thin; }
+.chatmenu_doc_item { gap: 8px; min-width: 0; padding: 6px 8px 6px 12px; border-color: var(--border, #222a33); border-radius: 8px; background: var(--surface-2, rgba(255, 255, 255, .03)); }
+.chatmenu_doc_item .chatmenu_doc_check { flex: 1 1 auto; min-width: 0; margin-bottom: 0; }
+.chatmenu_doc_date { flex: 0 0 auto; font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (max-width: 1100px) { .chatmenu_doc_list { grid-template-columns: minmax(0, 1fr); } }
+
+.flow_wrap { grid-template-columns: minmax(0, 1fr) minmax(320px, 380px); align-items: start; margin-top: 0; }
+.flow_tree_panel { min-width: 0; padding: 24px; border: 1px solid var(--border, #222a33); border-radius: 14px; background: var(--surface, #141b24); }
+.flow_columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; overflow: visible; }
+.flow_column { min-width: 0; gap: 0; padding: 12px; border-radius: 12px; background: var(--surface-2, rgba(255, 255, 255, .03)); }
+.flow_column.is_idle { background: transparent; border: 1px dashed var(--border-strong, #2a323c); }
+.flow_column_title { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border, #222a33); }
+.flow_column_sub { flex: 1 1 auto; min-width: 0; font-size: 12px; font-weight: 600; color: var(--text-dim, #adb7c0); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.flow_column_count { flex: 0 0 auto; font-size: 11px; font-weight: 600; color: var(--text-faint, #6b7684); font-variant-numeric: tabular-nums; }
+.flow_column_list { display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow-y: auto; scrollbar-width: thin; }
+.flow_column .flow_empty { padding: 28px 12px; border: none; font-size: 12.5px; line-height: 1.6; }
+.flow_node { padding: 10px 12px; border-color: transparent; border-radius: 8px; background: var(--surface, #141b24); font: inherit; transition: border-color .15s ease, background .15s ease; }
+.flow_node:hover { border-color: var(--border-strong, #2a323c); }
+.flow_node.active { border-color: var(--primary, #33d68a); background: var(--primary-dim, rgba(51, 214, 138, .08)); }
+/* 긴 메뉴 이름은 두 줄까지 보여 줌 (한 줄로 자르면 비슷한 이름끼리 구분이 안 됨) */
+.flow_columns .flow_node_label { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.45; word-break: keep-all; }
+.flow_node.active .flow_node_label { font-weight: 600; color: var(--primary, #33d68a); }
+.flow_node.active .flow_node_arrow { color: var(--primary, #33d68a); }
+.flow_node.is_hidden .flow_node_label { color: var(--text-faint, #6b7684); }
+.flow_node:focus-visible, .flow_add_btn:focus-visible { outline: 2px solid var(--primary, #33d68a); outline-offset: 2px; }
+.flow_node_state { flex: 0 0 auto; padding: 1px 7px; border-radius: 100px; background: var(--surface-2, rgba(255, 255, 255, .06)); color: var(--text-faint, #6b7684); font-size: 11px; font-weight: 600; white-space: nowrap; }
+.flow_add_btn { margin-top: 8px; padding: 9px 12px; border: 1px dashed var(--border-strong, #2a323c); border-radius: 8px; background: none; color: var(--text-faint, #6b7684); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: border-color .15s ease, color .15s ease; }
+.flow_add_btn:hover { border-color: var(--primary, #33d68a); color: var(--primary, #33d68a); }
+
+.flow_bottom { position: sticky; top: 16px; grid-template-rows: none; }
+.flow_detail_panel, .flow_preview_panel { padding: 20px; border-color: var(--border, #222a33); border-radius: 14px; }
+.flow_detail_label { font-size: 13px; font-weight: 700; color: var(--text, #e8ebed); }
+.flow_detail_row { flex-wrap: wrap; }
+.flow_detail_title { word-break: keep-all; }
+.flow_detail_caption { display: block; margin-bottom: 6px; font-size: 11px; font-weight: 700; color: var(--text-faint, #6b7684); }
+.flow_detail_answer { max-height: 220px; overflow-y: auto; line-height: 1.7; background: var(--surface-2, rgba(255, 255, 255, .03)); scrollbar-width: thin; }
+.flow_detail_actions { flex-wrap: wrap; }
+.flow_detail_delete { margin-left: auto; }
+.flow_preview_frame { height: 420px; }
+.flow_preview_refresh_btn { text-decoration: none; }
+
+@media (max-width: 1200px) {
+  .flow_wrap { grid-template-columns: minmax(0, 1fr); }
+  .flow_bottom { position: static; }
+}
+@media (max-width: 760px) {
+  .flow_columns { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ── 최상위 메뉴 AI 추천 결과 — 후보를 두 줄로 나눠 한눈에 ── */
+.chatmenu_suggest { margin: 4px 0 18px; padding: 20px; border-color: var(--border, #222a33); border-radius: 12px; background: var(--surface-2, rgba(255, 255, 255, .03)); }
+.chatmenu_suggest .chatmenu_section_head { margin-bottom: 12px; }
+.chatmenu_suggest_now { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin: 0 0 10px; font-size: 12.5px; color: var(--text-dim, #adb7c0); }
+.chatmenu_suggest_now span { flex: 0 0 auto; font-size: 11px; font-weight: 700; color: var(--text-faint, #6b7684); }
+.chatmenu_suggest_warn { margin-bottom: 12px; padding: 10px 12px; border-radius: 8px; background: rgba(245, 185, 74, .08); color: var(--warning, #f5b94a); font-size: 12.5px; line-height: 1.6; }
+.chatmenu_suggest_list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 0; }
+.chatmenu_suggest_item { min-width: 0; padding: 12px; border-color: var(--border, #222a33); border-radius: 10px; background: var(--surface, #141b24); transition: border-color .15s ease; }
+.chatmenu_suggest_item.is_checked { border-color: var(--primary, #33d68a); background: var(--surface, #141b24); }
+.chatmenu_suggest_item:not(.is_checked) .chatmenu_suggest_fields { opacity: .55; }
+.chatmenu_suggest_fields { min-width: 0; gap: 6px; }
+.chatmenu_suggest_fields .form_input { width: 100%; }
+.chatmenu_suggest_name { font-weight: 600; }
+.chatmenu_suggest .chatmenu_label_counter { margin: -2px 0 0; font-size: 10.5px; }
+.chatmenu_suggest_actions { margin-top: 14px; }
+.chatmenu_resuggest_btn { margin-right: auto; }
+
+/* 추천이 끝나 결과가 아래에 떠 있을 때 — 진행 패널은 한 줄만 */
+.chatmenu_progress.is_compact { display: flex; align-items: center; gap: 12px; }
+.chatmenu_progress.is_compact .chatmenu_progress_head { flex: 1 1 auto; margin-bottom: 0; }
+.chatmenu_progress.is_compact .chatmenu_progress_track,
+.chatmenu_progress.is_compact .chatmenu_progress_log { display: none; }
+.chatmenu_progress.is_compact .form_page_footer { flex: 0 0 auto; margin: 0; padding: 0; border: none; }
+
+@media (max-width: 1100px) { .chatmenu_suggest_list { grid-template-columns: minmax(0, 1fr); } }
+
+/* ── 하위 메뉴 추천 결과 안내 창 — 긴 목록은 창 안에서 스크롤 ── */
+.chatmenu_notice { display: flex; flex-direction: column; gap: 14px; }
+.chatmenu_notice_block h4 { display: flex; align-items: baseline; gap: 8px; margin: 0; font-size: 14px; font-weight: 700; color: var(--text, #e8ebed); }
+.chatmenu_notice_block h4 span { font-size: 12px; font-weight: 600; color: var(--warning, #f5b94a); font-variant-numeric: tabular-nums; }
+.chatmenu_notice_block.is_error h4 span { color: var(--red-200, #f5a3a3); }
+.chatmenu_notice_block > p { margin: 6px 0 10px; font-size: 12.5px; line-height: 1.6; color: var(--text-dim, #adb7c0); }
+.chatmenu_notice_block ul { max-height: 220px; margin: 0; padding: 4px 0; border: 1px solid var(--border, #222a33); border-radius: 10px; background: var(--surface-2, rgba(255, 255, 255, .03)); list-style: none; overflow-y: auto; scrollbar-width: thin; }
+.chatmenu_notice_block li { padding: 8px 14px; font-size: 13px; line-height: 1.5; color: var(--text, #e8ebed); word-break: keep-all; }
+.chatmenu_notice_block li + li { border-top: 1px solid var(--border, #222a33); }
+.chatmenu_notice_block > p.chatmenu_notice_tip { margin: 10px 0 0; color: var(--text-faint, #6b7684); }
+
+/* ── 하위 메뉴 추천 결과(검토·수정) — 최상위 메뉴별로 접었다 펼침, 세부 메뉴는 두 줄로 ── */
+.chatmenu_generated_preview { margin-top: 20px; padding-top: 20px; border-top-color: var(--border, #222a33); }
+.chatmenu_generated_preview .chatmenu_section_head { align-items: center; }
+.chatmenu_generated_top { margin-bottom: 8px; padding: 0; border-color: var(--border, #222a33); border-radius: 12px; background: var(--surface-2, rgba(255, 255, 255, .03)); overflow: hidden; }
+.chatmenu_generated_top[open] { border-color: var(--primary-dim, rgba(51, 214, 138, .3)); }
+.chatmenu_generated_top_header { margin-bottom: 0; padding: 12px 14px; cursor: pointer; list-style: none; user-select: none; }
+.chatmenu_generated_top_header::-webkit-details-marker { display: none; }
+.chatmenu_generated_top_header::before { content: "›"; flex: 0 0 auto; width: 14px; color: var(--text-faint, #6b7684); font-size: 16px; line-height: 1; text-align: center; transition: transform .15s ease; }
+.chatmenu_generated_top[open] > .chatmenu_generated_top_header::before { transform: rotate(90deg); color: var(--primary, #33d68a); }
+.chatmenu_generated_top_header:hover { background: var(--surface, rgba(255, 255, 255, .02)); }
+.chatmenu_generated_top_header:focus-visible { outline: 2px solid var(--primary, #33d68a); outline-offset: -2px; }
+.chatmenu_generated_top_header .flow_detail_title { flex: 0 1 auto; min-width: 0; }
+.chatmenu_generated_count { flex: 1 1 auto; font-size: 12px; color: var(--text-faint, #6b7684); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.chatmenu_generated_answer { margin: 0; padding: 0 16px 14px 40px; font-size: 13px; line-height: 1.7; color: var(--text-dim, #adb7c0); white-space: pre-wrap; }
+.chatmenu_generated_mid { margin: 0; padding: 14px 16px; border-top: 1px solid var(--border, #222a33); background: var(--surface, #141b24); }
+.chatmenu_generated_mid:first-of-type { border-top: 1px solid var(--border, #222a33); }
+.chatmenu_generated_mid_label { gap: 8px; margin-bottom: 10px; }
+.chatmenu_generated_mid_name { min-width: 0; word-break: keep-all; }
+.chatmenu_generated_file { flex: 0 0 auto; margin-left: auto; padding: 2px 8px; border-radius: 100px; background: var(--surface-2, rgba(255, 255, 255, .05)); color: var(--text-faint, #6b7684); font-size: 11px; font-weight: 500; white-space: nowrap; }
+.chatmenu_generated_leaves { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.chatmenu_generated_leaf { min-width: 0; margin: 0; padding: 12px; border: 1px solid var(--border, #222a33); background: var(--surface-2, rgba(255, 255, 255, .03)); }
+.chatmenu_generated_leaf.is_wide { grid-column: 1 / -1; }
+.chatmenu_generated_leaf_label { font-size: 10.5px; font-weight: 700; color: var(--text-faint, #6b7684); }
+.chatmenu_generated_leaf .form_input { width: 100%; }
+.chatmenu_generated_leaf .form_textarea { width: 100%; min-height: 72px; line-height: 1.6; }
+.chatmenu_generated_leaf .chatmenu_label_counter { margin: -2px 0 0; font-size: 10.5px; }
+@media (max-width: 1100px) { .chatmenu_generated_leaves { grid-template-columns: minmax(0, 1fr); } }
+
+/* ── 탭(메뉴 구성 / AI 추천) ── */
+.chatmenu_tab_state { margin-left: 6px; padding: 1px 7px; border-radius: 100px; background: var(--primary-dim, rgba(51, 214, 138, .12)); color: var(--primary, #33d68a); font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.chatmenu_tab_state.is_running { background: rgba(245, 185, 74, .12); color: var(--warning, #f5b94a); }
+.chatmenu_tab_notice { margin: 16px 0 0; }
+.chatmenu_tab_hint { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 16px 0 0; padding: 10px 12px; border: 1px solid var(--primary-dim, rgba(51, 214, 138, .3)); border-radius: 10px; background: var(--primary-dim, rgba(51, 214, 138, .06)); color: var(--text, #e8ebed); font-size: 13px; }
+/* 탭 아래 첫 카드 간격 */
+.chatmenu_generate_section { margin-top: 16px; }
+.flow_wrap { margin-top: 16px; }
+
+/* 하위 메뉴 추천 결과 요약 줄 — 끝났을 때 뜨는 창을 놓쳐도 여기서 다시 열 수 있음 */
+.chatmenu_result_info { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; padding: 10px 12px; border: 1px solid rgba(245, 185, 74, .35); border-radius: 10px; background: rgba(245, 185, 74, .08); color: var(--warning, #f5b94a); font-size: 13px; }

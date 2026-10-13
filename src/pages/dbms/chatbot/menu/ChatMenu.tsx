@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { axiosInstance, set_focus } from '../../../../utils/Tool';
 import { AlertModal, ConfirmDeleteModal, Modal, PageHeader } from '../../../../components/ui';
+import { useTab } from '../../../../hooks/useTab';
 import type { ChatMenuRequest, ChatMenuTypes } from '../../../../components/ts/ChatMenu';
 import {
   uploadManualDoc,
@@ -72,6 +73,9 @@ const EMPTY_FORM: ChatMenuRequest = {
 /** 최상위(STEP1) 메뉴 최대 개수 — Spring ChatMenuService.MAX_TOP_MENUS, FastAPI MAX_CATEGORIES와 같은 값 */
 const MAX_TOP_MENUS = 6;
 
+/** 화면 탭 — 메뉴 구성(직접 관리) / AI 추천(매뉴얼 첨부·추천·결과 검토) */
+type ChatMenuTabKey = 'menu' | 'ai';
+
 /** CHAT_MENU.LABEL은 VARCHAR2(100) BYTE — 한글 1자 = 3바이트라 약 33자까지 */
 const LABEL_MAX_BYTES = 100;
 const encoder = new TextEncoder();
@@ -92,7 +96,7 @@ function LabelCounter({ value }: { value: string }) {
   const bytes = byteLength(value);
   return (
     <div className={`form_hint chatmenu_label_counter${bytes >= LABEL_MAX_BYTES ? ' is_full' : ''}`}>
-      {[...value].length}자 · {bytes} / {LABEL_MAX_BYTES} byte (한글 최대 약 33자)
+      {[...value].length}자 · {bytes} / {LABEL_MAX_BYTES} byte
     </div>
   );
 }
@@ -159,6 +163,12 @@ export default function ChatMenu() {
   const [registering, setRegistering] = useState(false);
   const [replaceConfirmOpen, setReplaceConfirmOpen] = useState(false);
   const [regenConfirmOpen, setRegenConfirmOpen] = useState(false);
+  // 화면을 두 탭으로 나눔 — 메뉴 구성(직접 관리) / AI 추천(매뉴얼·추천·결과 검토). 주소의 ?tab= 으로 유지
+  const { tab, changeTab } = useTab<ChatMenuTabKey>({ defaultTab: 'menu' });
+  // 하위 메뉴 추천이 끝난 뒤 알려 줄 것 — 메뉴를 만들지 못한 문서 / 자리가 없어 넣지 않은 섹션
+  const [resultNotice, setResultNotice] = useState<{ skipped: string[]; dropped: string[] } | null>(null);
+  // 같은 내용을 AI 추천 탭에 계속 보여 주는 요약 (창은 한 번 뜨고 닫히므로)
+  const [resultInfo, setResultInfo] = useState<{ skipped: string[]; dropped: string[] } | null>(null);
   const [generateAvailable, setGenerateAvailable] = useState(false);
   const [generatedTree, setGeneratedTree] = useState<GeneratedMenuTop[] | null>(null);
   const [vectorizeFailedDocs, setVectorizeFailedDocs] = useState<{ no: number; filename: string }[]>([]);
@@ -183,7 +193,7 @@ export default function ChatMenu() {
     if (isNetworkError(err)) setAiServerDown(true);
   };
   const suggesting = generating && jobKind === 'suggest';
-  const jobTitle = jobKind === 'suggest' ? '최상위 메뉴 추천' : 'AI 옵션생성';
+  const jobTitle = jobKind === 'suggest' ? '최상위 메뉴 추천' : '하위 메뉴 추천';
   // 생성 중에는 화면의 다른 작업을 막는다(inert: 클릭·포커스·키보드 모두 차단). 진행 패널만 조작 가능
   const lockClass = generating ? 'chatmenu_locked' : '';
   const [serverPercent, setServerPercent] = useState(0);
@@ -232,18 +242,11 @@ export default function ChatMenu() {
     const skipped = result.skippedDocs ?? [];
     const dropped = result.droppedSections ?? [];
     if (showAlert && (skipped.length > 0 || dropped.length > 0)) {
-      const lines: string[] = [];
-      if (skipped.length > 0) lines.push(`다음 문서는 옵션을 만들지 못해 기존 메뉴를 유지했습니다: ${skipped.join(', ')}`);
-      if (dropped.length > 0) {
-        // 오류가 아니라 제한에 따른 정리 결과 → 안내로 표시
-        lines.push(
-          `최상위 메뉴 하나에 하위메뉴는 최대 5개라, 중요도가 낮은 다음 섹션은 메뉴에 넣지 않았습니다.`,
-          ...dropped.map((d) => `· ${d}`),
-          '필요하면 최상위 메뉴를 나누거나 직접 추가해주세요.',
-        );
-      }
-      setAlert({ message: lines.join('\n'), variant: skipped.length > 0 ? 'error' : 'info' });
+      // 긴 목록이라 일반 알림 대신 전용 창(결과 안내)으로 보여 줌
+      setResultNotice({ skipped, dropped });
     }
+    // 창을 닫았거나 다른 화면에 있다가 돌아와도 다시 볼 수 있게 AI 추천 탭에 남겨 둠
+    setResultInfo(skipped.length > 0 || dropped.length > 0 ? { skipped, dropped } : null);
     if (result.vectorizeFailedDocs.length > 0) {
       setVectorizeFailedDocs(result.vectorizeFailedDocs);
     } else {
@@ -280,7 +283,7 @@ export default function ChatMenu() {
       loadGenerateAvailable();
     } else if (st.status === 'error') {
       if (!fromMount) {
-        const title = kind === 'suggest' ? '최상위 메뉴 추천' : 'AI 옵션생성';
+        const title = kind === 'suggest' ? '최상위 메뉴 추천' : '하위 메뉴 추천';
         setAlert({ message: `${title} 중 오류가 발생했습니다.\n${st.error ?? ''}`, variant: 'error' });
       }
       loadGenerateAvailable();
@@ -424,7 +427,7 @@ export default function ChatMenu() {
 
   const tree = buildTree(flatList);
 
-  // 관리자가 등록한 최상위 메뉴 — [AI 옵션생성]은 매뉴얼 섹션을 이 메뉴들 아래로 분류한다
+  // 관리자가 등록한 최상위 메뉴 — [하위 메뉴 AI 추천]은 매뉴얼 섹션을 이 메뉴들 아래로 분류한다
   const adminRoots = flatList.filter((m) => m.pno == null && m.aiyn !== 'Y');
 
   /* ---------------------------------------------------------------------
@@ -485,7 +488,7 @@ export default function ChatMenu() {
       const res = await replaceTopMenus(checkedSuggestions.map((sg) => ({ label: sg.label.trim(), desc: sg.desc.trim() })));
       const lines = [`최상위 메뉴를 교체했습니다. (유지 ${res.kept.length} · 추가 ${res.added.length} · 삭제 ${res.removed.length})`];
       if (res.removed.length > 0) lines.push(`삭제: ${res.removed.join(', ')}`);
-      lines.push('이제 [AI 옵션생성]을 실행하면 매뉴얼이 새 메뉴 구성에 맞게 다시 분류됩니다.');
+      lines.push('이제 [하위 메뉴 AI 추천]을 실행하면 매뉴얼이 새 메뉴 구성에 맞게 다시 분류됩니다.');
       setAlert({ message: lines.join('\n'), variant: 'success' });
       setReplaceConfirmOpen(false);
       setSuggestInfo(null);
@@ -657,7 +660,7 @@ export default function ChatMenu() {
 
   /**
    * 매뉴얼 여러 개 업로드 — 파일 선택/끌어다놓기 공통.
-   * .md만 받고, 한 개씩 순서대로 올린다(같은 파일명 교체 처리가 겹치지 않게). 벡터화는 [AI 옵션생성] 때 수행.
+   * .md만 받고, 한 개씩 순서대로 올린다(같은 파일명 교체 처리가 겹치지 않게). 벡터화는 [하위 메뉴 AI 추천] 때 수행.
    * 같은 파일명은 서버가 기존 문서를 덮어쓴다.
    */
   const uploadFiles = async (fileList: FileList | File[] | null) => {
@@ -819,7 +822,8 @@ export default function ChatMenu() {
     setServerPercent(0);
     setDisplayPercent(0);
     setElapsedSec(0);
-    setProgressLogs([{ key: 'request', message: 'AI 옵션생성 요청 중...', state: 'running' }]);
+    setResultInfo(null); // 새로 추천하면 지난 결과 요약은 지움
+    setProgressLogs([{ key: 'request', message: '하위 메뉴 추천 요청 중...', state: 'running' }]);
     setJobKind('generate');
     setJobStatus('running');
     try {
@@ -830,7 +834,7 @@ export default function ChatMenu() {
       console.error('AI 옵션생성 시작 실패:', err);
       setJobStatus('idle');
       setProgressLogs([]);
-      setAlert({ message: 'AI 옵션생성을 시작하지 못했습니다.', variant: 'error' });
+      setAlert({ message: '하위 메뉴 추천을 시작하지 못했습니다.', variant: 'error' });
     }
   };
 
@@ -854,7 +858,7 @@ export default function ChatMenu() {
         setAlert({ message: '일부 문서는 여전히 벡터화에 실패했습니다.', variant: 'error' });
       } else {
         setVectorizeFailedDocs([]);
-        setAlert({ message: '벡터화가 완료되었습니다. 생성된 옵션을 확인해주세요.', variant: 'success' });
+        setAlert({ message: '벡터화가 완료되었습니다. 추천된 메뉴를 확인해주세요.', variant: 'success' });
         loadTree();
       }
     } catch (err) {
@@ -967,28 +971,64 @@ export default function ChatMenu() {
     }
   };
 
+  // AI 추천 탭에 검토할 것이 몇 개 있는지 — 최상위 메뉴 추천 후보 또는 공개 전인 하위 메뉴 추천 결과
+  const aiResultCount = visibleGenerated.length > 0 ? visibleGenerated.length : suggestInfo ? suggestions.length : 0;
+
   return (
     <section className="view active">
       <div className={lockClass} inert={generating}>
         <PageHeader
-          title="챗봇 옵션 메뉴 관리"
+          title="옵션메뉴 관리"
           description="옵션형 상담 선택지 트리를 관리합니다 (최대 3단계)"
-          createLabel="+ 직접 추가"
-          onCreate={() => openCreateModal(null)}
         />
       </div>
 
+      {/* 탭 — AI 작업은 몇 분 걸리므로, 다른 탭에 있어도 진행 중·검토할 결과가 있는지 탭에 표시 */}
+      <div className="tabs" role="tablist" aria-label="옵션 메뉴 관리 보기 전환">
+        <button
+          type="button"
+          role="tab"
+          className={`tab${tab === 'menu' ? ' on' : ''}`}
+          aria-selected={tab === 'menu'}
+          onClick={() => changeTab('menu')}
+        >
+          메뉴 구성
+        </button>
+        <button
+          type="button"
+          role="tab"
+          className={`tab${tab === 'ai' ? ' on' : ''}`}
+          aria-selected={tab === 'ai'}
+          onClick={() => changeTab('ai')}
+        >
+          AI 추천
+          {generating ? (
+            <span className="chatmenu_tab_state is_running">진행 중</span>
+          ) : aiResultCount > 0 ? (
+            <span className="chatmenu_tab_state">결과 {aiResultCount}</span>
+          ) : null}
+        </button>
+      </div>
+
+      {/* 탭을 바꿔도 입력하던 내용·펼친 상태가 남도록, 지우지 않고 숨기기만 함 */}
+      <div hidden={tab !== 'ai'}>
       {/* ===================== 옵션형 메뉴 자동생성 ===================== */}
       <div className="chatmenu_generate_section">
-        <div className="flow_detail_header">
-          <span className="flow_detail_label">옵션형 메뉴 자동생성</span>
+        <div className="chatmenu_section_head">
+          <div>
+            <h3 className="chatmenu_section_title">옵션형 메뉴 자동생성</h3>
+            <p className="chatmenu_section_desc">매뉴얼(.md)을 올리면 AI가 최상위 메뉴 아래로 내용을 나눠 하위 메뉴와 답변을 만듭니다.</p>
+          </div>
+          <span className={`chatmenu_count${adminRoots.length >= MAX_TOP_MENUS ? ' is_full' : ''}`}>
+            최상위 메뉴 {adminRoots.length}/{MAX_TOP_MENUS}
+          </span>
         </div>
 
         {/* AI 서버(FastAPI) 꺼짐 안내 — 자동으로 재연결을 시도하고, 켜지면 목록·상태를 다시 불러옴 */}
         {aiServerDown && (
           <div className="chatmenu_server_down" role="status">
             <span>
-              AI 서버(FastAPI)에 연결할 수 없습니다. 매뉴얼 첨부·AI 추천·옵션생성은 서버가 다시 켜지면 자동으로 복구됩니다.
+              AI 서버(FastAPI)에 연결할 수 없습니다. 매뉴얼 첨부·AI 추천은 서버가 다시 켜지면 자동으로 복구됩니다.
               {generating && ' 진행 중이던 작업 상태도 다시 확인합니다.'}
             </span>
             <button type="button" className="btn btn_xsm btn_ghost" onClick={handleRetryAiServer}>
@@ -1038,34 +1078,36 @@ export default function ChatMenu() {
         <div className="chatmenu_doc_upload_row">
           <button
             type="button"
-            className="btn btn_sm btn_ghost"
+            className="btn btn_md btn_outline_primary"
             onClick={handleSuggest}
             disabled={generating || docs.length === 0}
           >
             {suggesting ? '최상위 메뉴 추천 중...' : '최상위 메뉴 AI 추천'}
           </button>
+          {/* 하위 메뉴 추천 버튼은 하나 — 아직 반영되지 않은 매뉴얼이 있으면 그것만 추천하고,
+              모두 반영된 상태면 같은 버튼이 다시 추천(매뉴얼 전체로 다시 생성, 확인 창)을 엽니다 */}
           <button
             type="button"
-            className="btn btn_sm btn_primary"
-            onClick={handleGenerate}
-            disabled={!generateAvailable || generating || adminRoots.length === 0}
-          >
-            {generating && jobKind === 'generate' ? 'AI 옵션생성 중...' : docs.length > 0 && !generateAvailable ? '매뉴얼 수정' : 'AI 옵션생성'}
-          </button>
-          <button
-            type="button"
-            className="btn btn_sm btn_ghost"
-            onClick={() => setRegenConfirmOpen(true)}
+            className="btn btn_md btn_primary"
+            onClick={generateAvailable ? handleGenerate : () => setRegenConfirmOpen(true)}
             disabled={generating || docs.length === 0 || adminRoots.length === 0}
           >
-            매뉴얼 전체 다시 생성
+            {generating && jobKind === 'generate'
+              ? '하위 메뉴 추천 중...'
+              : docs.length > 0 && !generateAvailable
+                ? '하위 메뉴 다시 추천'
+                : '하위 메뉴 AI 추천'}
           </button>
-          <span className="cell_sub">
-            {adminRoots.length === 0
-              ? '최상위 메뉴를 먼저 등록해야 AI 옵션생성을 할 수 있습니다 (AI 추천 가능)'
-              : `최상위 메뉴 ${adminRoots.length}/${MAX_TOP_MENUS}개 · 매뉴얼 섹션은 이 메뉴들 아래로 분류됩니다`}
-          </span>
         </div>
+        <p className="chatmenu_action_hint">
+          {adminRoots.length === 0
+            ? '최상위 메뉴를 먼저 등록해야 하위 메뉴를 추천받을 수 있습니다 ([최상위 메뉴 AI 추천] 가능)'
+            : docs.length > 0 && !generateAvailable
+              ? '모든 매뉴얼이 메뉴에 반영되어 있습니다. [하위 메뉴 다시 추천]을 누르면 매뉴얼 전체로 하위 메뉴와 답변을 새로 만듭니다.'
+              : docs.length === 0
+                ? '매뉴얼을 올리면 AI가 하위 메뉴와 답변을 만들 수 있습니다.'
+                : '[하위 메뉴 AI 추천]을 누르면 아직 반영되지 않은 매뉴얼로 하위 메뉴와 답변을 만듭니다. 지금 등록된 최상위 메뉴들 아래로 분류됩니다.'}
+        </p>
 
 
         {generating && (
@@ -1074,9 +1116,12 @@ export default function ChatMenu() {
           </div>
         )}
 
-        {/* AI 옵션생성 진행률 — 완료된 단계는 취소선, 진행 중 단계는 강조 */}
+        {/* 하위 메뉴 추천(옵션생성) 진행률 — 완료된 단계는 취소선, 진행 중 단계는 강조 */}
         {(generating || progressLogs.length > 0) && (
-          <div className="chatmenu_progress" aria-live="polite">
+          <div
+            className={`chatmenu_progress${!generating && jobStatus !== 'error' && ((jobKind === 'suggest' && suggestInfo) || (jobKind === 'generate' && visibleGenerated.length > 0)) ? ' is_compact' : ''}`}
+            aria-live="polite"
+          >
             <div className="chatmenu_progress_head">
               <span>
                 {generating ? `${jobTitle} 진행 중` : jobStatus === 'error' ? `${jobTitle} 실패` : `${jobTitle} 완료`}
@@ -1120,20 +1165,27 @@ export default function ChatMenu() {
         {/* 최상위 메뉴 AI 추천 결과 — 골라서 등록 */}
         {suggestInfo && (
           <div className={`chatmenu_suggest ${lockClass}`} inert={generating}>
-            <div className="chatmenu_suggest_head">
-              <span className="flow_detail_label">최상위 메뉴 추천</span>
-              <span className="cell_sub">
-                선택 {checkedSuggestions.length} / 최대 {MAX_TOP_MENUS}개 · 매뉴얼 섹션 {suggestInfo.totalSections}개 /
-                들어갈 자리 {checkedSuggestions.length * 5}칸
+            <div className="chatmenu_section_head">
+              <div>
+                <h3 className="chatmenu_section_title">최상위 메뉴 추천</h3>
+                <p className="chatmenu_section_desc">
+                  이름과 안내 문구를 고친 뒤 교체하세요. 교체하면 최상위 메뉴 전체가 선택한 메뉴로 바뀝니다. [다시 추천]을 누르면 새 후보가 나옵니다.
+                </p>
+              </div>
+              <span className={`chatmenu_count${checkedSuggestions.length >= MAX_TOP_MENUS ? ' is_full' : ''}`}>
+                선택 {checkedSuggestions.length}/{MAX_TOP_MENUS}
               </span>
             </div>
-            <p className="cell_sub">
-              누를 때마다 새로 추천합니다. 등록하면 최상위 메뉴 전체가 선택한 메뉴로 교체됩니다
-              {suggestInfo.existing.length > 0 && ` (현재: ${suggestInfo.existing.join(', ')})`}.
-            </p>
+            {suggestInfo.existing.length > 0 && (
+              <p className="chatmenu_suggest_now">
+                <span>현재 메뉴</span>
+                {suggestInfo.existing.join(' · ')}
+              </p>
+            )}
             {checkedSuggestions.length * 5 < suggestInfo.totalSections && (
-              <div className="form_hint chatmenu_hint_info">
-                안내: 메뉴 하나에 하위메뉴가 최대 5개라, 이대로면 중요도가 낮은 섹션 일부는 메뉴에 들어가지 않습니다.
+              <div className="chatmenu_suggest_warn">
+                매뉴얼 섹션은 {suggestInfo.totalSections}개인데 들어갈 자리는 {checkedSuggestions.length * 5}칸입니다(메뉴 하나에 하위 메뉴 최대 5개).
+                이대로면 중요도가 낮은 섹션 일부는 메뉴에 들어가지 않습니다.
               </div>
             )}
             {suggestions.length === 0 ? (
@@ -1161,7 +1213,8 @@ export default function ChatMenu() {
                       <div className="chatmenu_suggest_fields">
                         <input
                           type="text"
-                          className="form_input"
+                          className="form_input chatmenu_suggest_name"
+                          aria-label="메뉴 이름"
                           value={sg.label}
                           onChange={(e) => updateSuggestion(i, { label: cutToBytes(e.target.value) })}
                         />
@@ -1169,6 +1222,7 @@ export default function ChatMenu() {
                         <input
                           type="text"
                           className="form_input"
+                          aria-label="안내 문구"
                           placeholder="메뉴를 눌렀을 때 보여줄 안내 문구 (분류에도 참고됨)"
                           value={sg.desc}
                           onChange={(e) => updateSuggestion(i, { desc: e.target.value })}
@@ -1180,12 +1234,16 @@ export default function ChatMenu() {
               </ul>
             )}
             <div className="chatmenu_suggest_actions">
-              <button type="button" className="btn btn_sm btn_ghost" onClick={() => setSuggestInfo(null)}>
+              {/* 위쪽 [최상위 메뉴 AI 추천]과 같은 동작 — 결과를 보다가 바로 다시 받을 수 있게 */}
+              <button type="button" className="btn btn_md btn_outline_primary chatmenu_resuggest_btn" onClick={handleSuggest} disabled={generating}>
+                ↻ 다시 추천
+              </button>
+              <button type="button" className="btn btn_md btn_ghost" onClick={() => setSuggestInfo(null)}>
                 닫기
               </button>
               <button
                 type="button"
-                className="btn btn_sm btn_primary"
+                className="btn btn_md btn_primary"
                 onClick={() => setReplaceConfirmOpen(true)}
                 disabled={registering || checkedSuggestions.length === 0}
               >
@@ -1232,8 +1290,8 @@ export default function ChatMenu() {
                     {doc.filename}
                   </label>
                 </div>
-                <span className="cell_sub">{doc.cdate}</span>
                 {doc.updateYn === 'N' && <span className="badge warn">미반영</span>}
+                <span className="cell_sub chatmenu_doc_date" title={doc.cdate}>{doc.cdate.split(' ')[0]}</span>
                 <div className="chatmenu_doc_item_actions">
                   <button type="button" className="btn btn_xsm btn_ghost" onClick={() => handleReplaceClick(doc)}>
                     수정
@@ -1252,7 +1310,7 @@ export default function ChatMenu() {
         {vectorizeFailedDocs.length > 0 && (
           <div className="form_hint error" style={{ marginTop: 12 }}>
             <p>
-              옵션 생성은 완료되었으나 벡터화가 실패하였습니다. 아래 문서의 벡터화를 다시 시도한 뒤 생성된 옵션을 확인해주세요.
+              하위 메뉴 추천은 완료되었으나 벡터화가 실패하였습니다. 아래 문서의 벡터화를 다시 시도한 뒤 추천된 메뉴를 확인해주세요.
             </p>
             <ul>
               {vectorizeFailedDocs.map((d) => (
@@ -1265,115 +1323,196 @@ export default function ChatMenu() {
           </div>
         )}
 
+        {/* 하위 메뉴 추천 결과 요약 — 만들지 못한 문서 / 넣지 않은 섹션 (끝났을 때 뜨는 창과 같은 내용, 계속 남음) */}
+        {resultInfo && !generating && (
+          <div className="chatmenu_result_info" role="status">
+            <span>
+              {resultInfo.skipped.length > 0 && `메뉴를 만들지 못한 문서 ${resultInfo.skipped.length}개`}
+              {resultInfo.skipped.length > 0 && resultInfo.dropped.length > 0 && ' · '}
+              {resultInfo.dropped.length > 0 && `자리가 없어 메뉴에 넣지 않은 섹션 ${resultInfo.dropped.length}개`}
+            </span>
+            <button type="button" className="btn btn_xsm btn_ghost" onClick={() => setResultNotice(resultInfo)}>
+              자세히 보기
+            </button>
+          </div>
+        )}
+
         {/* 생성 결과 미리보기 (label/answer 직접 수정 가능) */}
         {visibleGenerated.length > 0 && (
           <div className="chatmenu_generated_preview">
-            <div className="chatmenu_generated_preview_head">
-              <p className="b_title">
-                생성된 옵션을 검토한 뒤, [공개] 버튼을 눌러야 사용자 화면에 노출됩니다. 누르지 않으면 비공개 상태로 유지됩니다.
-              </p>
+            <div className="chatmenu_section_head">
+              <div>
+                <h3 className="chatmenu_section_title">하위 메뉴 추천 결과</h3>
+                <p className="chatmenu_section_desc">
+                  메뉴를 눌러 펼친 뒤 이름과 답변을 검토·수정하세요. [공개]를 눌러야 사용자 화면에 나오고, 누르지 않으면 비공개로 남습니다.
+                </p>
+              </div>
               <button
                 type="button"
-                className="btn btn_sm btn_primary"
+                className="btn btn_md btn_primary"
                 onClick={handlePublishAllGenerated}
                 disabled={publishing}
               >
                 {publishing ? '공개 중...' : `일괄 공개 (${visibleGenerated.length})`}
               </button>
             </div>
-            {visibleGenerated.map((top) => (
-              <div key={top.no} className="chatmenu_generated_top">
-                <div className="chatmenu_generated_top_header">
+            {visibleGenerated.map((top, topIdx) => (
+              // 최상위 메뉴마다 접었다 펼침 — 처음엔 첫 메뉴만 펼쳐서 전체 구성이 한눈에 보이게
+              <details key={top.no} className="chatmenu_generated_top" open={topIdx === 0}>
+                <summary className="chatmenu_generated_top_header">
                   <span className="chatmenu_step_badge">STEP1</span>
                   <span className="flow_detail_title">{top.label}</span>
+                  <span className="chatmenu_generated_count">
+                    하위 메뉴 {top.children.length}개
+                    {top.children.some((m) => m.leaves.length > 0) &&
+                      ` · 세부 ${top.children.reduce((sum, m) => sum + m.leaves.length, 0)}개`}
+                  </span>
                   <button
                     type="button"
-                    className="btn btn_xsm btn_primary"
-                    onClick={() => handlePublishGenerated(top)}
+                    className="btn btn_sm btn_outline_primary"
+                    onClick={(e) => {
+                      e.preventDefault(); // 버튼을 눌러도 접힘 상태는 그대로
+                      handlePublishGenerated(top);
+                    }}
                     disabled={publishing}
                   >
                     공개
                   </button>
-                </div>
+                </summary>
 
                 {top.children.length === 0 && top.answer && (
-                  <p className="cell_sub" style={{ marginLeft: 8, whiteSpace: 'pre-wrap' }}>
-                    {top.answer}
-                  </p>
+                  <p className="chatmenu_generated_answer">{top.answer}</p>
                 )}
 
                 {top.children.map((mid) => (
                   <div key={mid.no} className="chatmenu_generated_mid">
                     <div className="chatmenu_generated_mid_label">
-                      <span className="chatmenu_step_badge">STEP2</span> {mid.label}
-                      {mid.filename && <span className="cell_sub">· {mid.filename}</span>}
+                      <span className="chatmenu_step_badge">STEP2</span>
+                      <span className="chatmenu_generated_mid_name">{mid.label}</span>
+                      {mid.filename && <span className="chatmenu_generated_file">{mid.filename}</span>}
                     </div>
 
-                    {mid.leaves.length === 0 && (
-                      <div className="chatmenu_generated_leaf">
-                        <textarea
-                          className="form_textarea"
-                          style={{ minHeight: 60 }}
-                          value={mid.answer ?? ''}
-                          onChange={(e) => updateGeneratedMidAnswer(top.no, mid.no, e.target.value)}
-                        />
-                      </div>
-                    )}
+                    <div className="chatmenu_generated_leaves">
+                      {mid.leaves.length === 0 && (
+                        <div className="chatmenu_generated_leaf is_wide">
+                          <span className="chatmenu_generated_leaf_label">답변</span>
+                          <textarea
+                            className="form_textarea"
+                            aria-label={`${mid.label} 답변`}
+                            value={mid.answer ?? ''}
+                            onChange={(e) => updateGeneratedMidAnswer(top.no, mid.no, e.target.value)}
+                          />
+                        </div>
+                      )}
 
-                    {mid.leaves.map((leaf, leafIdx) => (
-                      <div key={leaf.no} className="chatmenu_generated_leaf">
-                        <input
-                          type="text"
-                          className="form_input"
-                          value={leaf.label}
-                          onChange={(e) => updateGeneratedLeafText(top.no, mid.no, leafIdx, 'label', cutToBytes(e.target.value))}
-                        />
-                        <LabelCounter value={leaf.label} />
-                        <textarea
-                          className="form_textarea"
-                          style={{ minHeight: 60 }}
-                          value={leaf.answer}
-                          onChange={(e) => updateGeneratedLeafText(top.no, mid.no, leafIdx, 'answer', e.target.value)}
-                        />
-                      </div>
-                    ))}
+                      {mid.leaves.map((leaf, leafIdx) => (
+                        <div key={leaf.no} className="chatmenu_generated_leaf">
+                          <span className="chatmenu_generated_leaf_label">STEP3</span>
+                          <input
+                            type="text"
+                            className="form_input"
+                            aria-label="세부 메뉴 이름"
+                            value={leaf.label}
+                            onChange={(e) => updateGeneratedLeafText(top.no, mid.no, leafIdx, 'label', cutToBytes(e.target.value))}
+                          />
+                          <LabelCounter value={leaf.label} />
+                          <textarea
+                            className="form_textarea"
+                            aria-label="세부 메뉴 답변"
+                            value={leaf.answer}
+                            onChange={(e) => updateGeneratedLeafText(top.no, mid.no, leafIdx, 'answer', e.target.value)}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
-              </div>
+              </details>
             ))}
           </div>
         )}
         </div>
       </div>
+      </div>
 
+      <div hidden={tab !== 'menu'}>
+      {/* AI 작업 중에는 메뉴를 고칠 수 없음 — 흐려진 이유를 알려 줌 */}
+      {generating && (
+        <div className="chatmenu_server_down chatmenu_tab_notice" role="status">
+          <span>{jobTitle} 진행 중에는 메뉴를 추가·수정·삭제할 수 없습니다. 끝나면 다시 사용할 수 있습니다.</span>
+          <button type="button" className="btn btn_xsm btn_ghost" onClick={() => changeTab('ai')}>
+            진행 상황 보기
+          </button>
+        </div>
+      )}
+      {/* 검토할 추천 결과가 있으면 알려 줌 */}
+      {!generating && aiResultCount > 0 && (
+        <div className="chatmenu_tab_hint" role="status">
+          <span>검토할 AI 추천 결과가 {aiResultCount}개 있습니다. 공개해야 사용자 화면에 나옵니다.</span>
+          <button type="button" className="btn btn_xsm btn_outline_primary" onClick={() => changeTab('ai')}>
+            AI 추천 탭에서 보기
+          </button>
+        </div>
+      )}
       {/* ===================== 기존 트리 관리 ===================== */}
       {loading ? (
         <p className="b_title">불러오는 중...</p>
       ) : (
         <div className={`flow_wrap ${lockClass}`} inert={generating}>
-          <div className="flow_columns">
-            {columns.map((col, i) => (
-              <div key={i} className="flow_column">
-                <div className="flow_column_title">STEP{i + 1}</div>
-                {col.nodes.length === 0 ? (
-                  <div className="flow_empty">등록된 메뉴가 없습니다.</div>
-                ) : (
-                  col.nodes.map((n) => (
-                    <button
-                      key={n.no}
-                      type="button"
-                      className={`flow_node ${selectedPath[i]?.no === n.no ? 'active' : ''}`}
-                      onClick={() => handleSelectAt(i, n)}
-                    >
-                      <span className="flow_node_label">{n.label}</span>
-                      {n.aiyn === 'Y' && <span className="badge info">AI</span>}
-                      {n.useyn === 'N' && <span className="cell_sub">(비공개)</span>}
-                      {n.children.length > 0 && <span className="flow_node_arrow">›</span>}
-                    </button>
-                  ))
-                )}
+          <div className="flow_tree_panel">
+            <div className="chatmenu_section_head">
+              <div>
+                <h3 className="chatmenu_section_title">메뉴 구성</h3>
+                <p className="chatmenu_section_desc">메뉴를 누르면 다음 단계가 옆에 열리고, 오른쪽에서 답변 확인·수정을 할 수 있습니다.</p>
               </div>
-            ))}
+            </div>
+            <div className="flow_columns">
+              {[0, 1, 2].map((i) => {
+                const col = columns[i];
+                // 이 칸에 메뉴를 추가할 때의 상위 메뉴 — 1단계는 없음, 2·3단계는 앞 칸에서 고른 메뉴
+                const parent = i === 0 ? null : selectedPath[i - 1] ?? null;
+                const canAdd = i === 0 || parent !== null;
+                return (
+                  <div key={i} className={`flow_column${col ? '' : ' is_idle'}`}>
+                    <div className="flow_column_title">
+                      <span>STEP{i + 1}</span>
+                      <span className="flow_column_sub">
+                        {i === 0 ? '최상위 메뉴' : parent ? parent.label : '하위 메뉴'}
+                      </span>
+                      {col && <span className="flow_column_count">{col.nodes.length}</span>}
+                    </div>
+                    <div className="flow_column_list">
+                      {!col ? (
+                        <div className="flow_empty">
+                          {parent ? '하위 메뉴가 없습니다.' : `STEP${i} 메뉴를 선택하면 표시됩니다.`}
+                        </div>
+                      ) : col.nodes.length === 0 ? (
+                        <div className="flow_empty">등록된 메뉴가 없습니다.</div>
+                      ) : (
+                        col.nodes.map((n) => (
+                          <button
+                            key={n.no}
+                            type="button"
+                            className={`flow_node ${selectedPath[i]?.no === n.no ? 'active' : ''}${n.useyn === 'N' ? ' is_hidden' : ''}`}
+                            onClick={() => handleSelectAt(i, n)}
+                          >
+                            <span className="flow_node_label">{n.label}</span>
+                            {n.aiyn === 'Y' && <span className="badge info">AI</span>}
+                            {n.useyn === 'N' && <span className="flow_node_state">비공개</span>}
+                            {n.children.length > 0 && <span className="flow_node_arrow">›</span>}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                    {canAdd && (
+                      <button type="button" className="flow_add_btn" onClick={() => openCreateModal(parent)}>
+                        + {i === 0 ? '최상위 메뉴' : '하위 메뉴'} 추가
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
           
           <div className="flow_bottom">
@@ -1388,24 +1527,25 @@ export default function ChatMenu() {
                     <span className="chatmenu_step_badge">STEP{lastSelected.step}</span>
                     <span className="flow_detail_title">{lastSelected.label}</span>
                     {lastSelected.aiyn === 'Y' && <span className="badge info">AI생성</span>}
-                    {lastSelected.useyn === 'N' && <span className="cell_sub">(비공개)</span>}
+                    {lastSelected.useyn === 'N' && <span className="flow_node_state">비공개</span>}
                   </div>
 
+                  <span className="flow_detail_caption">답변</span>
                   <div className="flow_detail_answer">{lastSelected.answer ?? '서비스 준비 중 입니다.'}</div>
 
                   <div className="flow_detail_actions">
-                    {lastSelected.step < 3 && (
-                      <button type="button" className="btn btn_xsm btn_ghost" onClick={() => openCreateModal(lastSelected)}>
-                        하위추가
-                      </button>
-                    )}
-                    <button type="button" className="btn btn_xsm btn_ghost" onClick={() => openEditModal(lastSelected)}>
+                    <button type="button" className="btn btn_sm btn_outline_primary" onClick={() => openEditModal(lastSelected)}>
                       수정
                     </button>
-                    <button type="button" className="btn btn_xsm btn_ghost" onClick={() => toggleUseyn(lastSelected)}>
+                    {lastSelected.step < 3 && (
+                      <button type="button" className="btn btn_sm btn_ghost" onClick={() => openCreateModal(lastSelected)}>
+                        하위 추가
+                      </button>
+                    )}
+                    <button type="button" className="btn btn_sm btn_ghost" onClick={() => toggleUseyn(lastSelected)}>
                       {lastSelected.useyn === 'Y' ? '비공개로 전환' : '공개로 전환'}
                     </button>
-                    <button type="button" className="btn btn_xsm btn_danger_outline" onClick={() => setDeleteTarget(lastSelected)}>
+                    <button type="button" className="btn btn_sm btn_danger_outline flow_detail_delete" onClick={() => setDeleteTarget(lastSelected)}>
                       삭제
                     </button>
                   </div>
@@ -1437,6 +1577,7 @@ export default function ChatMenu() {
 
         </div>
       )}
+      </div>
 
       {/* 등록/수정 모달 */}
       <Modal
@@ -1576,25 +1717,66 @@ export default function ChatMenu() {
         loading={docDeleting}
       />
 
+      {/* 하위 메뉴 추천 결과 안내 — 만들지 못한 문서 / 자리가 없어 넣지 않은 섹션 */}
+      <Modal
+        open={resultNotice !== null}
+        onClose={() => setResultNotice(null)}
+        titleId="chatMenuResultNoticeTitle"
+        title="하위 메뉴 추천 결과"
+        footer={
+          <button type="button" className="btn btn_md btn_primary" onClick={() => setResultNotice(null)}>
+            확인
+          </button>
+        }
+      >
+        {resultNotice && (
+          <div className="chatmenu_notice">
+            {resultNotice.skipped.length > 0 && (
+              <section className="chatmenu_notice_block is_error">
+                <h4>메뉴를 만들지 못한 문서 <span>{resultNotice.skipped.length}개</span></h4>
+                <p>아래 문서는 하위 메뉴를 만들지 못해 기존 메뉴를 그대로 유지했습니다.</p>
+                <ul>
+                  {resultNotice.skipped.map((name) => (
+                    <li key={name}>{name}</li>
+                  ))}
+                </ul>
+              </section>
+            )}
+            {resultNotice.dropped.length > 0 && (
+              <section className="chatmenu_notice_block">
+                <h4>메뉴에 넣지 않은 섹션 <span>{resultNotice.dropped.length}개</span></h4>
+                <p>최상위 메뉴 하나에 하위 메뉴는 최대 5개라, 중요도가 낮은 섹션은 넣지 않았습니다.</p>
+                <ul>
+                  {resultNotice.dropped.map((name) => (
+                    <li key={name}>{name}</li>
+                  ))}
+                </ul>
+                <p className="chatmenu_notice_tip">필요하면 최상위 메뉴를 나누거나 메뉴 구성에서 직접 추가해 주세요.</p>
+              </section>
+            )}
+          </div>
+        )}
+      </Modal>
+
       {/* 매뉴얼 전체 다시 생성 확인 */}
       <Modal
         open={regenConfirmOpen}
         onClose={() => setRegenConfirmOpen(false)}
         titleId="chatMenuRegenTitle"
-        title="매뉴얼 전체를 다시 생성하시겠습니까?"
+        title="하위 메뉴를 다시 추천받으시겠습니까?"
         footer={
           <>
             <button type="button" className="btn btn_md btn_ghost" onClick={() => setRegenConfirmOpen(false)}>
               취소
             </button>
             <button type="button" className="btn btn_md btn_primary" onClick={handleRegenerateAll}>
-              다시 생성
+              다시 추천
             </button>
           </>
         }
       >
         <div className="chatmenu_replace_plan">
-          <p>첨부된 매뉴얼 {docs.length}개로 AI 옵션메뉴를 모두 다시 만듭니다.</p>
+          <p>첨부된 매뉴얼 {docs.length}개로 AI가 만든 하위 메뉴를 모두 다시 만듭니다.</p>
           <p className="cell_sub">
             회원 등급 같은 내부 정보 제외, 긴 제목 요약 등 바뀐 규칙이 기존 AI 메뉴에도 적용됩니다.
             관리자가 직접 만든 메뉴는 그대로 유지됩니다.
@@ -1628,7 +1810,7 @@ export default function ChatMenu() {
           {replacePlan.removed.length > 0 && (
             <p className="form_hint error">삭제: {replacePlan.removed.join(', ')} — 하위메뉴까지 모두 삭제됩니다.</p>
           )}
-          <p className="cell_sub">교체 후 매뉴얼 전체가 [AI 옵션생성] 대상이 되어, 새 메뉴 구성에 맞게 다시 분류됩니다.</p>
+          <p className="cell_sub">교체 후 매뉴얼 전체가 [하위 메뉴 AI 추천] 대상이 되어, 새 메뉴 구성에 맞게 다시 분류됩니다.</p>
         </div>
       </Modal>
 
