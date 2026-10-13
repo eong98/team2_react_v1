@@ -46,3 +46,5 @@
 
 /* AI 분석 중에는 다른 조회기간을 누를 수 없음 */
 .dashboard_page .period_tab:disabled { opacity: .45; cursor: not-allowed; }
+/* 분석 결과가 지금 화면 숫자보다 예전 것일 때 */
+.dashboard_page .chat_ai_outdated { margin: 14px 0 0; padding: 10px 12px; border-radius: 8px; background: rgba(245, 185, 74, .08); color: var(--warning, #f5b94a); font-size: 12.5px; line-height: 1.6; }

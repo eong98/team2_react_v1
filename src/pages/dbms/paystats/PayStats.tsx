@@ -42,7 +42,7 @@ import './payStats.css';
 
    - KPI: 결제 금액·건수(직전 기간 대비), 평균 결제액, 환불 완료,
           정상 구독, 매장연결 대기, 결제 실패/취소, 환불 처리 대기
-   - 차트: 일별 결제 금액 / 일별 결제 건수 (Recharts)
+   - 차트: 일별 순매출(결제완료 − 결제취소) / 일별 결제 건수 (Recharts)
    - 목록: 구독권별 매출, 결제수단별, 구독기간별, 최근 결제
    - 1분마다 조용히 자동 새로고침
 --------------------------------------------------------------------- */
@@ -90,7 +90,8 @@ function AmountList({ items, total, empty }: { items: PayGroupAmount[]; total: n
   return (
     <ul className="type_list">
       {items.map((it) => {
-        const pct = total > 0 ? Math.round((it.amount / total) * 100) : 0;
+        // 기간 안에 취소만 있는 항목은 금액이 음수일 수 있어, 비율·막대는 0 아래로 내려가지 않게 함
+        const pct = total > 0 ? Math.max(0, Math.round((it.amount / total) * 100)) : 0;
         return (
           <li key={it.key} className="type_row">
             <div className="type_head">
@@ -167,6 +168,9 @@ export default function PayStats() {
   const hasPayData = !!stats && stats.daily.some((p) => p.count > 0);
   const periodLabel = PERIODS.find((p) => p.days === days)?.label ?? '';
   const avgPrice = summary && summary.payCount > 0 ? Math.round(summary.payAmount / summary.payCount) : null;
+  // 순매출 = 결제완료 − 결제취소 (서버가 예전 버전이라 취소 금액이 없으면 0으로 봄)
+  const netAmount = summary ? summary.payAmount - (summary.cancelAmount ?? 0) : 0;
+  const netAmountPrev = summary ? summary.payAmountPrev - (summary.cancelAmountPrev ?? 0) : 0;
   const dateTickInterval = days === 7 ? 0 : days === 30 ? 4 : 14;
 
   const dailyRows = useMemo(() => (stats ? stats.daily.slice().reverse() : []), [stats]);
@@ -174,7 +178,7 @@ export default function PayStats() {
   return (
     <section className="view active dashboard_page">
       <PageHeader
-        title="구독권 결제 통계"
+        title="매출 통계"
         description="구독권 결제 금액과 구독 현황입니다."
         actions={
           <div className="dash_toolbar">
@@ -215,10 +219,14 @@ export default function PayStats() {
         <div className={loading ? 'stat_dash_body is_loading' : 'stat_dash_body'}>
           {/* ---- KPI 1행: 매출 ---- */}
           <div className="stats_grid">
+            {/* 순매출 = 결제완료 − 결제취소(구독 취소·변경으로 돌려준 금액). 아래 일별 그래프와 구독권별·결제수단별·기간별 금액도 같은 기준 */}
             <div className="card kpi">
-              <div className="lab">결제 금액 · {periodLabel}</div>
-              <div className="val">{won(summary.payAmount)}</div>
-              <Delta current={summary.payAmount} prev={summary.payAmountPrev} days={days} />
+              <div className="lab">순매출 · {periodLabel}</div>
+              <div className="val">{won(netAmount)}</div>
+              <Delta current={netAmount} prev={netAmountPrev} days={days} />
+              <div className="delta neutral">
+                결제 {won(summary.payAmount)} − 취소 {won(summary.cancelAmount ?? 0)}
+              </div>
             </div>
             <div className="card kpi">
               <div className="lab">결제 건수 · {periodLabel}</div>
@@ -259,14 +267,14 @@ export default function PayStats() {
             <div className={`card kpi${summary.refundPending > 0 ? ' wait' : ''}`}>
               <div className="lab">환불 처리 대기</div>
               <div className="val">{summary.refundPending.toLocaleString()}건</div>
-              <div className="delta neutral">{summary.refundPending > 0 ? '처리가 필요합니다' : '대기 없음'}</div>
+              <div className="delta neutral">{summary.refundPending > 0 ? '변경·취소로 생긴 환불' : '대기 없음'}</div>
             </div>
           </div>
 
           {/* ---- 차트 1행: 일별 금액 / 건수 ---- */}
           <div className="chart_row dash_chart_row">
             <div className="card chart_card">
-              <h3 className="b_title lg">일별 결제 금액</h3>
+              <h3 className="b_title lg">일별 순매출</h3>
               <div className="chart_box">
                 {hasPayData ? (
                   <ResponsiveContainer width="100%" height="100%">
@@ -343,14 +351,14 @@ export default function PayStats() {
           <div className="chart_row dash_chart_row">
             <div className="card chart_card">
               <h3 className="b_title lg">구독권별 매출</h3>
-              <AmountList items={stats.byPlan} total={summary.payAmount} empty="기간 내 결제 내역이 없습니다." />
+              <AmountList items={stats.byPlan} total={netAmount} empty="기간 내 결제 내역이 없습니다." />
             </div>
 
             <div className="card chart_card">
               <h3 className="b_title lg">결제수단별</h3>
-              <AmountList items={stats.byMethod} total={summary.payAmount} empty="기간 내 결제 내역이 없습니다." />
+              <AmountList items={stats.byMethod} total={netAmount} empty="기간 내 결제 내역이 없습니다." />
               <h3 className="b_title lg pay_sub_title">구독기간별</h3>
-              <AmountList items={stats.byMonth} total={summary.payAmount} empty="기간 내 결제 내역이 없습니다." />
+              <AmountList items={stats.byMonth} total={netAmount} empty="기간 내 결제 내역이 없습니다." />
             </div>
           </div>
 

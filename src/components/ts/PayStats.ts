@@ -38,6 +38,8 @@ export interface PaySummary {
   payCountPrev: number;
   failCount: number;
   cancelCount: number;
+  cancelAmount: number; // 기간 내 결제취소 금액 (순매출 = payAmount - cancelAmount)
+  cancelAmountPrev: number;
   refundAmount: number;
   refundCount: number;
   refundPending: number;

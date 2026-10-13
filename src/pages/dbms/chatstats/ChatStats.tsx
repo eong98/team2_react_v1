@@ -138,6 +138,8 @@ function AiPanel({
   error,
   canAnalyze,
   periodLabel,
+  currentAnswered,
+  currentTo,
   onAnalyze,
 }: {
   result: ChatAiSummary | null;
@@ -145,8 +147,13 @@ function AiPanel({
   error: string;
   canAnalyze: boolean;
   periodLabel: string;
+  /** 지금 화면 기간의 만족도 응답 수·종료일 — 분석 결과가 예전 것인지 알려 주는 데 사용 */
+  currentAnswered: number;
+  currentTo: string;
   onAnalyze: () => void;
 }) {
+  // 분석한 뒤로 응답이 늘었거나 날짜가 바뀌었으면 아래 요약은 지금 숫자와 다를 수 있음
+  const outdated = !!result && (result.answered !== currentAnswered || result.to !== currentTo);
   const sentiment = result ? getChatSentiment(result.score) : null;
   const pct = result ? Math.min(100, Math.max(0, result.score * 10)) : 0;
 
@@ -185,6 +192,13 @@ function AiPanel({
             : '기간 내 만족도 응답이 없어 분석할 수 없습니다.'}
         </p>
       ) : (
+        <>
+        {outdated && (
+          <p className="chat_ai_outdated" role="status">
+            이 분석은 {result.to}까지의 응답 {result.answered.toLocaleString()}건 기준입니다. 지금 화면은 {currentTo}까지
+            {' '}{currentAnswered.toLocaleString()}건이라 내용이 다를 수 있습니다. [다시 분석]을 누르면 지금 기준으로 바뀝니다.
+          </p>
+        )}
         <div className="chat_ai_body" aria-live="polite">
           <section className="chat_ai_text">
             <p>{result.summary}</p>
@@ -227,6 +241,7 @@ function AiPanel({
             {result.reason && <p className="chat_ai_reason">{result.reason}</p>}
           </section>
         </div>
+        </>
       )}
     </div>
   );
@@ -355,8 +370,8 @@ export default function ChatStats() {
   return (
     <section className="view active dashboard_page">
       <PageHeader
-        title="챗봇 상담 만족도"
-        description="상담을 끝낼 때 받은 만족도 조사 결과입니다."
+        title="만족도 통계"
+        description="챗봇 상담을 끝낼 때 받은 만족도 조사 결과입니다."
         actions={
           <div className="dash_toolbar">
             <button type="button" className="btn btn_outline_primary" onClick={() => loadStats()} disabled={loading}>
@@ -404,6 +419,8 @@ export default function ChatStats() {
             error={aiError}
             canAnalyze={summary.answered > 0}
             periodLabel={periodLabel}
+            currentAnswered={summary.answered}
+            currentTo={stats.to}
             onAnalyze={analyze}
           />
 
