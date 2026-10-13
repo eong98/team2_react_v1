@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { axiosInstance } from '../../../utils/Tool';
 import { usePaging } from '../../../hooks/usePaging';
 import { DataCard, Filterbar, PageHeader, UserPagination, type DataCardColumn } from '../../../components/ui';
-import { EMPTY_FILTERS, NOTICE_TYPE_MAP, PAGE_SIZE, type Filters, type NoticeSearchResult, type NoticeTypes } from '../../../components/ts/NoticeType';
+import { EMPTY_FILTERS, NOTICE_TYPE_OPTIONS, getNoticeBadges, isNoticeNew, PAGE_SIZE, type Filters, type NoticeSearchResult, type NoticeTypes } from '../../../components/ts/NoticeType';
 
 export default function NoticeList() {
   // const { no:mno, id } = GlobalStoreSession();
@@ -113,9 +113,11 @@ export default function NoticeList() {
       header: '상태',
       render: (n) => (
         <div className='badge_area'>
-          <span className={`badge ${NOTICE_TYPE_MAP[n.type].className}`}>
-            {NOTICE_TYPE_MAP[n.type].label}
-          </span>
+          {getNoticeBadges(n).map((b) => (
+            <span key={b.label} className={`badge ${b.className}`}>
+              {b.label}
+            </span>
+          ))}
         </div>
       ),
     },
@@ -126,6 +128,7 @@ export default function NoticeList() {
           <div className="cell_title">
             <button type='button' className='link' onClick={() => navigateWithQuery(`${n.no}`)}>
               {n.title}
+              {isNoticeNew(n.cdate) && <span className="new_mark" title="오늘 올라온 공지">N</span>}
               {n.vmode === 'N' ? 
                 (<span className='lock'>
                   <span className='hidden'>비밀글</span>
@@ -184,7 +187,7 @@ export default function NoticeList() {
               title='유형 선택'
             >
               <option value="">유형 전체</option>
-              {Object.entries(NOTICE_TYPE_MAP).map(([type, {label}]) => (
+              {NOTICE_TYPE_OPTIONS.map(([type, {label}]) => (
                 <option key={type} value={type}>
                   {label}
                 </option>

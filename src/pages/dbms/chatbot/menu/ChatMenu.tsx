@@ -171,6 +171,8 @@ export default function ChatMenu() {
   const [resultInfo, setResultInfo] = useState<{ skipped: string[]; dropped: string[] } | null>(null);
   const [generateAvailable, setGenerateAvailable] = useState(false);
   const [generatedTree, setGeneratedTree] = useState<GeneratedMenuTop[] | null>(null);
+  // AI가 만든 그대로의 이름·답변 (메뉴 번호별) — 추천 결과 화면에서 고쳤는지 판단하는 기준
+  const generatedOriginal = useRef<Record<number, { label: string; answer: string }>>({});
   const [vectorizeFailedDocs, setVectorizeFailedDocs] = useState<{ no: number; filename: string }[]>([]);
   const [retryingVectorize, setRetryingVectorize] = useState(false);
   const [docDeleteTarget, setDocDeleteTarget] = useState<ManualDocSummary | null>(null);
@@ -250,6 +252,15 @@ export default function ChatMenu() {
     if (result.vectorizeFailedDocs.length > 0) {
       setVectorizeFailedDocs(result.vectorizeFailedDocs);
     } else {
+      // AI가 만든 그대로의 글을 따로 기억해 둠 — 공개할 때 "이 화면에서 고친 것"만 저장하기 위함 (publishOne)
+      const original: Record<number, { label: string; answer: string }> = {};
+      for (const top of result.categories) {
+        for (const mid of top.children) {
+          original[mid.no] = { label: mid.label, answer: mid.answer ?? '' };
+          for (const leaf of mid.leaves) original[leaf.no] = { label: leaf.label, answer: leaf.answer ?? '' };
+        }
+      }
+      generatedOriginal.current = original;
       setGeneratedTree(result.categories);
     }
   };
@@ -280,12 +291,14 @@ export default function ChatMenu() {
       }
       if (st.result) applyGenerateResult(st.result as GenerateMenuResult, !fromMount);
       loadTree();
+      loadDocs(); // 반영이 끝난 매뉴얼의 '미반영' 표시를 지움 (다시 불러오지 않으면 새로고침 전까지 남음)
       loadGenerateAvailable();
     } else if (st.status === 'error') {
       if (!fromMount) {
         const title = kind === 'suggest' ? '최상위 메뉴 추천' : '하위 메뉴 추천';
         setAlert({ message: `${title} 중 오류가 발생했습니다.\n${st.error ?? ''}`, variant: 'error' });
       }
+      loadDocs(); // 중간에 실패해도 일부 매뉴얼은 반영됐을 수 있음
       loadGenerateAvailable();
     }
   };
@@ -899,11 +912,24 @@ export default function ChatMenu() {
     .map((t) => ({ ...t, children: t.children.filter((c) => flatList.some((m) => m.no === c.no && m.useyn === 'N')) }))
     .filter((t) => t.children.length > 0);
 
-  /** 미리보기에서 수정한 텍스트를 저장(일반 메뉴 수정 API 재사용)한 뒤 공개 전환 */
+  /**
+   * 미리보기에서 수정한 텍스트를 저장(일반 메뉴 수정 API 재사용)한 뒤 공개 전환.
+   * 이 화면에서 실제로 고친 항목만 저장한다. DB 값과 다르다는 것만으로 저장하면,
+   * [메뉴 구성] 탭에서 먼저 고쳐 둔 이름·답변을 AI가 만든 원래 글로 덮어쓰게 된다.
+   */
   const publishOne = async (top: GeneratedMenuTop) => {
+    const editedHere = (no: number, label: string, answer: string) => {
+      const made = generatedOriginal.current[no];
+      return !made || made.label !== label || made.answer !== answer;
+    };
     for (const mid of top.children) {
       const originalMid = flatList.find((m) => m.no === mid.no);
-      if (originalMid && mid.leaves.length === 0 && originalMid.answer !== mid.answer) {
+      if (
+        originalMid &&
+        mid.leaves.length === 0 &&
+        originalMid.answer !== mid.answer &&
+        editedHere(mid.no, mid.label, mid.answer ?? '')
+      ) {
         await axiosInstance.put(`/chat_menu/${mid.no}`, {
           pno: originalMid.pno,
           step: originalMid.step,
@@ -915,7 +941,11 @@ export default function ChatMenu() {
       }
       for (const leaf of mid.leaves) {
         const original = flatList.find((m) => m.no === leaf.no);
-        if (original && (original.label !== leaf.label || original.answer !== leaf.answer)) {
+        if (
+          original &&
+          (original.label !== leaf.label || original.answer !== leaf.answer) &&
+          editedHere(leaf.no, leaf.label, leaf.answer ?? '')
+        ) {
           await axiosInstance.put(`/chat_menu/${leaf.no}`, {
             pno: original.pno,
             step: original.step,

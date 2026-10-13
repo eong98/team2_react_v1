@@ -6,7 +6,7 @@ import { useParams } from 'react-router-dom';
 import { usePaging } from '../../../hooks/usePaging';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import { AlertModal, AttachViewer, ConfirmDeleteModal, PageHeader, PrevNextNav } from '../../../components/ui';
-import { NOTICE_TYPE_MAP, type NoticeTypes } from '../../../components/ts/NoticeType';
+import { getNoticeBadges, isNoticeNew, type NoticeTypes } from '../../../components/ts/NoticeType';
 import { type AttachType } from '../../../components/ts/Attach';
 import { ATTACH_BOARD_LABEL, deleteAttachByBno } from '../../../components/ts/Attach';
 
@@ -197,12 +197,17 @@ export default function NoticeDetail() {
           </div>
 
           <div className="badge_area">
-            <span className={`badge ${NOTICE_TYPE_MAP[notice.type]?.className}`}>{NOTICE_TYPE_MAP[notice.type]?.label}</span>
+            {getNoticeBadges(notice).map((b) => (
+              <span key={b.label} className={`badge ${b.className}`}>
+                {b.label}
+              </span>
+            ))}
           </div>
 
           <div className="title_area">
             <h3 className="title md">
-              {notice.title} 
+              {notice.title}
+              {isNoticeNew(notice.cdate) && <span className="new_mark" title="오늘 올라온 공지">N</span>}
               {notice.fileyn === 'Y' && (
                 <span className='icon file'>
                   <span className='hidden'>첨부파일 포함</span>

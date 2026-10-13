@@ -146,12 +146,12 @@ export default function QaForm() {
     }
   };
 
-  // 필수 필드 정의
+  // 필수 필드 정의 — 화면에 놓인 순서대로 (첫 오류 칸으로 포커스가 가므로, 순서가 화면과 다르면 엉뚱한 칸으로 감)
   const REQUIRED_FIELDS: { field: keyof FormErrors; label: string; id: string }[] = [
+    { field: 'guestEmail', label: '이메일', id: 'guestEmail' },
     { field: 'title', label: '문의 제목', id: 'qa_title' },
     { field: 'content', label: '문의 내용', id: 'qa_content' },
     { field: 'pw', label: '게시글 비밀번호', id: 'password' },
-    { field: 'guestEmail', label: '이메일', id: 'guestEmail' },
   ];
 
   // 유효성 검사: 필수 필드 전부 검사해서 전부 에러로 잡고, 포커스는 맨 첫 번째 오류 필드로만 이동

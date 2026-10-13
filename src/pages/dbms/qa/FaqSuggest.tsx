@@ -113,7 +113,8 @@ export default function FaqSuggest() {
         answer: c.answer ?? '',
         count: c.count,
         sources: c.sources ?? [],
-        reason: c.reason ?? '',
+        // AI가 묶은 이유 대신 "4", "2, type: 1" 같은 값을 돌려주는 경우가 있어, 한글 문장으로 볼 수 없으면 표시하지 않음
+        reason: ((c.reason ?? '').match(/[가-힣]/g)?.length ?? 0) >= 8 ? (c.reason ?? '').trim() : '',
         checked: true,
       }));
       // 화면을 떠났어도 결과는 보관 — 돌아오면 보임 (추천할 것이 없으면 보관하지 않음)

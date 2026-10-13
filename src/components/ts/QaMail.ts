@@ -4,7 +4,6 @@
 
    API (QaMailCont, /qa/mail) - 관리자(ROLE_MANAGER) 쿠키 로그인 필요
    GET  /qa/mail/logs?word=&stype=&result=&page=0&size=10  → QaMailLogPage
-   POST /qa/mail/logs/{no}/resend                           → 실패한 답변 알림 다시 보내기
 
    메일 종류 STYPE : 1 답변 등록 알림 / 2 비밀번호 재설정 인증번호
    발송 결과 RESULT: Y 성공 / N 실패
@@ -25,7 +24,6 @@ export interface QaMailLog {
   result: 'Y' | 'N';
   msg: string | null; // 실패 사유
   cdate: string;
-  canResend: boolean; // [다시 보내기] 가능 여부
 }
 
 export interface QaMailLogPage {
@@ -62,8 +60,3 @@ export const getQaMailLogs = async (query: QaMailLogQuery): Promise<QaMailLogPag
   return res.data;
 };
 
-/** 실패한 답변 알림 다시 보내기 — 접수만 하고 바로 응답 (발송 결과는 목록에 새 줄로 추가됨) */
-export const resendQaMail = async (no: number): Promise<string> => {
-  const res = await axiosInstance.post<{ message: string }>(`/qa/mail/logs/${no}/resend`);
-  return res.data.message;
-};

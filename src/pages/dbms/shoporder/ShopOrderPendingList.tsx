@@ -246,7 +246,7 @@ export default function ShopOrderPendingnList() {
             <div className="aicon">!</div>
             <div className="atext">
               <div className="t1">승인을 기다리는 변경 신청이 {waitingCount}건 있습니다.</div>
-              <div className="t2">매장에 실제 등록된 CCTV 대수를 확인한 뒤 승인하거나, 사유를 적어 반려해 주세요.</div>
+              <div className="t2">점주와 연락해 카메라 설치·등록을 마친 뒤 승인해 주세요. 진행할 수 없으면 사유를 적어 반려합니다.</div>
             </div>
             <button type="button" className="abtn" onClick={showWaitingOnly}>
               승인 대기만 보기

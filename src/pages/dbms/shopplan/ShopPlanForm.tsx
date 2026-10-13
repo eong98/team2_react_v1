@@ -399,7 +399,7 @@ export default function ShopPlanForm() {
                 </div>
 
                 <div className="plan_unit mono">
-                  대당 <span className="price">{previewTarget.bprice.toLocaleString('ko-KR')}</span>원 / {previewTarget.pmonth}개월
+                  대당 월 <span className="price">{previewTarget.bprice.toLocaleString('ko-KR')}</span>원 · {previewTarget.pmonth}개월 결제
                 </div>
 
                 {previewTarget.description && (

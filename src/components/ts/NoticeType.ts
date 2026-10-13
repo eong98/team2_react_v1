@@ -1,6 +1,6 @@
 // NO       NUMBER(10)                  NOT NULL, -- 공지사항번호 (PK)
 // ANO      NUMBER(10)                  NOT NULL, -- 공지사항 작성 회원번호(FK)
-// TYPE     NUMBER(1)                   NOT NULL, -- 공지유형 (0: 긴급, 1: 중요, 2: 알림, 3: 신규)
+// TYPE     NUMBER(1)                   NOT NULL, -- 공지유형 (0: 긴급, 1: 중요, 3: 알림 / 2: 예전 '신규', 지금은 알림으로 표시) — '신규'는 유형이 아니라 오늘 등록된 글 표시
 // TITLE    VARCHAR2(200)               NOT NULL, -- 제목
 // CONTENT  CLOB                        NOT NULL, -- 내용
 // CDATE    VARCHAR2(30)                NOT NULL, -- 등록일
@@ -35,12 +35,34 @@ export interface NoticeTypes {
 }
 
 
-// TYPE (공지 유형)
+// TYPE (공지 유형) — 긴급 · 중요 · 알림 세 가지
+// 2번은 예전에 '신규'라는 유형이었습니다. '신규'는 유형이 아니라 "오늘 올라온 글" 표시이므로
+// 등록일을 보고(isNoticeNew) 제목 옆에 NEW 표시를 붙이고, 2번으로 저장된 예전 글은 알림으로 보여 줍니다.
 export const NOTICE_TYPE_MAP: Record<number, { label: string; className: string }> = {
   0: { label: '긴급', className: 'danger' },
   1: { label: '중요',   className: 'orange' },
-  2: { label: '신규', className: 'success' },
+  2: { label: '알림', className: 'info' },
   3: { label: '알림', className: 'info' },
+};
+
+/** 작성 화면·검색 필터에서 고를 수 있는 유형 (예전 2번은 고르는 목록에 넣지 않음) */
+export const NOTICE_TYPE_OPTIONS = Object.entries(NOTICE_TYPE_MAP).filter(([type]) => type !== '2');
+
+/** 등록일(cdate: 'yyyy-MM-dd HH:mm:ss')이 오늘(이 기기 날짜)인지 */
+export const isNoticeNew = (cdate?: string | null): boolean => {
+  if (!cdate) return false;
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  return cdate.slice(0, 10) === today;
+};
+
+/**
+ * 공지 한 건에 보여 줄 유형 배지 목록 (긴급·중요·알림).
+ * '신규'는 배지가 아니라 제목 옆 NEW 표시로 보여 줍니다 — isNoticeNew() 와 common.css 의 .new_mark 사용.
+ */
+export const getNoticeBadges = (notice: { type: number; cdate?: string | null }) => {
+  const typeBadge = NOTICE_TYPE_MAP[notice.type];
+  return typeBadge ? [typeBadge] : [];
 };
 
 

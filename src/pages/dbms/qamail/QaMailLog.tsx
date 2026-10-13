@@ -2,8 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { logUnexpected } from '../../../components/ts/ApiError';
 import { useNavigate } from 'react-router-dom';
 import { AdminToolbar, AlertModal, DataTable, DbmsPagination, PageHeader, type DataTableColumn } from '../../../components/ui';
-import { QA_MAIL_TYPE_LABEL, getQaMailLogs, resendQaMail, type QaMailLog as QaMailLogRow } from '../../../components/ts/QaMail';
-import { qaErrorMessage } from '../../../components/ts/QaGuestToken';
+import { QA_MAIL_TYPE_LABEL, getQaMailLogs, type QaMailLog as QaMailLogRow } from '../../../components/ts/QaMail';
 import './qaMailLog.css';
 
 /* ---------------------------------------------------------------------
@@ -14,7 +13,6 @@ import './qaMailLog.css';
    - 비밀번호 재설정 인증: 비회원이 문의글 비밀번호 재설정을 요청했을 때 보낸 인증번호 메일
      (인증번호와 본문은 저장하지 않고, 보냈다는 사실만 남김)
 
-   실패한 답변 알림은 [다시 보내기]로 다시 보낼 수 있습니다. 다시 보내면 새 줄이 추가되고 이전 기록은 그대로 남습니다.
    문의글이 삭제돼도 발송 기록은 남고, 문의 제목 자리에 "삭제된 게시글"로 표시됩니다.
 --------------------------------------------------------------------- */
 
@@ -36,7 +34,6 @@ export default function QaMailLog() {
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [resendingNo, setResendingNo] = useState<number | null>(null);
   const [alert, setAlert] = useState<AlertState>(null);
 
   // 조건을 빠르게 바꿀 때 늦게 도착한 이전 응답이 화면을 덮어쓰지 않도록 요청 번호로 구분
@@ -85,27 +82,14 @@ export default function QaMailLog() {
     setPage(1);
   };
 
-  /** 실패한 답변 알림 다시 보내기 — 발송은 서버에서 백그라운드로, 잠시 뒤 목록을 다시 불러옴 */
-  const onResend = async (row: QaMailLogRow) => {
-    setResendingNo(row.no);
-    try {
-      const message = await resendQaMail(row.no);
-      setAlert({ message, variant: 'success' });
-      window.setTimeout(loadLogs, 4000);
-    } catch (err) {
-      setAlert({ message: qaErrorMessage(err, '다시 보내지 못했습니다. 잠시 후 다시 시도해 주세요.'), variant: 'error' });
-    } finally {
-      setResendingNo(null);
-    }
-  };
-
   const columns: DataTableColumn<QaMailLogRow>[] = [
     { header: 'No', width: '6%', mono: true, render: (row) => row.no },
     {
       header: '발송 일시',
-      width: '14%',
+      width: '17%',
       mono: true,
-      render: (row) => row.cdate,
+      // 날짜와 시각이 중간에서 줄바꿈되지 않게 함
+      render: (row) => <span style={{ whiteSpace: 'nowrap' }}>{row.cdate}</span>,
     },
     {
       header: '종류',
@@ -151,7 +135,7 @@ export default function QaMailLog() {
     },
     {
       header: '결과',
-      width: '14%',
+      width: '11%',
       render: (row) => (
         <div className="qa_mail_post">
           <span className={`badge ${row.result === 'Y' ? 'badge_success' : 'badge_danger'}`}>
@@ -162,23 +146,6 @@ export default function QaMailLog() {
           )}
         </div>
       ),
-    },
-    {
-      header: '관리',
-      width: '8%',
-      render: (row) =>
-        row.canResend ? (
-          <button
-            type="button"
-            className="btn btn_xsm btn_outline_primary"
-            disabled={resendingNo === row.no}
-            onClick={() => onResend(row)}
-          >
-            {resendingNo === row.no ? '보내는 중' : '다시 보내기'}
-          </button>
-        ) : (
-          <span className="cell_sub">-</span>
-        ),
     },
   ];
 

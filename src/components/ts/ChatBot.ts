@@ -51,7 +51,7 @@ export const SYSTEM_MESSAGES: { code: number; label: string }[] = [
   { code: 7, label: '여기부터 AI 상담입니다.' },
   { code: 8, label: '여기까지가 AI 상담입니다.' },
   { code: 9, label: '안녕하세요! AI 입니다!\n무엇을 도와드릴까요?' },
-  { code: 10, label: '응답이 없어 약 5분 뒤 상담이 자동으로 종료됩니다.\n종료 전에 상담 만족도를 알려 주세요.' },
+  { code: 10, label: '한동안 응답이 없어 곧 상담이 자동으로 종료됩니다.\n종료 전에 상담 만족도를 알려 주세요.' },
   { code: 11, label: '상담을 계속 진행합니다.\n무엇을 도와드릴까요?' },
 ];
 

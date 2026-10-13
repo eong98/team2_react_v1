@@ -229,7 +229,7 @@ export default function ShopPlan() {
                     <h3>{p.pname}</h3>
                     <div className="plan_range mono">{Number(p.mincctv)} ~ {Number(p.maxcctv)}대</div>
                     <div className="plan_unit mono">
-                      대당 <span className='price'>{Number(p.bprice).toLocaleString('ko-KR')}</span>원 / {month}개월
+                      대당 월 <span className='price'>{Number(p.bprice).toLocaleString('ko-KR')}</span>원 · {month}개월 결제
                     </div>
                     {p.description && (
                       <ul>
@@ -306,7 +306,7 @@ export default function ShopPlan() {
                 <div className="order_lines sub_lines plan_lines">
                   <div className="order_line"><span>요금제</span><span>{plan.pname}</span></div>
                   <div className="order_line"><span>결제 주기</span><span>{month}개월</span></div>
-                  <div className="order_line"><span>대당 단가</span><span>{Number(plan.bprice).toLocaleString('ko-KR')}원</span></div>
+                  <div className="order_line"><span>대당 월 단가</span><span>{Number(plan.bprice).toLocaleString('ko-KR')}원</span></div>
                   <div className="order_line"><span>선택 대수</span><span>{qty}대</span></div>
                 </div>
 
@@ -353,7 +353,7 @@ export default function ShopPlan() {
                 <div className="order_lines sub_lines plan_lines">
                   <div className="order_line"><span>요금제</span><span>{plan.pname}</span></div>
                   <div className="order_line"><span>결제 주기</span><span>{month}개월</span></div>
-                  <div className="order_line"><span>대당 단가</span><span>{Number(plan.bprice).toLocaleString('ko-KR')}원</span></div>
+                  <div className="order_line"><span>대당 월 단가</span><span>{Number(plan.bprice).toLocaleString('ko-KR')}원</span></div>
                   <div className="order_line"><span>CCTV 대수</span><span>{qty}대</span></div>
                 </div>
 

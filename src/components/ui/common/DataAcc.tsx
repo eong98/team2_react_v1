@@ -118,6 +118,9 @@ export default function DataAcc<T>({
                 <span className='acc_title'>{title(row)}</span>
               </button>
               <div className={`acc_panel${open ? ' open' : ''}`} id={panelId}>
+                {/* 높이 애니메이션용 두 겹: clip 이 0 높이까지 줄어들고, 여백은 body 가 가짐 (common.css .acc_panel) */}
+                <div className="acc_panel_clip" inert={!open}>
+                <div className="acc_panel_body">
                 {columns.map((col, idx) => (
                   <div key={idx} className={col.className}>
                     {col.header && <span className="answer">{col.header}</span>}
@@ -139,6 +142,8 @@ export default function DataAcc<T>({
                     )}
                   </div>
                 )}
+                </div>
+                </div>
               </div>
             </div>
           );

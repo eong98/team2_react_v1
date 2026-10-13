@@ -474,7 +474,7 @@ export default function QaList() {
       <PageHeader
         title="문의사항"
         description="문의사항 및 FAQ를 관리할 수 있습니다."
-        createLabel={tab === 'qa' ? undefined : '+ FAQ 작성'}
+        createLabel={tab === 'faq' ? '+ FAQ 작성' : undefined} // 삭제된 문의 탭에는 작성 버튼을 두지 않음
         onCreate={() => navigateWithQuery('new')}
         actions={
           // 자주 들어온 문의를 AI가 묶어 FAQ 초안을 추천하는 화면(FaqSuggest)으로 — FAQ 탭에서만

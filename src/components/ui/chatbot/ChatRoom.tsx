@@ -868,6 +868,14 @@ export default function ChatRoom({
       });
       appendLogs(res.data.logs);
       setEndFlow(null);
+      // 메뉴 상담이었다면 "무엇을 도와드릴까요?" 아래에 처음 선택지(최상위 옵션메뉴)를 다시 보여 줌.
+      // 답변까지 본 뒤(더 고를 하위 메뉴가 없는 상태)에는 옵션이 하나도 안 보여 무엇을 눌러야 할지 알 수 없었음.
+      // AI 상담 중이었다면 그대로 입력창으로 이어감.
+      if (stage !== 'AI') {
+        setStage('INTRO');
+        setCurrentOptions([]);
+        if (rootMenus.length === 0) loadRootMenus();
+      }
       notifyChatChanged(sno);
     } catch (err) {
       console.error('상담 계속하기 처리 실패:', err);

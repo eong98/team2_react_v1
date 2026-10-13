@@ -7,7 +7,7 @@ import { AlertModal, AttachUploader, PageHeader, type AttachUploaderHandle } fro
 import { axiosInstance, cutByByte, getByteLength, getNowDate, set_focus } from '../../../utils/Tool';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import { usePaging } from '../../../hooks/usePaging';
-import { NOTICE_TYPE_MAP, type NCRequest } from '../../../components/ts/NoticeType';
+import { NOTICE_TYPE_OPTIONS, type NCRequest } from '../../../components/ts/NoticeType';
 import { ATTACH_BOARD_LABEL } from '../../../components/ts/Attach';
 import { attachErrorMessage } from '../../../components/ui/common/AttachUploader';
 
@@ -38,7 +38,7 @@ export default function NoticeForm() {
 
   const [input, setInput] = useState<NCRequest>({
     ano: ano,
-    type: 3,
+    type: 3, // 알림 (등록 당일에는 제목 옆에 N 표시)
     title: '',
     content: '',
     cdate: '',
@@ -73,7 +73,7 @@ export default function NoticeForm() {
         setInput((prev) => ({
           ...prev,
           ano: ano,
-          type: data.type,
+          type: data.type === 2 ? 3 : data.type, // 예전 '신규'(2)로 저장된 글은 알림(3)으로 — 고르는 목록에 2번이 없음
           title: data.title,
           content: data.content,
           fixyn: data.fixyn === 'Y' || data.fixyn === true ? 'Y' : 'N',
@@ -268,13 +268,13 @@ export default function NoticeForm() {
                 onChange={onChange}
                 style={{ maxWidth: 200 }}
               >
-                {Object.entries(NOTICE_TYPE_MAP).map(([type, {label}]) => (
+                {NOTICE_TYPE_OPTIONS.map(([type, {label}]) => (
                   <option key={type} value={type}>
                     {label}
                   </option>
                 ))}
               </select>
-              <div className="form_hint">유형을 선택하지 않을 경우 신규유형으로 등록됩니다.</div>
+              <div className="form_hint">유형을 선택하지 않으면 알림으로 등록됩니다. 등록한 날에는 제목 옆에 새 글 표시(N)가 붙습니다.</div>
             </div>
           </div>
 
