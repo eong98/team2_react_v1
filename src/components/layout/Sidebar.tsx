@@ -5,6 +5,7 @@ import { GlobalStoreSession } from '../../store/LoginStore';
 import { axiosInstance } from '../../utils/Tool';
 import { isAdminGrade } from '../ts/MyPage';
 import { getUnreadNotificationCount } from '../ts/notification';
+import { useAdminMenuBadges } from './adminMenuBadges';
 
 interface SidebarProps {
   open: boolean;
@@ -46,6 +47,8 @@ export default function Sidebar({ open, onNavigate }: SidebarProps) {
   const [loading, setLoading] = useState(true);
 
   const [unreadCount, setUnreadCount] = useState(0);
+  // 관리자 메뉴에 처리할 일이 있는지 (답변할 문의, 승인 대기 변경 신청) — 메뉴 주소별 건수, 0보다 크면 빨간 점
+  const menuBadges = useAdminMenuBadges(isDbms);
 
   useEffect(() => {
     // 관리자 사이드바에서는 알림 표시 안 함
@@ -225,6 +228,14 @@ export default function Sidebar({ open, onNavigate }: SidebarProps) {
                       onClick={onNavigate}
                     >
                       {child.title}
+
+                      {/* 관리자: 처리할 일이 있는 메뉴에 빨간 점 (답변할 문의, 승인 대기 변경 신청) — 아래 알림 관리와 같은 표시 */}
+                      {isDbms && (menuBadges[resolveHref(child.purl)] ?? 0) > 0 && (
+                        <span
+                          className="notification_dot"
+                          title={`처리할 건 ${menuBadges[resolveHref(child.purl)]}건`}
+                        />
+                      )}
 
                       {!isDbms &&
                         child.title === '알림 관리' &&

@@ -107,6 +107,34 @@ export default function QaList() {
     loadQaList();
   }, [tab, applied, page]);
 
+  // 답변해야 할 문의 수 — 답변대기(0) / 확인중(1). 목록 위 안내에 사용
+  const [todo, setTodo] = useState<{ wait: number; checking: number }>({ wait: 0, checking: 0 });
+  const loadTodo = async () => {
+    try {
+      const count = async (status: number) =>
+        (await axiosInstance.get<QaSearchResult>(LIST_URL.qa, { params: { page: 0, size: 1, status } })).data.totalElements;
+      const [wait, checking] = await Promise.all([count(0), count(1)]);
+      setTodo({ wait, checking });
+    } catch (error) {
+      // 표시용이라 실패해도 목록은 그대로 보여 줌
+      logUnexpected('답변 필요 문의 수 조회 실패:', error);
+    }
+  };
+  // 처음 들어올 때와, 목록이 바뀔 수 있는 동작(탭 전환·검색·페이지 이동) 뒤에 다시 셈
+  useEffect(() => {
+    loadTodo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, applied, page]);
+  const todoCount = todo.wait + todo.checking;
+
+  /** 답변이 필요한 문의만 보기 — 상태 필터(-1: 답변대기+확인중)를 걸고 1페이지로 */
+  const showTodoOnly = (status: number) => {
+    const next = { ...EMPTY_FILTERS, state: String(status) };
+    setDraft(next);
+    setApplied(next);
+    setPage(1);
+  };
+
   // ?tab=faq&open=번호 로 들어오면(관리자 첨부 목록의 "게시글로 이동" 등) 그 FAQ가 있는 페이지를 찾아 이동 → 펼침
   const [searchParams, setSearchParams] = useSearchParams();
   const openFaqNo = Number(searchParams.get('open')) || null;
@@ -291,44 +319,47 @@ export default function QaList() {
       ),
     },
     {
+      // 회원 화면 목록과 같은 구성 — 제목·정보 / 첨부 아이콘 / 조회수 (관리자는 작성자를 추가로 표시)
       header: '제목 및 정보',
       render: (n) => (
-        <div className="lt">
-          <div className="cell_title">
-            <button type='button' className='link' onClick={() => navigateWithQuery(`${n.no}`)}>
-              {n.title}
-              {n.vmode === 'Y' ? 
-                (<span className='lock'>
-                  <span className='hidden'>비밀글</span>
-                </span> ) : null
-              }
-            </button>
-            {/* AI 자동 답변이 달린 문의 — 제목 옆에 반짝이는 배지 (common.css .badge.ai_answer) */}
-            {n.aiyn === 'Y' && <span className="badge ai_answer">✨ AI 답변</span>}
-          </div>
-          <div className="cell_sub">
-            접수유형: {Object.entries(QA_TYPE_MAP).find(([type]) => Number(type) === n.type)?.[1].label ?? n.type} · {n.cdate.split(' ')[0]}
-            {/* 작성자 — 회원이면 아이디(번호), 비회원이면 '비회원' (상세·삭제된 글 탭과 같은 표시) */}
-            {' · '}작성자: {n.mno ? `${n.id ?? ''} (No.${n.mno})` : '비회원'}
-          </div>
-        </div>
-      ),
-    },
-    {
-      header: '첨부파일 정보',
-      render: (n) => {
-        if (n.fileyn !== 'Y') return null;
-
-        return (
-          <div className="me">
-            <div className='icon_row'>
-              <div className='icon file'>
-                <span className='hidden'>첨부파일 포함</span>
-              </div>
+        <>
+          <div className="lt">
+            <div className="cell_title">
+              <button type='button' className='link' onClick={() => navigateWithQuery(`${n.no}`)}>
+                {n.title}
+                {n.vmode === 'Y' ? 
+                  (<span className='lock'>
+                    <span className='hidden'>비밀글</span>
+                  </span> ) : null
+                }
+              </button>
+              {/* AI 자동 답변이 달린 문의 — 제목 옆에 반짝이는 배지 (common.css .badge.ai_answer) */}
+              {n.aiyn === 'Y' && <span className="badge ai_answer">✨ AI 답변</span>}
+            </div>
+            <div className="cell_sub">
+              접수유형: {Object.entries(QA_TYPE_MAP).find(([type]) => Number(type) === n.type)?.[1].label ?? n.type} · {n.cdate.split(' ')[0]}
+              {/* 작성자 — 회원이면 아이디(번호), 비회원이면 '비회원' (상세·삭제된 글 탭과 같은 표시) */}
+              {' · '}작성자: {n.mno ? `${n.id ?? ''} (No.${n.mno})` : '비회원'}
             </div>
           </div>
-        )
-      },
+
+          {n.fileyn === 'Y' && ( // 첨부파일 있는 글만 아이콘 표시
+            <div className="me">
+              <div className='icon_row'>
+                <div className='icon file'>
+                  <span className='hidden'>첨부파일 포함</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className='me'>
+            <div className="cell_sub">
+              조회수 {n.vcnt}
+            </div>
+          </div>
+        </>
+      ),
     },
   ];
 
@@ -383,6 +414,7 @@ export default function QaList() {
             작성자: {n.mno ? `${n.id ?? ''} (No.${n.mno})` : '비회원'}
             {' · '}작성 {n.cdate?.split(' ')[0]}
             {' · '}삭제 {n.ddate?.split(' ')[0] ?? '-'}
+            {' · '}조회수 {n.vcnt}
           </div>
         </div>
       ),
@@ -478,6 +510,22 @@ export default function QaList() {
         })}
       </div>
 
+      {/* 답변이 필요한 문의 안내 — 전체 문의 탭에서만 */}
+      {tab === 'qa' && todoCount > 0 && (
+        <div className="alert_mode">
+          <div className="alert_banner">
+            <div className="aicon">!</div>
+            <div className="atext">
+              <div className="t1">답변해야 할 문의가 {todoCount}건 있습니다.</div>
+              <div className="t2">답변대기 {todo.wait}건 · 확인중 {todo.checking}건</div>
+            </div>
+            <button type="button" className="abtn" onClick={() => showTodoOnly(-1)}>
+              답변할 문의만 보기
+            </button>
+          </div>
+        </div>
+      )}
+
       <AdminToolbar
         searchValue={draft.keyword}
         onSearchChange={(value) => setDraft((prev) => ({ ...prev, keyword: value }))}
@@ -513,6 +561,7 @@ export default function QaList() {
                   title='답변 상태 선택'
                 >
                   <option value="">답변상태 전체</option>
+                  <option value="-1">답변 필요 (대기 + 확인중)</option>
                   {Object.entries(QA_STATUS_MAP).map(([status, {label}]) => (
                     <option key={status} value={status}>
                       {label}

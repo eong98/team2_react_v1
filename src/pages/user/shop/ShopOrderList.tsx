@@ -213,7 +213,7 @@ export default function ShopOrderBySno() {
   if (!sno) {
     return (
       <section className="view active">
-        <PageHeader title="구독 내역" description="매장을 선택하면 해당 매장에 연결된 현재 구독과 지난 이력을 확인할 수 있습니다." />
+        <PageHeader title="매장별 구독내역" description="매장을 선택하면 해당 매장에 연결된 현재 구독과 지난 이력을 확인할 수 있습니다." />
         <div
           className="card card_pad_sm"
         >
@@ -232,7 +232,7 @@ export default function ShopOrderBySno() {
   return (
     <section className="view active">
       <PageHeader 
-        title="구독 내역" 
+        title="매장별 구독내역" 
         description={`${shopTitle}에 연결된 현재 구독과 지난 이력을 확인합니다.`} 
         actions={
           <div className='actions'>

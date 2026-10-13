@@ -55,8 +55,31 @@ export default function ShopOrderPendingnList() {
 
   const [alert, setAlert] = useState<{ message: string; variant?: 'success' | 'error' } | null>(null);
 
+  // 승인을 기다리는 신청 수 — 목록 위 안내에 사용 (검색 조건과 상관없이 전체 기준)
+  const [waitingCount, setWaitingCount] = useState(0);
+  const loadWaitingCount = async () => {
+    try {
+      const res = await axiosInstance.get<PendingSearchResult>('/shop_order_pending/list', {
+        params: { status: 0, page: 0, size: 1 },
+      });
+      setWaitingCount(res.data.totalElements);
+    } catch (error) {
+      // 표시용이라 실패해도 목록은 그대로 보여 줌
+      console.error('승인 대기 건수 조회 실패:', error);
+    }
+  };
+
+  /** 승인 대기만 보기 — 상태 필터를 걸고 1페이지로 */
+  const showWaitingOnly = () => {
+    const next = { ...EMPTY_FILTERS, status: '0' };
+    setDraft(next);
+    setApplied(next);
+    setPage(1);
+  };
+
   const loadList = async () => {
     setLoading(true);
+    loadWaitingCount(); // 승인·반려 뒤 목록을 다시 불러올 때 건수도 같이 갱신
 
     try {
       const res = await axiosInstance.get<PendingSearchResult>('/shop_order_pending/list', {
@@ -214,7 +237,23 @@ export default function ShopOrderPendingnList() {
 
   return (
     <section className="view active">
-      <PageHeader title="CCTV 대수 변경 신청 관리" description="회원이 신청한 CCTV 대수 변경 건을 확인하고 승인/반려합니다." />
+      <PageHeader title="변경 신청관리" description="회원이 신청한 CCTV 대수 변경 건을 확인하고 승인/반려합니다." />
+
+      {/* 승인을 기다리는 신청이 있으면 맨 위에 알림 (회원 구매내역 화면과 같은 띠) */}
+      {waitingCount > 0 && (
+        <div className="alert_mode">
+          <div className="alert_banner">
+            <div className="aicon">!</div>
+            <div className="atext">
+              <div className="t1">승인을 기다리는 변경 신청이 {waitingCount}건 있습니다.</div>
+              <div className="t2">매장에 실제 등록된 CCTV 대수를 확인한 뒤 승인하거나, 사유를 적어 반려해 주세요.</div>
+            </div>
+            <button type="button" className="abtn" onClick={showWaitingOnly}>
+              승인 대기만 보기
+            </button>
+          </div>
+        </div>
+      )}
 
       <AdminToolbar
         searchValue={draft.word}

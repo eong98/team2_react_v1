@@ -185,7 +185,7 @@ export default function QaMailLog() {
   return (
     <section className="view active qa_mail_page">
       <PageHeader
-        title="문의 메일 발송 내역"
+        title="메일 발송 이력"
         description="문의 답변 알림과 비회원 비밀번호 재설정 인증 메일의 발송 결과를 확인합니다."
       />
 

@@ -235,7 +235,7 @@ export default function AttachList() {
   return (
     <section className="view active">
       <PageHeader
-        title="첨부파일 관리"
+        title="첨부파일 목록"
         description="등록된 첨부파일의 상세정보를 확인합니다."
       />
 

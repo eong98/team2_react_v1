@@ -141,7 +141,7 @@ export default function ShopOrderPendingnList() {
 
   return (
     <section className="view active">
-      <PageHeader title="CCTV 대수 변경 신청 내역" description="신청한 CCTV 대수 변경 건의 내역을 확인합니다." />
+      <PageHeader title="변경 신청내역" description="신청한 CCTV 대수 변경 건의 내역을 확인합니다." />
 
       <Filterbar
         page={page}

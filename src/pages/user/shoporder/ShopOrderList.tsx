@@ -263,7 +263,7 @@ export default function ShopOrderList() {
   return (
     <section className="view active">
       <PageHeader
-        title="전체 구독 내역"
+        title="전체 구독내역"
         description="전체 매장의 현재 이용중이거나 갱신이 필요한 구독을 확인합니다."
         createLabel="+ 새 구독"
         onCreate={() => navigate('/shopplan')}

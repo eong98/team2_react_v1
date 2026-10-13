@@ -39,3 +39,8 @@
 /* 구독권 구매 화면(ShopPlan.tsx) 2·3단계의 줄 목록과 결제 수단 */
 .plan_lines { margin: 16px 0 18px !important; }
 .plan_pay { margin-bottom: 20px; }
+
+/* 관리자 회원 구매내역 — [변경 대기]를 누르면 변경 신청관리로 */
+.sub_wait_btn { margin-left: 8px; border: none; cursor: pointer; vertical-align: middle; }
+.sub_wait_btn:hover { filter: brightness(1.2); }
+.sub_wait_btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }

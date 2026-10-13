@@ -3,6 +3,7 @@ import { PageHeader, DataTable, type DataTableColumn, DbmsPagination, AdminToolb
 import { axiosInstance } from '../../../utils/Tool';
 import { EMPTY_FILTERS, formatLogAmount, LOG_ACTION_MAP, PAGE_SIZE, type Filters, type LogSearchResult, type RowType } from '../../../components/ts/ShopOrderLog';
 import { usePaging } from '../../../hooks/usePaging';
+import { useSearchParams } from 'react-router-dom';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import '../../user/shoporder/subLines.css';
 
@@ -21,9 +22,11 @@ export default function ShopOrderLogList() {
   const { page, setPage } = usePaging({ basePath: '/dbms/order/history' });
   const [detailTarget, setDetailTarget] = useState<RowType | null>(null);
 
-  /* 필터바 설정 */
-  const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS);
-  const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
+  /* 필터바 설정 — 회원 구매내역에서 주문번호를 눌러 들어오면(?word=주문번호) 그 주문만 검색된 상태로 시작 */
+  const [searchParams] = useSearchParams();
+  const initialFilters: Filters = { ...EMPTY_FILTERS, word: searchParams.get('word') ?? '' };
+  const [draft, setDraft] = useState<Filters>(initialFilters);
+  const [applied, setApplied] = useState<Filters>(initialFilters);
 
   /* 페이징 설정 */
   const [totalPages, setTotalPages] = useState(1);
@@ -131,14 +134,14 @@ export default function ShopOrderLogList() {
 
   return (
     <section className="view active">
-      <PageHeader title="전체 구독 변경이력" description="전체 회원의 결제·매장연결·갱신·취소·변경 이벤트를 확인합니다." />
+      <PageHeader title="전체 이력관리" description="전체 회원의 결제·매장연결·갱신·취소·변경 이벤트를 확인합니다." />
 
       <AdminToolbar
         width='250px'
         searchValue={draft.word}
         onSearchChange={(value) => setDraft((prev) => ({ ...prev, word: value }))}
         onSearchEnter={onSearch}
-        searchPlaceholder="회원정보 · 매장명 · 내용"
+        searchPlaceholder="회원정보 · 매장명 · 주문번호 · 내용"
         filters={
           <>
             <select

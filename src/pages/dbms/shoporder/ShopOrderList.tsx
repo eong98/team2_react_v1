@@ -12,6 +12,9 @@ import {
 } from '../../../components/ts/ShopOrder';
 import { GlobalStoreSession } from '../../../store/LoginStore';
 import { usePaging } from '../../../hooks/usePaging';
+import { useNavigate } from 'react-router-dom';
+import type { OrderPendingTypes } from '../../../components/ts/ShopOrderPending';
+import '../../user/shoporder/subLines.css';
 
 /* ---------------------------------------------------------------------
    전체 구독권 구매 목록 (관리자, /dbms/shop_order) — mno 구분 없이
@@ -29,8 +32,31 @@ export default function ShopOrderList() {
   const { no: ano } = GlobalStoreSession();
   const { page, setPage } = usePaging({ basePath: '/dbms/shoporder' });
 
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<RowType[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // 승인을 기다리는 변경 신청 — 목록 위 안내와 해당 주문의 [변경 대기] 표시에 사용
+  const [pendingOnos, setPendingOnos] = useState<Set<string>>(new Set());
+  const [pendingCount, setPendingCount] = useState(0);
+
+  const loadPending = async () => {
+    try {
+      const res = await axiosInstance.get<{ content: OrderPendingTypes[]; totalElements: number }>(
+        '/shop_order_pending/list',
+        { params: { status: 0, page: 0, size: 100 } },
+      );
+      setPendingOnos(new Set(res.data.content.map((p) => p.ono)));
+      setPendingCount(res.data.totalElements);
+    } catch (error) {
+      // 표시용이라 실패해도 목록은 그대로 보여 줌
+      console.error('변경 신청 대기 조회 실패:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadPending();
+  }, []);
 
   /* 필터바 설정 */
   const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS);
@@ -113,17 +139,56 @@ export default function ShopOrderList() {
     },
     {
       header: '구매정보',
-      width: '190px',
+      width: '230px',
       render: (o) => (
         <>
-          <span className='cell_title'>구독권 : {o.pname}</span>
-          <div className='cell_sub'>주문번호 {o.no}</div>
+          <span className='cell_title'>
+            {o.pname} · {o.pmonth}개월 · {o.ccnt}대
+            {pendingOnos.has(o.no) && (
+              <button
+                type="button"
+                className="sub_wait sub_wait_btn"
+                title="변경 신청관리에서 승인·반려하기"
+                onClick={() => navigate('/dbms/pending')}
+              >
+                변경 대기
+              </button>
+            )}
+          </span>
+          {/* 주문번호를 누르면 전체 이력관리에서 이 주문의 결제·연결·변경·취소 이력만 보여 줌 */}
+          <div className='cell_sub'>
+            주문번호{' '}
+            <button
+              type="button"
+              className="btn_link mono"
+              title="이 주문의 이력 보기"
+              onClick={() => navigate(`/dbms/order/history?word=${encodeURIComponent(o.no)}`)}
+            >
+              {o.no}
+            </button>
+          </div>
         </>
       ),
     },
-    { header: '매장', width: '140px', render: (o) => o.sname ?? <span className="cell_sub">연결 대기</span> },
-    { header: '기간', width: '80px', mono: true, render: (o) => `${o.pmonth}개월` },
-    { header: '대수', width: '70px', mono: true, render: (o) => `${o.ccnt}대` },
+    {
+      header: '매장',
+      width: '140px',
+      // 취소된 구독은 연결할 매장이 없으므로 "연결 대기"로 보이지 않게 함
+      render: (o) => o.sname ?? <span className="cell_sub">{o.status === 2 ? '-' : '연결 대기'}</span>,
+    },
+    {
+      header: '구독기간',
+      width: '200px',
+      mono: true,
+      render: (o) =>
+        o.sdate && o.edate ? (
+          `${o.sdate} ~ ${o.edate}`
+        ) : o.status === 2 && o.udate ? (
+          <span className="cell_sub">취소 {o.udate.split(' ')[0]}</span>
+        ) : (
+          <span className="cell_sub">-</span>
+        ),
+    },
     {
       header: '상태',
       width: '90px',
@@ -139,12 +204,29 @@ export default function ShopOrderList() {
     },
     { header: '결제금액(원)', width: '120px', mono: true, render: (o) => 
         <span className={o.status === 2 ? 'text_line' : ''}>{o.totalprice.toLocaleString('ko-KR')}</span> },
-    { header: '구매일', width: '180px', mono: true, render: (o) => o.cdate },
+    // 날짜만 보여 주고, 시각은 마우스를 올리면 나옴
+    { header: '구매일', width: '110px', mono: true, render: (o) => <span title={o.cdate}>{o.cdate.split(' ')[0]}</span> },
   ];
 
   return (
     <section className="view active">
-      <PageHeader title="전체 구독권 구매 목록" description="전체 회원의 구독 내역을 확인합니다." />
+      <PageHeader title="회원 구매내역" description="전체 회원의 구독 내역을 확인합니다." />
+
+      {/* 승인을 기다리는 변경 신청이 있으면 맨 위에 알림 */}
+      {pendingCount > 0 && (
+        <div className="alert_mode">
+          <div className="alert_banner">
+            <div className="aicon">!</div>
+            <div className="atext">
+              <div className="t1">승인을 기다리는 변경 신청이 {pendingCount}건 있습니다.</div>
+              <div className="t2">회원이 신청한 CCTV 대수 변경은 승인해야 반영됩니다. 해당 주문에는 [변경 대기]가 표시됩니다.</div>
+            </div>
+            <button type="button" className="abtn" onClick={() => navigate('/dbms/pending')}>
+              변경 신청관리
+            </button>
+          </div>
+        </div>
+      )}
 
       <AdminToolbar
         searchValue={draft.word}

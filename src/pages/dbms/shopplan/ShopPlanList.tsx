@@ -168,7 +168,7 @@ export default function ShopPlanList() {
   return (
     <section className="view active">
       <PageHeader
-        title="구독권 관리"
+        title="판매 목록"
         description="등급·이용기간별 구독권 단가와 CCTV 대수 구간을 관리합니다."
         createLabel="+ 구독권 등록"
         onCreate={() => navigate('new')}
