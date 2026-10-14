@@ -1,4 +1,12 @@
-import { axiosInstance, getIP } from '../../utils/Tool';
+import { axiosInstance } from '../../utils/Tool';
+
+/**
+ * H200 FastAPI 주소.
+ * AI 이슈맵 / 원본 도면은 Spring(9102)이 아니라 H200 FastAPI(11200)를 직접 호출한다.
+ * (getIP()는 접속한 웹서버 주소라서 웹서버가 가비아일 때 H200이 아닌 곳을 가리키므로 쓰지 않는다.)
+ */
+const FASTAPI_BASE_URL = 'http://139.150.91.194:11200';
+// const FASTAPI_BASE_URL = 'http://localhost:11200';
 
 
 // ========================================
@@ -37,8 +45,8 @@ export interface NotificationItem {
 
 export interface AiIssueMap {
     no: number;
-    mno: number;
-    smno: number;
+    smno: number | null;
+    cino: number | null;
 
     xpos: number | null;
     ypos: number | null;
@@ -129,8 +137,8 @@ export const readNotification = async (
 
 // ========================================
 // AI 이슈맵 정보 조회
-// GET /api/shopmap/issue-map/{aimapno}
-// FastAPI : 11200
+// GET /api/aiissuemap/{no}
+// FastAPI : H200 (11200)
 // ========================================
 
 export const getAiIssueMap = async (
@@ -138,7 +146,7 @@ export const getAiIssueMap = async (
 ): Promise<AiIssueMap> => {
 
     const response = await fetch(
-        `http://${getIP()}:11200/api/shopmap/issue-map/${aimapno}`
+        `${FASTAPI_BASE_URL}/api/aiissuemap/${aimapno}`
     );
 
     if (!response.ok) {
@@ -151,15 +159,29 @@ export const getAiIssueMap = async (
 
 // ========================================
 // AI 이슈맵 이미지 URL
-// GET /api/shopmap/image/{filename}
-// FastAPI : 11200
+// GET /api/aiissuemap/image/{filename}
+// FastAPI : H200 (11200)
 // ========================================
 
 export const getAiIssueMapImageUrl = (
     filename: string
 ): string => {
 
-    return `http://${getIP()}:11200/api/shopmap/image/${encodeURIComponent(filename)}`;
+    return `${FASTAPI_BASE_URL}/api/aiissuemap/image/${encodeURIComponent(filename)}`;
+};
+
+
+// ========================================
+// 원본 매장 도면 파일 URL
+// GET /api/shopmap/file/{filename}
+// FastAPI : H200 (11200)
+// ========================================
+
+export const getShopMapFileUrl = (
+    filename: string
+): string => {
+
+    return `${FASTAPI_BASE_URL}/api/shopmap/file/${encodeURIComponent(filename)}`;
 };
 
 
