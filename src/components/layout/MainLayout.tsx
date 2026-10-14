@@ -178,7 +178,7 @@ const MainLayout = () => {
                 </Link>
 
                 <Link to="/index#dashboard">
-                  대시보드
+                  서비스 화면
                 </Link>
 
                 <Link to="/index#roadmap">
@@ -405,7 +405,7 @@ const MainLayout = () => {
               </Link>
 
               <Link to="/index#dashboard">
-                대시보드
+                서비스 화면
               </Link>
 
               <Link to="/index#roadmap">

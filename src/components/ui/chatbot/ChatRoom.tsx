@@ -735,14 +735,9 @@ export default function ChatRoom({
     const labelText = e.currentTarget.textContent;
 
     try {
-      // 1. AI 상담 모드인 경우 '여기까지가 AI 상담입니다' 구분선을 먼저 DB에 확실히 저장
-      if (stage === 'AI') {
-        showDividerNow('여기까지가 AI 상담입니다');
-        // await를 붙여 구분선 API 처리가 완전히 끝날 때까지 기다립니다.
-        await endAiConsultDivider(sessionIdRef.current);
-      }
-
-      // 2. 구분선 저장이 완류된 후 시스템 안내메시지(예/아니오) 요청 API 실행
+      // '여기까지가 AI 상담입니다' 구분선은 여기서 넣지 않는다.
+      // 여기서 넣으면 [아니오]를 눌러 AI 상담을 이어 간 뒤 상담을 끝낼 때 구분선이 한 번 더 들어간다.
+      // 문의를 남기기로 확정했을 때(handleEscalateConfirm 의 [네])에 넣는다.
       const result = await callStep({
         action: 4,
         label: labelText,
@@ -826,7 +821,13 @@ export default function ChatRoom({
 
   /** 관리자 연결 확인(예/아니오) 및 게시판 작성 이동 처리 */
   const handleEscalateConfirm = async (e: React.MouseEvent, goQa: boolean) => {
-    const result = await callStep({ action: 5, goQa, label: e.currentTarget.textContent });
+    const labelText = e.currentTarget.textContent; // await 뒤에는 currentTarget 이 비므로 먼저 꺼내 둠
+    // [네]로 문의를 확정하면 AI 상담이 여기서 끝나므로 구분선을 먼저 저장 ([아니오]는 AI 상담을 그대로 이어 감)
+    if (goQa && stage === 'AI' && sessionIdRef.current) {
+      showDividerNow('여기까지가 AI 상담입니다');
+      await endAiConsultDivider(sessionIdRef.current);
+    }
+    const result = await callStep({ action: 5, goQa, label: labelText });
     if (!result) return;
 
     if (goQa && sessionIdRef.current) {

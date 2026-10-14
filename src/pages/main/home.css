@@ -34,7 +34,7 @@
 .main .hero_stats .num{
   font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--text);
 }
-.main .hero_stats .lab{font-size:12.5px;color:var(--text-faint);margin-top:4px;}
+.main .hero_stats .lab{font-size:12.5px;color:var(--text-faint);margin-top:4px; word-break: keep-all;}
 
 
 /* monitor wall */
@@ -110,12 +110,13 @@
 @media(max-width:820px){.problem_grid{grid-template-columns:1fr;}}
 .main .problem_card{background:var(--bg-elevated);padding:32px 28px;}
 .main .problem_card .tag{font-family:var(--font-mono);font-size:11px;color:var(--amber-500);background:var(--amber-dim);display:inline-block;padding:3px 9px;border-radius:100px;margin-bottom:16px;}
+.main .problem_card .num{font-size:24px;font-weight:800;color:var(--cyan);margin:10px 0 12px;letter-spacing:-0.5px;}
 .main .problem_card p{font-size:15px;color:var(--text);line-height:1.7;}
 .main .problem_card .sub{color:var(--text-faint);font-size:13px;margin-top:10px;}
 
 
 /* features */
-.main .feat_grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;}
+.main .feat_grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
 @media(max-width:960px){.main .feat_grid{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:520px){.main .feat_grid{grid-template-columns:1fr;}}
 .main .feat_card{
@@ -203,3 +204,96 @@
 
 .main .reveal{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease;}
 .main .reveal.in{opacity:1;transform:translateY(0);}
+
+/* 서비스 화면 그림 (HomeShowcase) */
+.main .showcase{background:var(--bg-elevated);border:1px solid var(--border-strong);border-radius:14px;padding:10px;box-shadow:0 40px 100px -30px rgba(0,0,0,0.55);overflow-x:auto;}
+.main .showcase svg{display:block;width:100%;min-width:760px;height:auto;font-family:var(--font-disp);}
+.main .showcase .sc_panel > rect{fill:var(--n-800);stroke:var(--n-600);}
+.main .showcase .sc_cap{fill:var(--text);font-size:15px;font-weight:700;}
+.main .showcase .sc_sub{fill:var(--text-faint);font-size:11.5px;}
+.main .showcase .sc_tiny{fill:var(--text-faint);font-size:10.5px;}
+.main .showcase .sc_link{stroke:var(--cyan);stroke-width:1.5;stroke-dasharray:4 5;fill:none;animation:sc_dash 1.2s linear infinite;}
+.main .showcase .sc_plan > rect{fill:var(--bg);stroke:var(--border-strong);}
+.main .showcase .shelf{fill:var(--n-600);stroke:none;}
+.main .showcase .kiosk{fill:var(--cyan-dim);stroke:var(--cyan);}
+.main .showcase .door{stroke:var(--cyan);stroke-width:4;stroke-linecap:round;}
+.main .showcase .camdot circle{fill:var(--cyan);}
+.main .showcase .camdot path{fill:var(--cyan);opacity:.12;}
+.main .showcase .sc_pin .core,.main .showcase .sc_legend .core{fill:var(--red-500);}
+.main .showcase .sc_legend .cam{fill:var(--cyan);}
+.main .showcase .sc_pin .ring{fill:none;stroke:var(--red-500);stroke-width:2;transform-box:fill-box;transform-origin:center;animation:sc_pulse 2s ease-out infinite;}
+.main .showcase .sc_pin .ring.late{animation-delay:1s;}
+.main .showcase .sc_tag rect{fill:var(--red-500);}
+.main .showcase .sc_tag text{fill:#fff;font-size:11.5px;font-weight:700;}
+.main .showcase .sc_alert rect{fill:var(--bg);stroke:var(--red-500);}
+.main .showcase .sc_alert circle{fill:none;stroke:var(--red-500);stroke-width:1.6;}
+.main .showcase .sc_alert path{stroke:var(--red-500);stroke-width:2;stroke-linecap:round;}
+.main .showcase .sc_alert .t{fill:var(--text);font-size:13.5px;font-weight:700;}
+.main .showcase .sc_alert .d{fill:var(--text-dim);font-size:11.5px;}
+.main .showcase .sc_alert .time{fill:var(--text-faint);font-size:11px;font-family:var(--font-mono);}
+.main .showcase .sc_review .chip{fill:none;stroke:var(--amber-500);}
+.main .showcase .sc_review .chip_t{fill:var(--amber-500);font-size:11px;font-weight:700;}
+.main .showcase .sc_review .by{fill:var(--text-faint);font-size:11px;}
+.main .showcase .sc_review circle{fill:var(--text-faint);}
+.main .showcase .sc_review text{fill:var(--text-dim);font-size:12px;}
+.main .showcase .sc_review .tip{fill:var(--bg);stroke:var(--n-600);}
+.main .showcase .sc_review .tip_l{fill:var(--text-faint);font-size:10.5px;}
+.main .showcase .sc_review .tip_t{fill:var(--text);font-size:12.5px;font-weight:700;}
+.main .showcase .sc_phone > rect{fill:var(--bg);stroke:var(--border-strong);stroke-width:1.5;}
+.main .showcase .sc_phone .notch{fill:var(--n-600);stroke:none;}
+.main .showcase .bubble rect{fill:var(--n-800);stroke:var(--n-600);}
+.main .showcase .bubble.mail rect{stroke:var(--cyan);}
+.main .showcase .bubble text{fill:var(--text-dim);font-size:10.5px;}
+.main .showcase .bubble .b{fill:var(--text);font-weight:700;font-size:11px;}
+.main .showcase .bubble .lang{fill:var(--cyan);font-size:9.5px;}
+.main .showcase .sc_btns .ghost{fill:none;stroke:var(--border-strong);}
+.main .showcase .sc_btns .ghost_t{fill:var(--text-dim);font-size:13px;font-weight:700;}
+.main .showcase .sc_btns .solid{fill:var(--cyan);}
+.main .showcase .sc_btns .solid_t{fill:#06211c;font-size:13px;font-weight:800;}
+.main .showcase .sc_chart .axis{stroke:var(--n-600);}
+.main .showcase .sc_chart polyline{fill:none;stroke:var(--cyan);stroke-width:2;stroke-linejoin:round;}
+.main .showcase .sc_chart circle{fill:var(--cyan);}
+@keyframes sc_pulse{0%{transform:scale(.6);opacity:.9;}100%{transform:scale(2.6);opacity:0;}}
+@keyframes sc_dash{to{stroke-dashoffset:-18;}}
+@media (prefers-reduced-motion: reduce){.main .showcase .sc_pin .ring,.main .showcase .sc_link{animation:none;}}
+
+/* 도입 부담 */
+.main .reason_grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+@media(max-width:820px){.main .reason_grid{grid-template-columns:1fr;}}
+.main .reason_card{background:var(--n-800);border:1px solid var(--n-600);border-radius:10px;padding:26px 24px;}
+.main .reason_card h4{font-size:16px;font-weight:700;margin-bottom:10px;color:var(--cyan);}
+.main .reason_card p{font-size:13.5px;color:var(--text-dim);line-height:1.65;}
+.main .price_strip{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:18px;padding:20px 24px;border:1px solid var(--border-strong);border-radius:10px;background:var(--bg-elevated);}
+.main .price_item{flex:1;min-width:150px;padding-right:14px;border-right:1px solid var(--n-600);}
+.main .price_item:last-of-type{border-right:0;}
+.main .price_item .pn{font-size:14px;font-weight:700;}
+.main .price_item .pc{font-size:12px;color:var(--text-faint);margin:2px 0 8px;}
+.main .price_item .pp{font-size:19px;font-weight:800;}
+.main .price_item .pp small{font-size:11.5px;font-weight:400;color:var(--text-faint);}
+.main .price_go{margin-left:auto;white-space:nowrap;}
+
+
+/* 첫 화면 CCTV 4분할 그림 (HeroCams) */
+.main .cam .hc_scene{position:absolute;inset:0;}
+.main .cam .hc_scene svg{width:100%;height:100%;display:block;}
+.main .hc_wall{fill:#0b1218;}
+.main .hc_floor{fill:#0e171e;}
+.main .hc_edge{stroke:#1d2a33;stroke-width:1;}
+.main .hc_shelf{fill:#16222b;stroke:#22313c;stroke-width:.8;}
+.main .hc_freezer{fill:#122129;stroke:#2a4650;stroke-width:.8;}
+.main .hc_door{fill:#0f1c22;stroke:#2a3b46;stroke-width:1;}
+.main .hc_frame{stroke:#2a3b46;stroke-width:.8;}
+.main .hc_kiosk{fill:#15212a;stroke:#2c3d48;stroke-width:.8;}
+.main .hc_screen{fill:rgba(51,214,192,.25);}
+.main .hc_person circle,.main .hc_person rect{fill:rgba(170,190,205,.32);}
+.main .hc_person.hot circle,.main .hc_person.hot rect{fill:rgba(255,140,150,.38);}
+.main .hc_track rect{fill:none;stroke:var(--cyan);stroke-width:.8;opacity:.85;}
+.main .hc_track .lab{fill:var(--cyan);stroke:none;opacity:.9;}
+.main .hc_track text{fill:#06211c;font-family:var(--font-mono);font-size:6.5px;font-weight:700;}
+.main .hc_track.alert rect{stroke:var(--red-500);stroke-width:1.2;opacity:1;animation:hc_blink 1.6s ease-in-out infinite;}
+.main .hc_track.alert .lab{fill:var(--red-300);animation:none;}
+.main .hc_track.alert text{fill:#1a0004;}
+.main .hc_walk{animation:hc_walk 7s ease-in-out infinite alternate;}
+@keyframes hc_walk{from{transform:translate(-6px,8px);}to{transform:translate(4px,-2px);}}
+@keyframes hc_blink{0%,100%{opacity:1;}50%{opacity:.45;}}
+@media (prefers-reduced-motion: reduce){.main .hc_walk,.main .hc_track.alert rect{animation:none;}}

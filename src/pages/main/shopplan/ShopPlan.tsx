@@ -158,8 +158,8 @@ export default function ShopPlan() {
       {step === 1 && (
         <section className="view active">
           <div className="ott_hero">
-            <h2 className="title xlg">한 개의 매장에 맞는 요금제를 선택하세요</h2>
-            <p className="b_title lg">매장에 필요한 CCTV 대수에 맞춰 필요한 만큼만 결제하세요.</p>
+            <h2 className="title xlg">매장 한 곳에 맞는 요금제를 선택하세요</h2>
+            <p className="b_title lg">매장에 있는 CCTV 대수만큼만 결제하세요. <br />이상행동 6가지 감지는 모든 요금제에 들어 있습니다.</p>
           </div>
           
           <div className="ott_toggle_wrap">
@@ -170,7 +170,7 @@ export default function ShopPlan() {
                   left: `${(100 / Math.max(months.length, 1)) * (months.indexOf(longestMonth) + 0.5)}%`,
                 }}
               >
-                🎁 {longestMonth}개월 선택 시 2개월 무료
+                🎁 {longestMonth}개월로 이용하면 대당 월 요금이 더 저렴해요
               </span>
             )}
 
@@ -196,7 +196,7 @@ export default function ShopPlan() {
           </div>
             
           <div className="panel">
-            <p className="b_caption">* 구독권 선택시 만료 전까지 변경할 수 없습니다.</p>
+            <p className="b_caption">* 이용 중에도 변경 신청으로 CCTV 대수와 이용 기간을 바꿀 수 있습니다. (담당자 확인 후 반영)</p>
             <div className='plan_grid'>
               {plansForMonth.map((p) => {
                 const highlighted = p.isreco === 'Y' || p.popular;
@@ -251,8 +251,8 @@ export default function ShopPlan() {
       {step === 2 && (
         <section className="view active">
           <div className="ott_hero">
-            <h2 className="title xlg">연동 CCTV 대수 선택</h2>
-            <p className="b_title lg">allimio 관제 서비스를 연동할 정확한 CCTV 대수를 선택해주세요</p>
+            <h2 className="title xlg">CCTV 대수 선택</h2>
+            <p className="b_title lg">AI가 지켜볼 CCTV 대수를 선택해 주세요. 매장에 있는 대수와 같게 고르시면 됩니다.</p>
           </div>
           
           {step === 2 && plan && month !== null && (
@@ -297,7 +297,7 @@ export default function ShopPlan() {
 
                 <div className="gd_label">
                   <p className='b_title sm'>
-                    {plan.pname} 요금제는 {Number(plan.mincctv)}~{Number(plan.maxcctv)}대의 CCTV를 지정 할 수 있습니다.
+                    {plan.pname} 요금제는 CCTV {Number(plan.mincctv)}~{Number(plan.maxcctv)}대까지 선택할 수 있습니다.
                   </p>
 
                   <button type="button" className="wz_back" onClick={() => goBack(1)}>요금제 다시 선택</button>
@@ -339,7 +339,7 @@ export default function ShopPlan() {
         <section className="view active">
           <div className="ott_hero">
             <h2 className="title xlg">선택한 내용을 확인하고 결제하세요</h2>
-            <p className="b_title lg">결제 후 CCTV 대수 변경은 가능하나 구독권 종류는 변경할 수 없습니다.</p>
+            <p className="b_title lg">결제 후에도 변경 신청으로 CCTV 대수와 이용 기간을 바꿀 수 있습니다.</p>
           </div>
 
           {plan && month !== null && (
@@ -387,7 +387,7 @@ export default function ShopPlan() {
 
                 {!shopNo && (
                   <div className="form_hint" style={{ marginBottom: 16 }}>
-                    결제 완료 후 매장을 등록하여 구독권을 연결할 수 있습니다.
+                    결제 후 담당자가 연락드려 CCTV 설치 · 등록을 도와드립니다. 등록이 끝나면 구독권을 매장에 연결해 바로 이용하실 수 있습니다.
                   </div>
                 )}
                 
