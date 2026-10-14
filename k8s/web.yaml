@@ -1,0 +1,68 @@
+# =====================================================================
+# allimio React 프론트 (k3s)
+#   - IMAGE_TAG는 GitHub Actions가 커밋 SHA로 바꿔서 apply 함 (수동 배포 시 latest 등으로 치환)
+#   - 외부 접속: http://1.201.122.5:5174  → Service(LoadBalancer 5174) → Pod(nginx 80)
+# =====================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: allimio
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: allimio-web
+  namespace: allimio
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5            # rollout undo로 되돌릴 수 있는 이전 버전 개수
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1                    # 새 Pod를 먼저 띄우고
+      maxUnavailable: 0              # 새 Pod가 준비되기 전엔 기존 Pod를 내리지 않음 → 무중단
+  selector:
+    matchLabels:
+      app: allimio-web
+  template:
+    metadata:
+      labels:
+        app: allimio-web
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret          # GHCR(깃허브 이미지 저장소)에서 이미지를 받을 때 쓰는 로그인 정보
+      containers:
+        - name: web
+          image: ghcr.io/eong98/allimio-web:IMAGE_TAG
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          readinessProbe:            # 응답이 와야 트래픽을 보냄
+            httpGet:
+              path: /
+              port: 80
+            periodSeconds: 10
+          livenessProbe:             # 응답이 계속 없으면 컨테이너 재시작
+            httpGet:
+              path: /
+              port: 80
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: allimio-web
+  namespace: allimio
+spec:
+  type: LoadBalancer                 # k3s 내장 ServiceLB가 서버의 5174 포트를 이 서비스로 연결
+  selector:
+    app: allimio-web
+  ports:
+    - name: http
+      port: 5174
+      targetPort: 80

@@ -1,4 +1,8 @@
-import { axiosInstance, getIP } from '../../utils/Tool';
+import { axiosInstance } from '../../utils/Tool';
+
+// ★ 수정: FastAPI(AI 도면)는 H200 서버에 있으므로 브라우저 접속 주소(getIP)가 아니라 H200 주소를 직접 사용
+//   (CctvIssueReview.ts, ChatApi.ts, surveyApi.ts와 같은 방식)
+const FASTAPI_BASE_URL = 'http://139.150.91.194:11200';
 
 
 // ========================================
@@ -138,7 +142,7 @@ export const getAiIssueMap = async (
 ): Promise<AiIssueMap> => {
 
     const response = await fetch(
-        `http://${getIP()}:11200/api/shopmap/issue-map/${aimapno}`
+        `${FASTAPI_BASE_URL}/api/shopmap/issue-map/${aimapno}` // ★ 수정
     );
 
     if (!response.ok) {
@@ -159,7 +163,7 @@ export const getAiIssueMapImageUrl = (
     filename: string
 ): string => {
 
-    return `http://${getIP()}:11200/api/shopmap/image/${encodeURIComponent(filename)}`;
+    return `${FASTAPI_BASE_URL}/api/shopmap/image/${encodeURIComponent(filename)}`; // ★ 수정
 };
 
 
